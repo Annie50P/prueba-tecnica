@@ -1,0 +1,5503 @@
+{
+  "metadata": {
+    "fecha_generacion": "2025-08-12T13:37:49.852579",
+    "total_clientes": 50,
+    "total_interacciones": 502,
+    "periodo": "90 días"
+  },
+  "clientes": [
+    {
+      "id": "cliente_000",
+      "nombre": "Cliente 1",
+      "telefono": "+507 6656-8011",
+      "monto_deuda_inicial": 2062,
+      "fecha_prestamo": "2024-12-28",
+      "tipo_deuda": "hipoteca"
+    },
+    {
+      "id": "cliente_001",
+      "nombre": "Cliente 2",
+      "telefono": "+507 6606-8228",
+      "monto_deuda_inicial": 7199,
+      "fecha_prestamo": "2025-02-04",
+      "tipo_deuda": "tarjeta_credito"
+    },
+    {
+      "id": "cliente_002",
+      "nombre": "Cliente 3",
+      "telefono": "+507 6730-6789",
+      "monto_deuda_inicial": 633,
+      "fecha_prestamo": "2025-01-02",
+      "tipo_deuda": "auto"
+    },
+    {
+      "id": "cliente_003",
+      "nombre": "Cliente 4",
+      "telefono": "+507 6752-2387",
+      "monto_deuda_inicial": 3003,
+      "fecha_prestamo": "2024-09-07",
+      "tipo_deuda": "tarjeta_credito"
+    },
+    {
+      "id": "cliente_004",
+      "nombre": "Cliente 5",
+      "telefono": "+507 6788-9001",
+      "monto_deuda_inicial": 7535,
+      "fecha_prestamo": "2023-09-09",
+      "tipo_deuda": "auto"
+    },
+    {
+      "id": "cliente_005",
+      "nombre": "Cliente 6",
+      "telefono": "+507 6664-6720",
+      "monto_deuda_inicial": 5518,
+      "fecha_prestamo": "2023-09-15",
+      "tipo_deuda": "hipoteca"
+    },
+    {
+      "id": "cliente_006",
+      "nombre": "Cliente 7",
+      "telefono": "+507 6299-7592",
+      "monto_deuda_inicial": 2186,
+      "fecha_prestamo": "2023-10-17",
+      "tipo_deuda": "hipoteca"
+    },
+    {
+      "id": "cliente_007",
+      "nombre": "Cliente 8",
+      "telefono": "+507 6711-5551",
+      "monto_deuda_inicial": 9543,
+      "fecha_prestamo": "2024-06-22",
+      "tipo_deuda": "prestamo_personal"
+    },
+    {
+      "id": "cliente_008",
+      "nombre": "Cliente 9",
+      "telefono": "+507 6111-5609",
+      "monto_deuda_inicial": 1378,
+      "fecha_prestamo": "2024-11-08",
+      "tipo_deuda": "auto"
+    },
+    {
+      "id": "cliente_009",
+      "nombre": "Cliente 10",
+      "telefono": "+507 6997-3260",
+      "monto_deuda_inicial": 6552,
+      "fecha_prestamo": "2024-12-10",
+      "tipo_deuda": "auto"
+    },
+    {
+      "id": "cliente_010",
+      "nombre": "Cliente 11",
+      "telefono": "+507 6735-8713",
+      "monto_deuda_inicial": 9261,
+      "fecha_prestamo": "2024-01-21",
+      "tipo_deuda": "auto"
+    },
+    {
+      "id": "cliente_011",
+      "nombre": "Cliente 12",
+      "telefono": "+507 6411-1453",
+      "monto_deuda_inicial": 8434,
+      "fecha_prestamo": "2024-09-19",
+      "tipo_deuda": "tarjeta_credito"
+    },
+    {
+      "id": "cliente_012",
+      "nombre": "Cliente 13",
+      "telefono": "+507 6289-9642",
+      "monto_deuda_inicial": 4337,
+      "fecha_prestamo": "2024-04-16",
+      "tipo_deuda": "hipoteca"
+    },
+    {
+      "id": "cliente_013",
+      "nombre": "Cliente 14",
+      "telefono": "+507 6687-3960",
+      "monto_deuda_inicial": 3093,
+      "fecha_prestamo": "2024-06-17",
+      "tipo_deuda": "auto"
+    },
+    {
+      "id": "cliente_014",
+      "nombre": "Cliente 15",
+      "telefono": "+507 6968-3151",
+      "monto_deuda_inicial": 668,
+      "fecha_prestamo": "2023-10-29",
+      "tipo_deuda": "tarjeta_credito"
+    },
+    {
+      "id": "cliente_015",
+      "nombre": "Cliente 16",
+      "telefono": "+507 6728-1877",
+      "monto_deuda_inicial": 1446,
+      "fecha_prestamo": "2024-11-24",
+      "tipo_deuda": "tarjeta_credito"
+    },
+    {
+      "id": "cliente_016",
+      "nombre": "Cliente 17",
+      "telefono": "+507 6292-6543",
+      "monto_deuda_inicial": 5111,
+      "fecha_prestamo": "2025-01-24",
+      "tipo_deuda": "prestamo_personal"
+    },
+    {
+      "id": "cliente_017",
+      "nombre": "Cliente 18",
+      "telefono": "+507 6752-4697",
+      "monto_deuda_inicial": 2399,
+      "fecha_prestamo": "2024-12-05",
+      "tipo_deuda": "hipoteca"
+    },
+    {
+      "id": "cliente_018",
+      "nombre": "Cliente 19",
+      "telefono": "+507 6909-5617",
+      "monto_deuda_inicial": 9037,
+      "fecha_prestamo": "2024-10-08",
+      "tipo_deuda": "auto"
+    },
+    {
+      "id": "cliente_019",
+      "nombre": "Cliente 20",
+      "telefono": "+507 6309-8649",
+      "monto_deuda_inicial": 1199,
+      "fecha_prestamo": "2023-09-22",
+      "tipo_deuda": "auto"
+    },
+    {
+      "id": "cliente_020",
+      "nombre": "Cliente 21",
+      "telefono": "+507 6631-3654",
+      "monto_deuda_inicial": 8396,
+      "fecha_prestamo": "2023-12-18",
+      "tipo_deuda": "tarjeta_credito"
+    },
+    {
+      "id": "cliente_021",
+      "nombre": "Cliente 22",
+      "telefono": "+507 6767-3549",
+      "monto_deuda_inicial": 6849,
+      "fecha_prestamo": "2024-02-21",
+      "tipo_deuda": "tarjeta_credito"
+    },
+    {
+      "id": "cliente_022",
+      "nombre": "Cliente 23",
+      "telefono": "+507 6498-5169",
+      "monto_deuda_inicial": 6359,
+      "fecha_prestamo": "2023-12-30",
+      "tipo_deuda": "tarjeta_credito"
+    },
+    {
+      "id": "cliente_023",
+      "nombre": "Cliente 24",
+      "telefono": "+507 6212-8805",
+      "monto_deuda_inicial": 7062,
+      "fecha_prestamo": "2024-01-04",
+      "tipo_deuda": "prestamo_personal"
+    },
+    {
+      "id": "cliente_024",
+      "nombre": "Cliente 25",
+      "telefono": "+507 6725-9489",
+      "monto_deuda_inicial": 5752,
+      "fecha_prestamo": "2023-09-18",
+      "tipo_deuda": "prestamo_personal"
+    },
+    {
+      "id": "cliente_025",
+      "nombre": "Cliente 26",
+      "telefono": "+507 6617-5564",
+      "monto_deuda_inicial": 2517,
+      "fecha_prestamo": "2024-11-09",
+      "tipo_deuda": "prestamo_personal"
+    },
+    {
+      "id": "cliente_026",
+      "nombre": "Cliente 27",
+      "telefono": "+507 6986-1061",
+      "monto_deuda_inicial": 8130,
+      "fecha_prestamo": "2024-11-05",
+      "tipo_deuda": "auto"
+    },
+    {
+      "id": "cliente_027",
+      "nombre": "Cliente 28",
+      "telefono": "+507 6352-6266",
+      "monto_deuda_inicial": 5583,
+      "fecha_prestamo": "2023-12-27",
+      "tipo_deuda": "auto"
+    },
+    {
+      "id": "cliente_028",
+      "nombre": "Cliente 29",
+      "telefono": "+507 6404-8161",
+      "monto_deuda_inicial": 2080,
+      "fecha_prestamo": "2023-12-21",
+      "tipo_deuda": "prestamo_personal"
+    },
+    {
+      "id": "cliente_029",
+      "nombre": "Cliente 30",
+      "telefono": "+507 6545-9437",
+      "monto_deuda_inicial": 7619,
+      "fecha_prestamo": "2024-08-17",
+      "tipo_deuda": "tarjeta_credito"
+    },
+    {
+      "id": "cliente_030",
+      "nombre": "Cliente 31",
+      "telefono": "+507 6508-6506",
+      "monto_deuda_inicial": 6672,
+      "fecha_prestamo": "2023-10-31",
+      "tipo_deuda": "prestamo_personal"
+    },
+    {
+      "id": "cliente_031",
+      "nombre": "Cliente 32",
+      "telefono": "+507 6257-7593",
+      "monto_deuda_inicial": 2156,
+      "fecha_prestamo": "2024-08-10",
+      "tipo_deuda": "prestamo_personal"
+    },
+    {
+      "id": "cliente_032",
+      "nombre": "Cliente 33",
+      "telefono": "+507 6260-3776",
+      "monto_deuda_inicial": 7839,
+      "fecha_prestamo": "2024-03-19",
+      "tipo_deuda": "tarjeta_credito"
+    },
+    {
+      "id": "cliente_033",
+      "nombre": "Cliente 34",
+      "telefono": "+507 6420-1514",
+      "monto_deuda_inicial": 3330,
+      "fecha_prestamo": "2024-05-07",
+      "tipo_deuda": "hipoteca"
+    },
+    {
+      "id": "cliente_034",
+      "nombre": "Cliente 35",
+      "telefono": "+507 6970-9619",
+      "monto_deuda_inicial": 5683,
+      "fecha_prestamo": "2024-01-31",
+      "tipo_deuda": "tarjeta_credito"
+    },
+    {
+      "id": "cliente_035",
+      "nombre": "Cliente 36",
+      "telefono": "+507 6688-8834",
+      "monto_deuda_inicial": 7083,
+      "fecha_prestamo": "2024-07-20",
+      "tipo_deuda": "hipoteca"
+    },
+    {
+      "id": "cliente_036",
+      "nombre": "Cliente 37",
+      "telefono": "+507 6469-4414",
+      "monto_deuda_inicial": 7799,
+      "fecha_prestamo": "2024-03-10",
+      "tipo_deuda": "auto"
+    },
+    {
+      "id": "cliente_037",
+      "nombre": "Cliente 38",
+      "telefono": "+507 6114-1866",
+      "monto_deuda_inicial": 8414,
+      "fecha_prestamo": "2024-01-11",
+      "tipo_deuda": "tarjeta_credito"
+    },
+    {
+      "id": "cliente_038",
+      "nombre": "Cliente 39",
+      "telefono": "+507 6824-4616",
+      "monto_deuda_inicial": 7093,
+      "fecha_prestamo": "2023-09-01",
+      "tipo_deuda": "hipoteca"
+    },
+    {
+      "id": "cliente_039",
+      "nombre": "Cliente 40",
+      "telefono": "+507 6112-2766",
+      "monto_deuda_inicial": 4832,
+      "fecha_prestamo": "2024-05-28",
+      "tipo_deuda": "hipoteca"
+    },
+    {
+      "id": "cliente_040",
+      "nombre": "Cliente 41",
+      "telefono": "+507 6877-7255",
+      "monto_deuda_inicial": 4871,
+      "fecha_prestamo": "2024-09-28",
+      "tipo_deuda": "auto"
+    },
+    {
+      "id": "cliente_041",
+      "nombre": "Cliente 42",
+      "telefono": "+507 6628-6960",
+      "monto_deuda_inicial": 5315,
+      "fecha_prestamo": "2023-09-20",
+      "tipo_deuda": "prestamo_personal"
+    },
+    {
+      "id": "cliente_042",
+      "nombre": "Cliente 43",
+      "telefono": "+507 6428-1234",
+      "monto_deuda_inicial": 8481,
+      "fecha_prestamo": "2024-09-12",
+      "tipo_deuda": "hipoteca"
+    },
+    {
+      "id": "cliente_043",
+      "nombre": "Cliente 44",
+      "telefono": "+507 6240-5600",
+      "monto_deuda_inicial": 7929,
+      "fecha_prestamo": "2024-08-29",
+      "tipo_deuda": "tarjeta_credito"
+    },
+    {
+      "id": "cliente_044",
+      "nombre": "Cliente 45",
+      "telefono": "+507 6444-1501",
+      "monto_deuda_inicial": 9645,
+      "fecha_prestamo": "2023-10-25",
+      "tipo_deuda": "hipoteca"
+    },
+    {
+      "id": "cliente_045",
+      "nombre": "Cliente 46",
+      "telefono": "+507 6661-2061",
+      "monto_deuda_inicial": 6346,
+      "fecha_prestamo": "2024-09-11",
+      "tipo_deuda": "prestamo_personal"
+    },
+    {
+      "id": "cliente_046",
+      "nombre": "Cliente 47",
+      "telefono": "+507 6742-2435",
+      "monto_deuda_inicial": 1029,
+      "fecha_prestamo": "2023-10-22",
+      "tipo_deuda": "hipoteca"
+    },
+    {
+      "id": "cliente_047",
+      "nombre": "Cliente 48",
+      "telefono": "+507 6241-8201",
+      "monto_deuda_inicial": 5009,
+      "fecha_prestamo": "2023-12-10",
+      "tipo_deuda": "hipoteca"
+    },
+    {
+      "id": "cliente_048",
+      "nombre": "Cliente 49",
+      "telefono": "+507 6726-6529",
+      "monto_deuda_inicial": 1468,
+      "fecha_prestamo": "2023-11-09",
+      "tipo_deuda": "auto"
+    },
+    {
+      "id": "cliente_049",
+      "nombre": "Cliente 50",
+      "telefono": "+507 6451-1177",
+      "monto_deuda_inicial": 7529,
+      "fecha_prestamo": "2024-05-27",
+      "tipo_deuda": "tarjeta_credito"
+    }
+  ],
+  "interacciones": [
+    {
+      "id": "int_ddb0b226",
+      "cliente_id": "cliente_000",
+      "timestamp": "2025-05-17T13:37:49.849120Z",
+      "tipo": "pago_recibido",
+      "monto": 920,
+      "metodo_pago": "transferencia",
+      "pago_completo": true
+    },
+    {
+      "id": "int_6653bd21",
+      "cliente_id": "cliente_036",
+      "timestamp": "2025-05-17T13:37:49.851601Z",
+      "tipo": "pago_recibido",
+      "monto": 1124,
+      "metodo_pago": "tarjeta",
+      "pago_completo": false
+    },
+    {
+      "id": "int_f0007f5f",
+      "cliente_id": "cliente_041",
+      "timestamp": "2025-05-17T13:37:49.851982Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 414,
+      "agente_id": "agente_002",
+      "resultado": "disputa",
+      "sentimiento": "frustrado"
+    },
+    {
+      "id": "int_bd6b3e2f",
+      "cliente_id": "cliente_049",
+      "timestamp": "2025-05-17T13:37:49.852504Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 195,
+      "agente_id": "agente_009",
+      "resultado": "promesa_pago",
+      "sentimiento": "cooperativo",
+      "monto_prometido": 3060,
+      "fecha_promesa": "2025-05-29"
+    },
+    {
+      "id": "int_95054051",
+      "cliente_id": "cliente_001",
+      "timestamp": "2025-05-18T13:37:49.849237Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 588,
+      "agente_id": "agente_008",
+      "resultado": "pago_inmediato",
+      "sentimiento": "cooperativo"
+    },
+    {
+      "id": "int_782ce889",
+      "cliente_id": "cliente_002",
+      "timestamp": "2025-05-18T13:37:49.849331Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 552,
+      "agente_id": "agente_009",
+      "resultado": "pago_inmediato",
+      "sentimiento": "cooperativo"
+    },
+    {
+      "id": "int_e600786d",
+      "cliente_id": "cliente_023",
+      "timestamp": "2025-05-18T13:37:49.850766Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 228,
+      "agente_id": "agente_006",
+      "resultado": "renegociacion",
+      "sentimiento": "cooperativo",
+      "nuevo_plan_pago": {
+        "cuotas": 7,
+        "monto_mensual": 294
+      }
+    },
+    {
+      "id": "int_8a3644b4",
+      "cliente_id": "cliente_028",
+      "timestamp": "2025-05-18T13:37:49.851159Z",
+      "tipo": "llamada_entrante",
+      "duracion_segundos": 557,
+      "agente_id": "agente_009",
+      "resultado": "promesa_pago",
+      "sentimiento": "cooperativo",
+      "monto_prometido": 2057,
+      "fecha_promesa": "2025-05-28"
+    },
+    {
+      "id": "int_1ccce828",
+      "cliente_id": "cliente_007",
+      "timestamp": "2025-05-19T13:37:49.849681Z",
+      "tipo": "email"
+    },
+    {
+      "id": "int_c8826f41",
+      "cliente_id": "cliente_015",
+      "timestamp": "2025-05-19T13:37:49.850173Z",
+      "tipo": "llamada_entrante",
+      "duracion_segundos": 181,
+      "agente_id": "agente_004",
+      "resultado": "renegociacion",
+      "sentimiento": "frustrado",
+      "nuevo_plan_pago": {
+        "cuotas": 5,
+        "monto_mensual": 180
+      }
+    },
+    {
+      "id": "int_65e721f8",
+      "cliente_id": "cliente_026",
+      "timestamp": "2025-05-19T13:37:49.851001Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 580,
+      "agente_id": "agente_002",
+      "resultado": "promesa_pago",
+      "sentimiento": "cooperativo",
+      "monto_prometido": 1725,
+      "fecha_promesa": "2025-06-03"
+    },
+    {
+      "id": "int_b508c9da",
+      "cliente_id": "cliente_040",
+      "timestamp": "2025-05-19T13:37:49.851887Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 179,
+      "agente_id": "agente_003",
+      "resultado": "renegociacion",
+      "sentimiento": "frustrado",
+      "nuevo_plan_pago": {
+        "cuotas": 8,
+        "monto_mensual": 374
+      }
+    },
+    {
+      "id": "int_161082d5",
+      "cliente_id": "cliente_006",
+      "timestamp": "2025-05-20T13:37:49.849630Z",
+      "tipo": "llamada_entrante",
+      "duracion_segundos": 285,
+      "agente_id": "agente_001",
+      "resultado": "se_niega_pagar",
+      "sentimiento": "hostil"
+    },
+    {
+      "id": "int_8cda0136",
+      "cliente_id": "cliente_013",
+      "timestamp": "2025-05-20T13:37:49.850018Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 394,
+      "agente_id": "agente_008",
+      "resultado": "renegociacion",
+      "sentimiento": "cooperativo",
+      "nuevo_plan_pago": {
+        "cuotas": 10,
+        "monto_mensual": 386
+      }
+    },
+    {
+      "id": "int_6f2ae765",
+      "cliente_id": "cliente_017",
+      "timestamp": "2025-05-20T13:37:49.850286Z",
+      "tipo": "email"
+    },
+    {
+      "id": "int_6b114b4e",
+      "cliente_id": "cliente_025",
+      "timestamp": "2025-05-20T13:37:49.850942Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 151,
+      "agente_id": "agente_008",
+      "resultado": "se_niega_pagar",
+      "sentimiento": "hostil"
+    },
+    {
+      "id": "int_763689ad",
+      "cliente_id": "cliente_033",
+      "timestamp": "2025-05-20T13:37:49.851452Z",
+      "tipo": "pago_recibido",
+      "monto": 1544,
+      "metodo_pago": "transferencia",
+      "pago_completo": false
+    },
+    {
+      "id": "int_64c86354",
+      "cliente_id": "cliente_038",
+      "timestamp": "2025-05-20T13:37:49.851727Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 434,
+      "agente_id": "agente_002",
+      "resultado": "pago_inmediato",
+      "sentimiento": "cooperativo"
+    },
+    {
+      "id": "int_59ed05e8",
+      "cliente_id": "cliente_004",
+      "timestamp": "2025-05-21T13:37:49.849476Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 336,
+      "agente_id": "agente_003",
+      "resultado": "promesa_pago",
+      "sentimiento": "cooperativo",
+      "monto_prometido": 1985,
+      "fecha_promesa": "2025-05-25"
+    },
+    {
+      "id": "int_078028e2",
+      "cliente_id": "cliente_009",
+      "timestamp": "2025-05-21T13:37:49.849750Z",
+      "tipo": "pago_recibido",
+      "monto": 191,
+      "metodo_pago": "tarjeta",
+      "pago_completo": false
+    },
+    {
+      "id": "int_52034714",
+      "cliente_id": "cliente_011",
+      "timestamp": "2025-05-21T13:37:49.849851Z",
+      "tipo": "pago_recibido",
+      "monto": 2124,
+      "metodo_pago": "tarjeta",
+      "pago_completo": true
+    },
+    {
+      "id": "int_f310175d",
+      "cliente_id": "cliente_020",
+      "timestamp": "2025-05-21T13:37:49.850548Z",
+      "tipo": "sms"
+    },
+    {
+      "id": "int_6932f670",
+      "cliente_id": "cliente_022",
+      "timestamp": "2025-05-21T13:37:49.850688Z",
+      "tipo": "llamada_entrante",
+      "duracion_segundos": 57,
+      "agente_id": "agente_004",
+      "resultado": "disputa",
+      "sentimiento": "frustrado"
+    },
+    {
+      "id": "int_43a525c4",
+      "cliente_id": "cliente_024",
+      "timestamp": "2025-05-21T13:37:49.850861Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 343,
+      "agente_id": "agente_007",
+      "resultado": "pago_inmediato",
+      "sentimiento": "cooperativo"
+    },
+    {
+      "id": "int_c0549e7d",
+      "cliente_id": "cliente_030",
+      "timestamp": "2025-05-21T13:37:49.851282Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 540,
+      "agente_id": "agente_001",
+      "resultado": "promesa_pago",
+      "sentimiento": "cooperativo",
+      "monto_prometido": 4453,
+      "fecha_promesa": "2025-05-29"
+    },
+    {
+      "id": "int_f4e128a1",
+      "cliente_id": "cliente_036",
+      "timestamp": "2025-05-21T13:37:49.851601Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 211,
+      "agente_id": "agente_010",
+      "resultado": "promesa_pago",
+      "sentimiento": "cooperativo",
+      "monto_prometido": 3783,
+      "fecha_promesa": "2025-05-28"
+    },
+    {
+      "id": "int_15e03ee0",
+      "cliente_id": "cliente_039",
+      "timestamp": "2025-05-21T13:37:49.851809Z",
+      "tipo": "email"
+    },
+    {
+      "id": "int_35592baa",
+      "cliente_id": "cliente_005",
+      "timestamp": "2025-05-22T13:37:49.849536Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 585,
+      "agente_id": "agente_007",
+      "resultado": "promesa_pago",
+      "sentimiento": "cooperativo",
+      "monto_prometido": 5277,
+      "fecha_promesa": "2025-06-06"
+    },
+    {
+      "id": "int_ce690d10",
+      "cliente_id": "cliente_008",
+      "timestamp": "2025-05-22T13:37:49.849709Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 31,
+      "agente_id": "agente_008",
+      "resultado": "pago_inmediato",
+      "sentimiento": "cooperativo"
+    },
+    {
+      "id": "int_db6f6360",
+      "cliente_id": "cliente_016",
+      "timestamp": "2025-05-22T13:37:49.850235Z",
+      "tipo": "llamada_entrante",
+      "duracion_segundos": 338,
+      "agente_id": "agente_009",
+      "resultado": "se_niega_pagar",
+      "sentimiento": "hostil"
+    },
+    {
+      "id": "int_388fbad9",
+      "cliente_id": "cliente_021",
+      "timestamp": "2025-05-22T13:37:49.850592Z",
+      "tipo": "email"
+    },
+    {
+      "id": "int_5f04e9b2",
+      "cliente_id": "cliente_034",
+      "timestamp": "2025-05-22T13:37:49.851481Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 498,
+      "agente_id": "agente_010",
+      "resultado": "se_niega_pagar",
+      "sentimiento": "hostil"
+    },
+    {
+      "id": "int_fbad77ba",
+      "cliente_id": "cliente_042",
+      "timestamp": "2025-05-22T13:37:49.852046Z",
+      "tipo": "llamada_entrante",
+      "duracion_segundos": 521,
+      "agente_id": "agente_008",
+      "resultado": "se_niega_pagar",
+      "sentimiento": "hostil"
+    },
+    {
+      "id": "int_2d5ea6f0",
+      "cliente_id": "cliente_043",
+      "timestamp": "2025-05-22T13:37:49.852078Z",
+      "tipo": "pago_recibido",
+      "monto": 534,
+      "metodo_pago": "efectivo",
+      "pago_completo": false
+    },
+    {
+      "id": "int_21a710b1",
+      "cliente_id": "cliente_044",
+      "timestamp": "2025-05-22T13:37:49.852130Z",
+      "tipo": "llamada_entrante",
+      "duracion_segundos": 192,
+      "agente_id": "agente_005",
+      "resultado": "pago_inmediato",
+      "sentimiento": "cooperativo"
+    },
+    {
+      "id": "int_2606e476",
+      "cliente_id": "cliente_046",
+      "timestamp": "2025-05-22T13:37:49.852301Z",
+      "tipo": "llamada_entrante",
+      "duracion_segundos": 506,
+      "agente_id": "agente_006",
+      "resultado": "pago_inmediato",
+      "sentimiento": "cooperativo"
+    },
+    {
+      "id": "int_18308597",
+      "cliente_id": "cliente_049",
+      "timestamp": "2025-05-22T13:37:49.852504Z",
+      "tipo": "llamada_entrante",
+      "duracion_segundos": 566,
+      "agente_id": "agente_006",
+      "resultado": "sin_respuesta",
+      "sentimiento": "n/a"
+    },
+    {
+      "id": "int_9392ea24",
+      "cliente_id": "cliente_003",
+      "timestamp": "2025-05-23T13:37:49.849383Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 441,
+      "agente_id": "agente_004",
+      "resultado": "renegociacion",
+      "sentimiento": "cooperativo",
+      "nuevo_plan_pago": {
+        "cuotas": 12,
+        "monto_mensual": 166
+      }
+    },
+    {
+      "id": "int_6d997e28",
+      "cliente_id": "cliente_010",
+      "timestamp": "2025-05-23T13:37:49.849784Z",
+      "tipo": "pago_recibido",
+      "monto": 545,
+      "metodo_pago": "tarjeta",
+      "pago_completo": true
+    },
+    {
+      "id": "int_6a7676c4",
+      "cliente_id": "cliente_014",
+      "timestamp": "2025-05-23T13:37:49.850081Z",
+      "tipo": "sms"
+    },
+    {
+      "id": "int_6355ca4b",
+      "cliente_id": "cliente_019",
+      "timestamp": "2025-05-23T13:37:49.850453Z",
+      "tipo": "email"
+    },
+    {
+      "id": "int_cef503b5",
+      "cliente_id": "cliente_025",
+      "timestamp": "2025-05-23T13:37:49.850942Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 445,
+      "agente_id": "agente_008",
+      "resultado": "se_niega_pagar",
+      "sentimiento": "hostil"
+    },
+    {
+      "id": "int_6c94729a",
+      "cliente_id": "cliente_027",
+      "timestamp": "2025-05-23T13:37:49.851073Z",
+      "tipo": "email"
+    },
+    {
+      "id": "int_56a21603",
+      "cliente_id": "cliente_031",
+      "timestamp": "2025-05-23T13:37:49.851318Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 399,
+      "agente_id": "agente_005",
+      "resultado": "sin_respuesta",
+      "sentimiento": "n/a"
+    },
+    {
+      "id": "int_f9795195",
+      "cliente_id": "cliente_032",
+      "timestamp": "2025-05-23T13:37:49.851403Z",
+      "tipo": "email"
+    },
+    {
+      "id": "int_ecfad952",
+      "cliente_id": "cliente_047",
+      "timestamp": "2025-05-23T13:37:49.852394Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 138,
+      "agente_id": "agente_010",
+      "resultado": "promesa_pago",
+      "sentimiento": "cooperativo",
+      "monto_prometido": 1498,
+      "fecha_promesa": "2025-06-05"
+    },
+    {
+      "id": "int_a76bea3a",
+      "cliente_id": "cliente_011",
+      "timestamp": "2025-05-24T13:37:49.849851Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 190,
+      "agente_id": "agente_002",
+      "resultado": "sin_respuesta",
+      "sentimiento": "n/a"
+    },
+    {
+      "id": "int_5f849277",
+      "cliente_id": "cliente_012",
+      "timestamp": "2025-05-24T13:37:49.849925Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 541,
+      "agente_id": "agente_008",
+      "resultado": "sin_respuesta",
+      "sentimiento": "n/a"
+    },
+    {
+      "id": "int_eab235b6",
+      "cliente_id": "cliente_018",
+      "timestamp": "2025-05-24T13:37:49.850373Z",
+      "tipo": "email"
+    },
+    {
+      "id": "int_c7e4a132",
+      "cliente_id": "cliente_029",
+      "timestamp": "2025-05-24T13:37:49.851196Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 321,
+      "agente_id": "agente_009",
+      "resultado": "promesa_pago",
+      "sentimiento": "cooperativo",
+      "monto_prometido": 2005,
+      "fecha_promesa": "2025-05-28"
+    },
+    {
+      "id": "int_804f6601",
+      "cliente_id": "cliente_035",
+      "timestamp": "2025-05-24T13:37:49.851533Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 598,
+      "agente_id": "agente_006",
+      "resultado": "sin_respuesta",
+      "sentimiento": "n/a"
+    },
+    {
+      "id": "int_b741a01d",
+      "cliente_id": "cliente_037",
+      "timestamp": "2025-05-24T13:37:49.851651Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 481,
+      "agente_id": "agente_006",
+      "resultado": "renegociacion",
+      "sentimiento": "cooperativo",
+      "nuevo_plan_pago": {
+        "cuotas": 12,
+        "monto_mensual": 560
+      }
+    },
+    {
+      "id": "int_f8a9e171",
+      "cliente_id": "cliente_041",
+      "timestamp": "2025-05-24T13:37:49.851982Z",
+      "tipo": "pago_recibido",
+      "monto": 930,
+      "metodo_pago": "efectivo",
+      "pago_completo": false
+    },
+    {
+      "id": "int_e523d47b",
+      "cliente_id": "cliente_045",
+      "timestamp": "2025-05-24T13:37:49.852204Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 314,
+      "agente_id": "agente_003",
+      "resultado": "promesa_pago",
+      "sentimiento": "neutral",
+      "monto_prometido": 3487,
+      "fecha_promesa": "2025-05-25"
+    },
+    {
+      "id": "int_051f0bf1",
+      "cliente_id": "cliente_048",
+      "timestamp": "2025-05-24T13:37:49.852433Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 102,
+      "agente_id": "agente_010",
+      "resultado": "sin_respuesta",
+      "sentimiento": "n/a"
+    },
+    {
+      "id": "int_fdfbdadb",
+      "cliente_id": "cliente_002",
+      "timestamp": "2025-05-25T13:37:49.849331Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 251,
+      "agente_id": "agente_006",
+      "resultado": "promesa_pago",
+      "sentimiento": "neutral",
+      "monto_prometido": 609,
+      "fecha_promesa": "2025-05-30"
+    },
+    {
+      "id": "int_a9c49e29",
+      "cliente_id": "cliente_039",
+      "timestamp": "2025-05-25T13:37:49.851809Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 336,
+      "agente_id": "agente_001",
+      "resultado": "sin_respuesta",
+      "sentimiento": "n/a"
+    },
+    {
+      "id": "int_4122a5b4",
+      "cliente_id": "cliente_043",
+      "timestamp": "2025-05-25T13:37:49.852078Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 390,
+      "agente_id": "agente_006",
+      "resultado": "pago_inmediato",
+      "sentimiento": "cooperativo"
+    },
+    {
+      "id": "int_140b990f",
+      "cliente_id": "cliente_004",
+      "timestamp": "2025-05-26T13:37:49.849476Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 342,
+      "agente_id": "agente_010",
+      "resultado": "promesa_pago",
+      "sentimiento": "neutral",
+      "monto_prometido": 2380,
+      "fecha_promesa": "2025-06-10"
+    },
+    {
+      "id": "int_35657ede",
+      "cliente_id": "cliente_024",
+      "timestamp": "2025-05-26T13:37:49.850861Z",
+      "tipo": "llamada_entrante",
+      "duracion_segundos": 500,
+      "agente_id": "agente_010",
+      "resultado": "sin_respuesta",
+      "sentimiento": "n/a"
+    },
+    {
+      "id": "int_5f4c806c",
+      "cliente_id": "cliente_032",
+      "timestamp": "2025-05-26T13:37:49.851403Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 500,
+      "agente_id": "agente_004",
+      "resultado": "sin_respuesta",
+      "sentimiento": "n/a"
+    },
+    {
+      "id": "int_c006b5ca",
+      "cliente_id": "cliente_036",
+      "timestamp": "2025-05-26T13:37:49.851601Z",
+      "tipo": "email"
+    },
+    {
+      "id": "int_21671f04",
+      "cliente_id": "cliente_040",
+      "timestamp": "2025-05-26T13:37:49.851887Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 592,
+      "agente_id": "agente_010",
+      "resultado": "pago_inmediato",
+      "sentimiento": "cooperativo"
+    },
+    {
+      "id": "int_cddf9096",
+      "cliente_id": "cliente_000",
+      "timestamp": "2025-05-27T13:37:49.849120Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 429,
+      "agente_id": "agente_009",
+      "resultado": "sin_respuesta",
+      "sentimiento": "n/a"
+    },
+    {
+      "id": "int_d5ad9308",
+      "cliente_id": "cliente_005",
+      "timestamp": "2025-05-27T13:37:49.849536Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 158,
+      "agente_id": "agente_007",
+      "resultado": "promesa_pago",
+      "sentimiento": "neutral",
+      "monto_prometido": 1069,
+      "fecha_promesa": "2025-05-28"
+    },
+    {
+      "id": "int_a51622ff",
+      "cliente_id": "cliente_023",
+      "timestamp": "2025-05-27T13:37:49.850766Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 538,
+      "agente_id": "agente_005",
+      "resultado": "sin_respuesta",
+      "sentimiento": "n/a"
+    },
+    {
+      "id": "int_6d1baeb2",
+      "cliente_id": "cliente_026",
+      "timestamp": "2025-05-27T13:37:49.851001Z",
+      "tipo": "pago_recibido",
+      "monto": 778,
+      "metodo_pago": "tarjeta",
+      "pago_completo": false
+    },
+    {
+      "id": "int_2d7ad424",
+      "cliente_id": "cliente_027",
+      "timestamp": "2025-05-27T13:37:49.851073Z",
+      "tipo": "llamada_entrante",
+      "duracion_segundos": 524,
+      "agente_id": "agente_002",
+      "resultado": "renegociacion",
+      "sentimiento": "cooperativo",
+      "nuevo_plan_pago": {
+        "cuotas": 9,
+        "monto_mensual": 328
+      }
+    },
+    {
+      "id": "int_4e127d35",
+      "cliente_id": "cliente_035",
+      "timestamp": "2025-05-27T13:37:49.851533Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 591,
+      "agente_id": "agente_008",
+      "resultado": "pago_inmediato",
+      "sentimiento": "cooperativo"
+    },
+    {
+      "id": "int_f96ceb5a",
+      "cliente_id": "cliente_001",
+      "timestamp": "2025-05-28T13:37:49.849237Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 412,
+      "agente_id": "agente_006",
+      "resultado": "renegociacion",
+      "sentimiento": "frustrado",
+      "nuevo_plan_pago": {
+        "cuotas": 4,
+        "monto_mensual": 1199
+      }
+    },
+    {
+      "id": "int_b2e381c2",
+      "cliente_id": "cliente_009",
+      "timestamp": "2025-05-28T13:37:49.849750Z",
+      "tipo": "sms"
+    },
+    {
+      "id": "int_ee1d17c2",
+      "cliente_id": "cliente_028",
+      "timestamp": "2025-05-28T13:37:49.851159Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 216,
+      "agente_id": "agente_007",
+      "resultado": "pago_inmediato",
+      "sentimiento": "cooperativo"
+    },
+    {
+      "id": "int_7895bfb4",
+      "cliente_id": "cliente_033",
+      "timestamp": "2025-05-28T13:37:49.851452Z",
+      "tipo": "pago_recibido",
+      "monto": 536,
+      "metodo_pago": "transferencia",
+      "pago_completo": false
+    },
+    {
+      "id": "int_58f787e8",
+      "cliente_id": "cliente_041",
+      "timestamp": "2025-05-28T13:37:49.851982Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 142,
+      "agente_id": "agente_004",
+      "resultado": "disputa",
+      "sentimiento": "frustrado"
+    },
+    {
+      "id": "int_36102f49",
+      "cliente_id": "cliente_006",
+      "timestamp": "2025-05-29T13:37:49.849630Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 221,
+      "agente_id": "agente_008",
+      "resultado": "sin_respuesta",
+      "sentimiento": "n/a"
+    },
+    {
+      "id": "int_a1ed21db",
+      "cliente_id": "cliente_007",
+      "timestamp": "2025-05-29T13:37:49.849681Z",
+      "tipo": "sms"
+    },
+    {
+      "id": "int_b6f6d4b3",
+      "cliente_id": "cliente_012",
+      "timestamp": "2025-05-29T13:37:49.849925Z",
+      "tipo": "email"
+    },
+    {
+      "id": "int_e79b725b",
+      "cliente_id": "cliente_015",
+      "timestamp": "2025-05-29T13:37:49.850173Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 556,
+      "agente_id": "agente_008",
+      "resultado": "se_niega_pagar",
+      "sentimiento": "hostil"
+    },
+    {
+      "id": "int_0eba756c",
+      "cliente_id": "cliente_018",
+      "timestamp": "2025-05-29T13:37:49.850373Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 391,
+      "agente_id": "agente_001",
+      "resultado": "promesa_pago",
+      "sentimiento": "neutral",
+      "monto_prometido": 5055,
+      "fecha_promesa": "2025-06-08"
+    },
+    {
+      "id": "int_9ff6a3b4",
+      "cliente_id": "cliente_021",
+      "timestamp": "2025-05-29T13:37:49.850592Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 481,
+      "agente_id": "agente_004",
+      "resultado": "promesa_pago",
+      "sentimiento": "cooperativo",
+      "monto_prometido": 3813,
+      "fecha_promesa": "2025-06-02"
+    },
+    {
+      "id": "int_dcac73ee",
+      "cliente_id": "cliente_022",
+      "timestamp": "2025-05-29T13:37:49.850688Z",
+      "tipo": "pago_recibido",
+      "monto": 2017,
+      "metodo_pago": "transferencia",
+      "pago_completo": false
+    },
+    {
+      "id": "int_529f458e",
+      "cliente_id": "cliente_034",
+      "timestamp": "2025-05-29T13:37:49.851481Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 372,
+      "agente_id": "agente_005",
+      "resultado": "sin_respuesta",
+      "sentimiento": "n/a"
+    },
+    {
+      "id": "int_0e94b192",
+      "cliente_id": "cliente_044",
+      "timestamp": "2025-05-29T13:37:49.852130Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 554,
+      "agente_id": "agente_005",
+      "resultado": "pago_inmediato",
+      "sentimiento": "cooperativo"
+    },
+    {
+      "id": "int_e89e71e2",
+      "cliente_id": "cliente_046",
+      "timestamp": "2025-05-29T13:37:49.852301Z",
+      "tipo": "email"
+    },
+    {
+      "id": "int_892d6678",
+      "cliente_id": "cliente_047",
+      "timestamp": "2025-05-29T13:37:49.852394Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 449,
+      "agente_id": "agente_008",
+      "resultado": "sin_respuesta",
+      "sentimiento": "n/a"
+    },
+    {
+      "id": "int_d3b7078f",
+      "cliente_id": "cliente_000",
+      "timestamp": "2025-05-30T13:37:49.849120Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 599,
+      "agente_id": "agente_001",
+      "resultado": "disputa",
+      "sentimiento": "hostil"
+    },
+    {
+      "id": "int_16860536",
+      "cliente_id": "cliente_003",
+      "timestamp": "2025-05-30T13:37:49.849383Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 146,
+      "agente_id": "agente_010",
+      "resultado": "disputa",
+      "sentimiento": "hostil"
+    },
+    {
+      "id": "int_fb6022e8",
+      "cliente_id": "cliente_013",
+      "timestamp": "2025-05-30T13:37:49.850018Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 196,
+      "agente_id": "agente_001",
+      "resultado": "promesa_pago",
+      "sentimiento": "neutral",
+      "monto_prometido": 2711,
+      "fecha_promesa": "2025-06-07"
+    },
+    {
+      "id": "int_a7131b13",
+      "cliente_id": "cliente_014",
+      "timestamp": "2025-05-30T13:37:49.850081Z",
+      "tipo": "pago_recibido",
+      "monto": 192,
+      "metodo_pago": "transferencia",
+      "pago_completo": true
+    },
+    {
+      "id": "int_8490d757",
+      "cliente_id": "cliente_017",
+      "timestamp": "2025-05-30T13:37:49.850286Z",
+      "tipo": "llamada_entrante",
+      "duracion_segundos": 206,
+      "agente_id": "agente_001",
+      "resultado": "pago_inmediato",
+      "sentimiento": "cooperativo"
+    },
+    {
+      "id": "int_727ea242",
+      "cliente_id": "cliente_023",
+      "timestamp": "2025-05-30T13:37:49.850766Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 60,
+      "agente_id": "agente_010",
+      "resultado": "sin_respuesta",
+      "sentimiento": "n/a"
+    },
+    {
+      "id": "int_9854c257",
+      "cliente_id": "cliente_029",
+      "timestamp": "2025-05-30T13:37:49.851196Z",
+      "tipo": "llamada_entrante",
+      "duracion_segundos": 459,
+      "agente_id": "agente_010",
+      "resultado": "disputa",
+      "sentimiento": "frustrado"
+    },
+    {
+      "id": "int_5864dcaa",
+      "cliente_id": "cliente_030",
+      "timestamp": "2025-05-30T13:37:49.851282Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 336,
+      "agente_id": "agente_009",
+      "resultado": "sin_respuesta",
+      "sentimiento": "n/a"
+    },
+    {
+      "id": "int_86ddb456",
+      "cliente_id": "cliente_038",
+      "timestamp": "2025-05-30T13:37:49.851727Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 417,
+      "agente_id": "agente_007",
+      "resultado": "promesa_pago",
+      "sentimiento": "cooperativo",
+      "monto_prometido": 6745,
+      "fecha_promesa": "2025-06-06"
+    },
+    {
+      "id": "int_0241990e",
+      "cliente_id": "cliente_043",
+      "timestamp": "2025-05-30T13:37:49.852078Z",
+      "tipo": "pago_recibido",
+      "monto": 3010,
+      "metodo_pago": "transferencia",
+      "pago_completo": true
+    },
+    {
+      "id": "int_d6be268b",
+      "cliente_id": "cliente_002",
+      "timestamp": "2025-05-31T13:37:49.849331Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 257,
+      "agente_id": "agente_007",
+      "resultado": "disputa",
+      "sentimiento": "hostil"
+    },
+    {
+      "id": "int_b4718315",
+      "cliente_id": "cliente_004",
+      "timestamp": "2025-05-31T13:37:49.849476Z",
+      "tipo": "sms"
+    },
+    {
+      "id": "int_faf6ac05",
+      "cliente_id": "cliente_008",
+      "timestamp": "2025-05-31T13:37:49.849709Z",
+      "tipo": "pago_recibido",
+      "monto": 207,
+      "metodo_pago": "tarjeta",
+      "pago_completo": false
+    },
+    {
+      "id": "int_eae38aa0",
+      "cliente_id": "cliente_010",
+      "timestamp": "2025-05-31T13:37:49.849784Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 399,
+      "agente_id": "agente_007",
+      "resultado": "se_niega_pagar",
+      "sentimiento": "hostil"
+    },
+    {
+      "id": "int_f6248ab5",
+      "cliente_id": "cliente_019",
+      "timestamp": "2025-05-31T13:37:49.850453Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 322,
+      "agente_id": "agente_006",
+      "resultado": "sin_respuesta",
+      "sentimiento": "n/a"
+    },
+    {
+      "id": "int_2c0516bd",
+      "cliente_id": "cliente_020",
+      "timestamp": "2025-05-31T13:37:49.850548Z",
+      "tipo": "pago_recibido",
+      "monto": 1893,
+      "metodo_pago": "efectivo",
+      "pago_completo": true
+    },
+    {
+      "id": "int_4c711a80",
+      "cliente_id": "cliente_036",
+      "timestamp": "2025-05-31T13:37:49.851601Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 489,
+      "agente_id": "agente_008",
+      "resultado": "sin_respuesta",
+      "sentimiento": "n/a"
+    },
+    {
+      "id": "int_5a2e589e",
+      "cliente_id": "cliente_042",
+      "timestamp": "2025-05-31T13:37:49.852046Z",
+      "tipo": "pago_recibido",
+      "monto": 1450,
+      "metodo_pago": "transferencia",
+      "pago_completo": true
+    },
+    {
+      "id": "int_bfba6e43",
+      "cliente_id": "cliente_049",
+      "timestamp": "2025-05-31T13:37:49.852504Z",
+      "tipo": "sms"
+    },
+    {
+      "id": "int_49ec7c63",
+      "cliente_id": "cliente_009",
+      "timestamp": "2025-06-01T13:37:49.849750Z",
+      "tipo": "sms"
+    },
+    {
+      "id": "int_b0115eb8",
+      "cliente_id": "cliente_011",
+      "timestamp": "2025-06-01T13:37:49.849851Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 36,
+      "agente_id": "agente_001",
+      "resultado": "renegociacion",
+      "sentimiento": "cooperativo",
+      "nuevo_plan_pago": {
+        "cuotas": 11,
+        "monto_mensual": 1405
+      }
+    },
+    {
+      "id": "int_120b7866",
+      "cliente_id": "cliente_016",
+      "timestamp": "2025-06-01T13:37:49.850235Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 118,
+      "agente_id": "agente_009",
+      "resultado": "renegociacion",
+      "sentimiento": "frustrado",
+      "nuevo_plan_pago": {
+        "cuotas": 11,
+        "monto_mensual": 730
+      }
+    },
+    {
+      "id": "int_ad0d87f4",
+      "cliente_id": "cliente_024",
+      "timestamp": "2025-06-01T13:37:49.850861Z",
+      "tipo": "email"
+    },
+    {
+      "id": "int_2de2f5c1",
+      "cliente_id": "cliente_025",
+      "timestamp": "2025-06-01T13:37:49.850942Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 42,
+      "agente_id": "agente_003",
+      "resultado": "sin_respuesta",
+      "sentimiento": "n/a"
+    },
+    {
+      "id": "int_27ab7fc6",
+      "cliente_id": "cliente_028",
+      "timestamp": "2025-06-01T13:37:49.851159Z",
+      "tipo": "email"
+    },
+    {
+      "id": "int_c400bc71",
+      "cliente_id": "cliente_013",
+      "timestamp": "2025-06-02T13:37:49.850018Z",
+      "tipo": "llamada_entrante",
+      "duracion_segundos": 361,
+      "agente_id": "agente_007",
+      "resultado": "disputa",
+      "sentimiento": "frustrado"
+    },
+    {
+      "id": "int_b935dfb9",
+      "cliente_id": "cliente_021",
+      "timestamp": "2025-06-02T13:37:49.850592Z",
+      "tipo": "email"
+    },
+    {
+      "id": "int_ef3bb639",
+      "cliente_id": "cliente_026",
+      "timestamp": "2025-06-02T13:37:49.851001Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 304,
+      "agente_id": "agente_002",
+      "resultado": "se_niega_pagar",
+      "sentimiento": "hostil"
+    },
+    {
+      "id": "int_2c24e7cc",
+      "cliente_id": "cliente_031",
+      "timestamp": "2025-06-02T13:37:49.851318Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 205,
+      "agente_id": "agente_010",
+      "resultado": "disputa",
+      "sentimiento": "frustrado"
+    },
+    {
+      "id": "int_0b377451",
+      "cliente_id": "cliente_037",
+      "timestamp": "2025-06-02T13:37:49.851651Z",
+      "tipo": "llamada_entrante",
+      "duracion_segundos": 120,
+      "agente_id": "agente_006",
+      "resultado": "sin_respuesta",
+      "sentimiento": "n/a"
+    },
+    {
+      "id": "int_03b96de9",
+      "cliente_id": "cliente_039",
+      "timestamp": "2025-06-02T13:37:49.851809Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 248,
+      "agente_id": "agente_007",
+      "resultado": "promesa_pago",
+      "sentimiento": "neutral",
+      "monto_prometido": 1848,
+      "fecha_promesa": "2025-06-15"
+    },
+    {
+      "id": "int_62bec27a",
+      "cliente_id": "cliente_045",
+      "timestamp": "2025-06-02T13:37:49.852204Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 271,
+      "agente_id": "agente_001",
+      "resultado": "sin_respuesta",
+      "sentimiento": "n/a"
+    },
+    {
+      "id": "int_050c8b04",
+      "cliente_id": "cliente_003",
+      "timestamp": "2025-06-03T13:37:49.849383Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 513,
+      "agente_id": "agente_002",
+      "resultado": "pago_inmediato",
+      "sentimiento": "cooperativo"
+    },
+    {
+      "id": "int_a67306aa",
+      "cliente_id": "cliente_004",
+      "timestamp": "2025-06-03T13:37:49.849476Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 271,
+      "agente_id": "agente_010",
+      "resultado": "promesa_pago",
+      "sentimiento": "neutral",
+      "monto_prometido": 2027,
+      "fecha_promesa": "2025-06-18"
+    },
+    {
+      "id": "int_d8a8c321",
+      "cliente_id": "cliente_007",
+      "timestamp": "2025-06-03T13:37:49.849681Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 407,
+      "agente_id": "agente_008",
+      "resultado": "renegociacion",
+      "sentimiento": "frustrado",
+      "nuevo_plan_pago": {
+        "cuotas": 3,
+        "monto_mensual": 477
+      }
+    },
+    {
+      "id": "int_ea7a1ec3",
+      "cliente_id": "cliente_012",
+      "timestamp": "2025-06-03T13:37:49.849925Z",
+      "tipo": "pago_recibido",
+      "monto": 925,
+      "metodo_pago": "transferencia",
+      "pago_completo": true
+    },
+    {
+      "id": "int_c05c560b",
+      "cliente_id": "cliente_019",
+      "timestamp": "2025-06-03T13:37:49.850453Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 239,
+      "agente_id": "agente_008",
+      "resultado": "promesa_pago",
+      "sentimiento": "cooperativo",
+      "monto_prometido": 239,
+      "fecha_promesa": "2025-06-08"
+    },
+    {
+      "id": "int_4151d3b0",
+      "cliente_id": "cliente_022",
+      "timestamp": "2025-06-03T13:37:49.850688Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 542,
+      "agente_id": "agente_005",
+      "resultado": "pago_inmediato",
+      "sentimiento": "cooperativo"
+    },
+    {
+      "id": "int_c2191abb",
+      "cliente_id": "cliente_043",
+      "timestamp": "2025-06-03T13:37:49.852078Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 254,
+      "agente_id": "agente_008",
+      "resultado": "disputa",
+      "sentimiento": "frustrado"
+    },
+    {
+      "id": "int_d3219223",
+      "cliente_id": "cliente_044",
+      "timestamp": "2025-06-03T13:37:49.852130Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 398,
+      "agente_id": "agente_006",
+      "resultado": "se_niega_pagar",
+      "sentimiento": "hostil"
+    },
+    {
+      "id": "int_4c31c7ef",
+      "cliente_id": "cliente_048",
+      "timestamp": "2025-06-03T13:37:49.852433Z",
+      "tipo": "pago_recibido",
+      "monto": 492,
+      "metodo_pago": "tarjeta",
+      "pago_completo": true
+    },
+    {
+      "id": "int_efad4135",
+      "cliente_id": "cliente_049",
+      "timestamp": "2025-06-03T13:37:49.852504Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 367,
+      "agente_id": "agente_010",
+      "resultado": "promesa_pago",
+      "sentimiento": "cooperativo",
+      "monto_prometido": 3911,
+      "fecha_promesa": "2025-06-08"
+    },
+    {
+      "id": "int_46afa7a1",
+      "cliente_id": "cliente_001",
+      "timestamp": "2025-06-04T13:37:49.849237Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 365,
+      "agente_id": "agente_008",
+      "resultado": "pago_inmediato",
+      "sentimiento": "cooperativo"
+    },
+    {
+      "id": "int_42f4cc49",
+      "cliente_id": "cliente_002",
+      "timestamp": "2025-06-04T13:37:49.849331Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 391,
+      "agente_id": "agente_010",
+      "resultado": "se_niega_pagar",
+      "sentimiento": "hostil"
+    },
+    {
+      "id": "int_01d3bc59",
+      "cliente_id": "cliente_005",
+      "timestamp": "2025-06-04T13:37:49.849536Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 415,
+      "agente_id": "agente_008",
+      "resultado": "pago_inmediato",
+      "sentimiento": "cooperativo"
+    },
+    {
+      "id": "int_e72781c2",
+      "cliente_id": "cliente_008",
+      "timestamp": "2025-06-04T13:37:49.849709Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 418,
+      "agente_id": "agente_006",
+      "resultado": "disputa",
+      "sentimiento": "frustrado"
+    },
+    {
+      "id": "int_66c6bf61",
+      "cliente_id": "cliente_027",
+      "timestamp": "2025-06-04T13:37:49.851073Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 165,
+      "agente_id": "agente_008",
+      "resultado": "se_niega_pagar",
+      "sentimiento": "hostil"
+    },
+    {
+      "id": "int_f687938c",
+      "cliente_id": "cliente_033",
+      "timestamp": "2025-06-04T13:37:49.851452Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 511,
+      "agente_id": "agente_006",
+      "resultado": "pago_inmediato",
+      "sentimiento": "cooperativo"
+    },
+    {
+      "id": "int_0574510a",
+      "cliente_id": "cliente_035",
+      "timestamp": "2025-06-04T13:37:49.851533Z",
+      "tipo": "email"
+    },
+    {
+      "id": "int_0e7bdb31",
+      "cliente_id": "cliente_000",
+      "timestamp": "2025-06-05T13:37:49.849120Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 359,
+      "agente_id": "agente_001",
+      "resultado": "promesa_pago",
+      "sentimiento": "cooperativo",
+      "monto_prometido": 1062,
+      "fecha_promesa": "2025-06-18"
+    },
+    {
+      "id": "int_32c6798e",
+      "cliente_id": "cliente_015",
+      "timestamp": "2025-06-05T13:37:49.850173Z",
+      "tipo": "llamada_entrante",
+      "duracion_segundos": 374,
+      "agente_id": "agente_008",
+      "resultado": "renegociacion",
+      "sentimiento": "frustrado",
+      "nuevo_plan_pago": {
+        "cuotas": 6,
+        "monto_mensual": 111
+      }
+    },
+    {
+      "id": "int_470ae76c",
+      "cliente_id": "cliente_018",
+      "timestamp": "2025-06-05T13:37:49.850373Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 429,
+      "agente_id": "agente_008",
+      "resultado": "se_niega_pagar",
+      "sentimiento": "hostil"
+    },
+    {
+      "id": "int_1ce1cf74",
+      "cliente_id": "cliente_020",
+      "timestamp": "2025-06-05T13:37:49.850548Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 135,
+      "agente_id": "agente_003",
+      "resultado": "renegociacion",
+      "sentimiento": "frustrado",
+      "nuevo_plan_pago": {
+        "cuotas": 7,
+        "monto_mensual": 349
+      }
+    },
+    {
+      "id": "int_9fcc2ef6",
+      "cliente_id": "cliente_029",
+      "timestamp": "2025-06-05T13:37:49.851196Z",
+      "tipo": "llamada_entrante",
+      "duracion_segundos": 106,
+      "agente_id": "agente_008",
+      "resultado": "se_niega_pagar",
+      "sentimiento": "hostil"
+    },
+    {
+      "id": "int_60edcb87",
+      "cliente_id": "cliente_030",
+      "timestamp": "2025-06-05T13:37:49.851282Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 111,
+      "agente_id": "agente_001",
+      "resultado": "pago_inmediato",
+      "sentimiento": "cooperativo"
+    },
+    {
+      "id": "int_53631097",
+      "cliente_id": "cliente_032",
+      "timestamp": "2025-06-05T13:37:49.851403Z",
+      "tipo": "pago_recibido",
+      "monto": 1486,
+      "metodo_pago": "transferencia",
+      "pago_completo": true
+    },
+    {
+      "id": "int_2acd3e3e",
+      "cliente_id": "cliente_040",
+      "timestamp": "2025-06-05T13:37:49.851887Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 269,
+      "agente_id": "agente_004",
+      "resultado": "renegociacion",
+      "sentimiento": "frustrado",
+      "nuevo_plan_pago": {
+        "cuotas": 5,
+        "monto_mensual": 270
+      }
+    },
+    {
+      "id": "int_a6157803",
+      "cliente_id": "cliente_003",
+      "timestamp": "2025-06-06T13:37:49.849383Z",
+      "tipo": "llamada_entrante",
+      "duracion_segundos": 569,
+      "agente_id": "agente_008",
+      "resultado": "promesa_pago",
+      "sentimiento": "neutral",
+      "monto_prometido": 2708,
+      "fecha_promesa": "2025-06-10"
+    },
+    {
+      "id": "int_c678b85d",
+      "cliente_id": "cliente_017",
+      "timestamp": "2025-06-06T13:37:49.850286Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 152,
+      "agente_id": "agente_010",
+      "resultado": "promesa_pago",
+      "sentimiento": "neutral",
+      "monto_prometido": 498,
+      "fecha_promesa": "2025-06-12"
+    },
+    {
+      "id": "int_ff8e8486",
+      "cliente_id": "cliente_022",
+      "timestamp": "2025-06-06T13:37:49.850688Z",
+      "tipo": "pago_recibido",
+      "monto": 782,
+      "metodo_pago": "efectivo",
+      "pago_completo": false
+    },
+    {
+      "id": "int_8f137b95",
+      "cliente_id": "cliente_044",
+      "timestamp": "2025-06-06T13:37:49.852130Z",
+      "tipo": "llamada_entrante",
+      "duracion_segundos": 481,
+      "agente_id": "agente_006",
+      "resultado": "promesa_pago",
+      "sentimiento": "cooperativo",
+      "monto_prometido": 4539,
+      "fecha_promesa": "2025-06-09"
+    },
+    {
+      "id": "int_84a2e7c2",
+      "cliente_id": "cliente_045",
+      "timestamp": "2025-06-06T13:37:49.852204Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 220,
+      "agente_id": "agente_008",
+      "resultado": "pago_inmediato",
+      "sentimiento": "cooperativo"
+    },
+    {
+      "id": "int_5a0183df",
+      "cliente_id": "cliente_046",
+      "timestamp": "2025-06-06T13:37:49.852301Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 459,
+      "agente_id": "agente_005",
+      "resultado": "renegociacion",
+      "sentimiento": "cooperativo",
+      "nuevo_plan_pago": {
+        "cuotas": 7,
+        "monto_mensual": 85
+      }
+    },
+    {
+      "id": "int_fd980dd3",
+      "cliente_id": "cliente_047",
+      "timestamp": "2025-06-06T13:37:49.852394Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 562,
+      "agente_id": "agente_006",
+      "resultado": "promesa_pago",
+      "sentimiento": "cooperativo",
+      "monto_prometido": 1120,
+      "fecha_promesa": "2025-06-19"
+    },
+    {
+      "id": "int_9ac2d127",
+      "cliente_id": "cliente_008",
+      "timestamp": "2025-06-07T13:37:49.849709Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 415,
+      "agente_id": "agente_007",
+      "resultado": "pago_inmediato",
+      "sentimiento": "cooperativo"
+    },
+    {
+      "id": "int_80cc9212",
+      "cliente_id": "cliente_009",
+      "timestamp": "2025-06-07T13:37:49.849750Z",
+      "tipo": "llamada_entrante",
+      "duracion_segundos": 392,
+      "agente_id": "agente_002",
+      "resultado": "renegociacion",
+      "sentimiento": "frustrado",
+      "nuevo_plan_pago": {
+        "cuotas": 5,
+        "monto_mensual": 468
+      }
+    },
+    {
+      "id": "int_9ee9fb10",
+      "cliente_id": "cliente_012",
+      "timestamp": "2025-06-07T13:37:49.849925Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 82,
+      "agente_id": "agente_007",
+      "resultado": "sin_respuesta",
+      "sentimiento": "n/a"
+    },
+    {
+      "id": "int_6ba6aec5",
+      "cliente_id": "cliente_025",
+      "timestamp": "2025-06-07T13:37:49.850942Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 126,
+      "agente_id": "agente_010",
+      "resultado": "sin_respuesta",
+      "sentimiento": "n/a"
+    },
+    {
+      "id": "int_cad1913b",
+      "cliente_id": "cliente_031",
+      "timestamp": "2025-06-07T13:37:49.851318Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 234,
+      "agente_id": "agente_001",
+      "resultado": "promesa_pago",
+      "sentimiento": "cooperativo",
+      "monto_prometido": 1826,
+      "fecha_promesa": "2025-06-20"
+    },
+    {
+      "id": "int_52627bd7",
+      "cliente_id": "cliente_035",
+      "timestamp": "2025-06-07T13:37:49.851533Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 138,
+      "agente_id": "agente_001",
+      "resultado": "sin_respuesta",
+      "sentimiento": "n/a"
+    },
+    {
+      "id": "int_29194c47",
+      "cliente_id": "cliente_041",
+      "timestamp": "2025-06-07T13:37:49.851982Z",
+      "tipo": "email"
+    },
+    {
+      "id": "int_5b820e83",
+      "cliente_id": "cliente_006",
+      "timestamp": "2025-06-08T13:37:49.849630Z",
+      "tipo": "llamada_entrante",
+      "duracion_segundos": 341,
+      "agente_id": "agente_010",
+      "resultado": "pago_inmediato",
+      "sentimiento": "cooperativo"
+    },
+    {
+      "id": "int_7ab77538",
+      "cliente_id": "cliente_010",
+      "timestamp": "2025-06-08T13:37:49.849784Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 190,
+      "agente_id": "agente_005",
+      "resultado": "se_niega_pagar",
+      "sentimiento": "hostil"
+    },
+    {
+      "id": "int_2827d71c",
+      "cliente_id": "cliente_034",
+      "timestamp": "2025-06-08T13:37:49.851481Z",
+      "tipo": "pago_recibido",
+      "monto": 206,
+      "metodo_pago": "tarjeta",
+      "pago_completo": true
+    },
+    {
+      "id": "int_5913ee76",
+      "cliente_id": "cliente_038",
+      "timestamp": "2025-06-08T13:37:49.851727Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 452,
+      "agente_id": "agente_010",
+      "resultado": "renegociacion",
+      "sentimiento": "frustrado",
+      "nuevo_plan_pago": {
+        "cuotas": 5,
+        "monto_mensual": 295
+      }
+    },
+    {
+      "id": "int_8c8788a5",
+      "cliente_id": "cliente_040",
+      "timestamp": "2025-06-08T13:37:49.851887Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 335,
+      "agente_id": "agente_004",
+      "resultado": "renegociacion",
+      "sentimiento": "frustrado",
+      "nuevo_plan_pago": {
+        "cuotas": 12,
+        "monto_mensual": 442
+      }
+    },
+    {
+      "id": "int_89f70a53",
+      "cliente_id": "cliente_043",
+      "timestamp": "2025-06-08T13:37:49.852078Z",
+      "tipo": "llamada_entrante",
+      "duracion_segundos": 126,
+      "agente_id": "agente_008",
+      "resultado": "promesa_pago",
+      "sentimiento": "cooperativo",
+      "monto_prometido": 3978,
+      "fecha_promesa": "2025-06-21"
+    },
+    {
+      "id": "int_2e63b6b2",
+      "cliente_id": "cliente_011",
+      "timestamp": "2025-06-09T13:37:49.849851Z",
+      "tipo": "pago_recibido",
+      "monto": 3009,
+      "metodo_pago": "transferencia",
+      "pago_completo": false
+    },
+    {
+      "id": "int_05a0b03e",
+      "cliente_id": "cliente_014",
+      "timestamp": "2025-06-09T13:37:49.850081Z",
+      "tipo": "sms"
+    },
+    {
+      "id": "int_d376b13a",
+      "cliente_id": "cliente_017",
+      "timestamp": "2025-06-09T13:37:49.850286Z",
+      "tipo": "pago_recibido",
+      "monto": 748,
+      "metodo_pago": "efectivo",
+      "pago_completo": true
+    },
+    {
+      "id": "int_ba217f38",
+      "cliente_id": "cliente_023",
+      "timestamp": "2025-06-09T13:37:49.850766Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 78,
+      "agente_id": "agente_006",
+      "resultado": "se_niega_pagar",
+      "sentimiento": "hostil"
+    },
+    {
+      "id": "int_a02a6914",
+      "cliente_id": "cliente_024",
+      "timestamp": "2025-06-09T13:37:49.850861Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 574,
+      "agente_id": "agente_009",
+      "resultado": "sin_respuesta",
+      "sentimiento": "n/a"
+    },
+    {
+      "id": "int_cbda0a36",
+      "cliente_id": "cliente_026",
+      "timestamp": "2025-06-09T13:37:49.851001Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 145,
+      "agente_id": "agente_001",
+      "resultado": "renegociacion",
+      "sentimiento": "cooperativo",
+      "nuevo_plan_pago": {
+        "cuotas": 5,
+        "monto_mensual": 903
+      }
+    },
+    {
+      "id": "int_e181fa38",
+      "cliente_id": "cliente_032",
+      "timestamp": "2025-06-09T13:37:49.851403Z",
+      "tipo": "sms"
+    },
+    {
+      "id": "int_bf5daa40",
+      "cliente_id": "cliente_033",
+      "timestamp": "2025-06-09T13:37:49.851452Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 584,
+      "agente_id": "agente_004",
+      "resultado": "sin_respuesta",
+      "sentimiento": "n/a"
+    },
+    {
+      "id": "int_d95763ee",
+      "cliente_id": "cliente_044",
+      "timestamp": "2025-06-09T13:37:49.852130Z",
+      "tipo": "sms"
+    },
+    {
+      "id": "int_78545123",
+      "cliente_id": "cliente_002",
+      "timestamp": "2025-06-10T13:37:49.849331Z",
+      "tipo": "llamada_entrante",
+      "duracion_segundos": 547,
+      "agente_id": "agente_005",
+      "resultado": "promesa_pago",
+      "sentimiento": "cooperativo",
+      "monto_prometido": 464,
+      "fecha_promesa": "2025-06-19"
+    },
+    {
+      "id": "int_c33b8a7b",
+      "cliente_id": "cliente_003",
+      "timestamp": "2025-06-10T13:37:49.849383Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 245,
+      "agente_id": "agente_010",
+      "resultado": "sin_respuesta",
+      "sentimiento": "n/a"
+    },
+    {
+      "id": "int_24eebadc",
+      "cliente_id": "cliente_007",
+      "timestamp": "2025-06-10T13:37:49.849681Z",
+      "tipo": "email"
+    },
+    {
+      "id": "int_808a0d76",
+      "cliente_id": "cliente_018",
+      "timestamp": "2025-06-10T13:37:49.850373Z",
+      "tipo": "email"
+    },
+    {
+      "id": "int_ecf40156",
+      "cliente_id": "cliente_029",
+      "timestamp": "2025-06-10T13:37:49.851196Z",
+      "tipo": "email"
+    },
+    {
+      "id": "int_d8c9772c",
+      "cliente_id": "cliente_030",
+      "timestamp": "2025-06-10T13:37:49.851282Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 321,
+      "agente_id": "agente_007",
+      "resultado": "promesa_pago",
+      "sentimiento": "neutral",
+      "monto_prometido": 336,
+      "fecha_promesa": "2025-06-19"
+    },
+    {
+      "id": "int_5799ba43",
+      "cliente_id": "cliente_035",
+      "timestamp": "2025-06-10T13:37:49.851533Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 443,
+      "agente_id": "agente_008",
+      "resultado": "se_niega_pagar",
+      "sentimiento": "hostil"
+    },
+    {
+      "id": "int_76494831",
+      "cliente_id": "cliente_036",
+      "timestamp": "2025-06-10T13:37:49.851601Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 128,
+      "agente_id": "agente_002",
+      "resultado": "promesa_pago",
+      "sentimiento": "cooperativo",
+      "monto_prometido": 2203,
+      "fecha_promesa": "2025-06-13"
+    },
+    {
+      "id": "int_17f95a6e",
+      "cliente_id": "cliente_042",
+      "timestamp": "2025-06-10T13:37:49.852046Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 491,
+      "agente_id": "agente_003",
+      "resultado": "sin_respuesta",
+      "sentimiento": "n/a"
+    },
+    {
+      "id": "int_8b7f9350",
+      "cliente_id": "cliente_048",
+      "timestamp": "2025-06-10T13:37:49.852433Z",
+      "tipo": "llamada_entrante",
+      "duracion_segundos": 261,
+      "agente_id": "agente_010",
+      "resultado": "sin_respuesta",
+      "sentimiento": "n/a"
+    },
+    {
+      "id": "int_b9606f53",
+      "cliente_id": "cliente_049",
+      "timestamp": "2025-06-10T13:37:49.852504Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 109,
+      "agente_id": "agente_002",
+      "resultado": "promesa_pago",
+      "sentimiento": "cooperativo",
+      "monto_prometido": 998,
+      "fecha_promesa": "2025-06-19"
+    },
+    {
+      "id": "int_5c8e0491",
+      "cliente_id": "cliente_006",
+      "timestamp": "2025-06-11T13:37:49.849630Z",
+      "tipo": "llamada_entrante",
+      "duracion_segundos": 276,
+      "agente_id": "agente_008",
+      "resultado": "renegociacion",
+      "sentimiento": "frustrado",
+      "nuevo_plan_pago": {
+        "cuotas": 7,
+        "monto_mensual": 198
+      }
+    },
+    {
+      "id": "int_37e3005a",
+      "cliente_id": "cliente_009",
+      "timestamp": "2025-06-11T13:37:49.849750Z",
+      "tipo": "pago_recibido",
+      "monto": 3036,
+      "metodo_pago": "transferencia",
+      "pago_completo": false
+    },
+    {
+      "id": "int_cf873b3a",
+      "cliente_id": "cliente_016",
+      "timestamp": "2025-06-11T13:37:49.850235Z",
+      "tipo": "sms"
+    },
+    {
+      "id": "int_5ddd20b7",
+      "cliente_id": "cliente_019",
+      "timestamp": "2025-06-11T13:37:49.850453Z",
+      "tipo": "llamada_entrante",
+      "duracion_segundos": 115,
+      "agente_id": "agente_001",
+      "resultado": "pago_inmediato",
+      "sentimiento": "cooperativo"
+    },
+    {
+      "id": "int_ef3a881d",
+      "cliente_id": "cliente_021",
+      "timestamp": "2025-06-11T13:37:49.850592Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 127,
+      "agente_id": "agente_001",
+      "resultado": "promesa_pago",
+      "sentimiento": "cooperativo",
+      "monto_prometido": 4463,
+      "fecha_promesa": "2025-06-17"
+    },
+    {
+      "id": "int_b52ede29",
+      "cliente_id": "cliente_028",
+      "timestamp": "2025-06-11T13:37:49.851159Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 256,
+      "agente_id": "agente_010",
+      "resultado": "sin_respuesta",
+      "sentimiento": "n/a"
+    },
+    {
+      "id": "int_61ac59d3",
+      "cliente_id": "cliente_037",
+      "timestamp": "2025-06-11T13:37:49.851651Z",
+      "tipo": "pago_recibido",
+      "monto": 3103,
+      "metodo_pago": "transferencia",
+      "pago_completo": false
+    },
+    {
+      "id": "int_fb5c7884",
+      "cliente_id": "cliente_041",
+      "timestamp": "2025-06-11T13:37:49.851982Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 297,
+      "agente_id": "agente_005",
+      "resultado": "promesa_pago",
+      "sentimiento": "cooperativo",
+      "monto_prometido": 2347,
+      "fecha_promesa": "2025-06-19"
+    },
+    {
+      "id": "int_b36a6dcb",
+      "cliente_id": "cliente_047",
+      "timestamp": "2025-06-11T13:37:49.852394Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 424,
+      "agente_id": "agente_004",
+      "resultado": "pago_inmediato",
+      "sentimiento": "cooperativo"
+    },
+    {
+      "id": "int_b430230b",
+      "cliente_id": "cliente_004",
+      "timestamp": "2025-06-12T13:37:49.849476Z",
+      "tipo": "pago_recibido",
+      "monto": 2446,
+      "metodo_pago": "efectivo",
+      "pago_completo": false
+    },
+    {
+      "id": "int_13628a73",
+      "cliente_id": "cliente_008",
+      "timestamp": "2025-06-12T13:37:49.849709Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 503,
+      "agente_id": "agente_008",
+      "resultado": "promesa_pago",
+      "sentimiento": "cooperativo",
+      "monto_prometido": 301,
+      "fecha_promesa": "2025-06-27"
+    },
+    {
+      "id": "int_c83fb74e",
+      "cliente_id": "cliente_013",
+      "timestamp": "2025-06-12T13:37:49.850018Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 457,
+      "agente_id": "agente_008",
+      "resultado": "pago_inmediato",
+      "sentimiento": "cooperativo"
+    },
+    {
+      "id": "int_730fdb1e",
+      "cliente_id": "cliente_015",
+      "timestamp": "2025-06-12T13:37:49.850173Z",
+      "tipo": "sms"
+    },
+    {
+      "id": "int_efb05374",
+      "cliente_id": "cliente_020",
+      "timestamp": "2025-06-12T13:37:49.850548Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 448,
+      "agente_id": "agente_005",
+      "resultado": "promesa_pago",
+      "sentimiento": "cooperativo",
+      "monto_prometido": 2086,
+      "fecha_promesa": "2025-06-27"
+    },
+    {
+      "id": "int_3f49e026",
+      "cliente_id": "cliente_039",
+      "timestamp": "2025-06-12T13:37:49.851809Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 383,
+      "agente_id": "agente_006",
+      "resultado": "renegociacion",
+      "sentimiento": "cooperativo",
+      "nuevo_plan_pago": {
+        "cuotas": 3,
+        "monto_mensual": 690
+      }
+    },
+    {
+      "id": "int_c7066ccb",
+      "cliente_id": "cliente_040",
+      "timestamp": "2025-06-12T13:37:49.851887Z",
+      "tipo": "llamada_entrante",
+      "duracion_segundos": 274,
+      "agente_id": "agente_005",
+      "resultado": "se_niega_pagar",
+      "sentimiento": "hostil"
+    },
+    {
+      "id": "int_08c51aff",
+      "cliente_id": "cliente_043",
+      "timestamp": "2025-06-12T13:37:49.852078Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 114,
+      "agente_id": "agente_003",
+      "resultado": "promesa_pago",
+      "sentimiento": "cooperativo",
+      "monto_prometido": 942,
+      "fecha_promesa": "2025-06-16"
+    },
+    {
+      "id": "int_87d26e08",
+      "cliente_id": "cliente_001",
+      "timestamp": "2025-06-13T13:37:49.849237Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 96,
+      "agente_id": "agente_006",
+      "resultado": "promesa_pago",
+      "sentimiento": "neutral",
+      "monto_prometido": 1993,
+      "fecha_promesa": "2025-06-23"
+    },
+    {
+      "id": "int_409a2c56",
+      "cliente_id": "cliente_012",
+      "timestamp": "2025-06-13T13:37:49.849925Z",
+      "tipo": "pago_recibido",
+      "monto": 696,
+      "metodo_pago": "tarjeta",
+      "pago_completo": false
+    },
+    {
+      "id": "int_bde80ffd",
+      "cliente_id": "cliente_018",
+      "timestamp": "2025-06-13T13:37:49.850373Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 108,
+      "agente_id": "agente_007",
+      "resultado": "sin_respuesta",
+      "sentimiento": "n/a"
+    },
+    {
+      "id": "int_521ad7cc",
+      "cliente_id": "cliente_027",
+      "timestamp": "2025-06-13T13:37:49.851073Z",
+      "tipo": "llamada_entrante",
+      "duracion_segundos": 30,
+      "agente_id": "agente_004",
+      "resultado": "se_niega_pagar",
+      "sentimiento": "hostil"
+    },
+    {
+      "id": "int_bd7639c9",
+      "cliente_id": "cliente_030",
+      "timestamp": "2025-06-13T13:37:49.851282Z",
+      "tipo": "email"
+    },
+    {
+      "id": "int_110bd0ce",
+      "cliente_id": "cliente_000",
+      "timestamp": "2025-06-14T13:37:49.849120Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 590,
+      "agente_id": "agente_005",
+      "resultado": "sin_respuesta",
+      "sentimiento": "n/a"
+    },
+    {
+      "id": "int_f294f6cf",
+      "cliente_id": "cliente_005",
+      "timestamp": "2025-06-14T13:37:49.849536Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 514,
+      "agente_id": "agente_009",
+      "resultado": "se_niega_pagar",
+      "sentimiento": "hostil"
+    },
+    {
+      "id": "int_fc0cb0bc",
+      "cliente_id": "cliente_011",
+      "timestamp": "2025-06-14T13:37:49.849851Z",
+      "tipo": "pago_recibido",
+      "monto": 1967,
+      "metodo_pago": "efectivo",
+      "pago_completo": true
+    },
+    {
+      "id": "int_aa9951ed",
+      "cliente_id": "cliente_014",
+      "timestamp": "2025-06-14T13:37:49.850081Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 388,
+      "agente_id": "agente_008",
+      "resultado": "promesa_pago",
+      "sentimiento": "neutral",
+      "monto_prometido": 356,
+      "fecha_promesa": "2025-06-18"
+    },
+    {
+      "id": "int_ca383a4c",
+      "cliente_id": "cliente_035",
+      "timestamp": "2025-06-14T13:37:49.851533Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 153,
+      "agente_id": "agente_006",
+      "resultado": "se_niega_pagar",
+      "sentimiento": "hostil"
+    },
+    {
+      "id": "int_fab9c084",
+      "cliente_id": "cliente_038",
+      "timestamp": "2025-06-14T13:37:49.851727Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 499,
+      "agente_id": "agente_006",
+      "resultado": "disputa",
+      "sentimiento": "hostil"
+    },
+    {
+      "id": "int_73abbd24",
+      "cliente_id": "cliente_042",
+      "timestamp": "2025-06-14T13:37:49.852046Z",
+      "tipo": "email"
+    },
+    {
+      "id": "int_a2e0833d",
+      "cliente_id": "cliente_044",
+      "timestamp": "2025-06-14T13:37:49.852130Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 304,
+      "agente_id": "agente_010",
+      "resultado": "se_niega_pagar",
+      "sentimiento": "hostil"
+    },
+    {
+      "id": "int_2147bbae",
+      "cliente_id": "cliente_045",
+      "timestamp": "2025-06-14T13:37:49.852204Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 86,
+      "agente_id": "agente_001",
+      "resultado": "disputa",
+      "sentimiento": "hostil"
+    },
+    {
+      "id": "int_431c3315",
+      "cliente_id": "cliente_013",
+      "timestamp": "2025-06-15T13:37:49.850018Z",
+      "tipo": "llamada_entrante",
+      "duracion_segundos": 92,
+      "agente_id": "agente_005",
+      "resultado": "sin_respuesta",
+      "sentimiento": "n/a"
+    },
+    {
+      "id": "int_6f63a9fb",
+      "cliente_id": "cliente_024",
+      "timestamp": "2025-06-15T13:37:49.850861Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 329,
+      "agente_id": "agente_002",
+      "resultado": "promesa_pago",
+      "sentimiento": "cooperativo",
+      "monto_prometido": 3846,
+      "fecha_promesa": "2025-06-17"
+    },
+    {
+      "id": "int_693a1d31",
+      "cliente_id": "cliente_025",
+      "timestamp": "2025-06-15T13:37:49.850942Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 328,
+      "agente_id": "agente_005",
+      "resultado": "sin_respuesta",
+      "sentimiento": "n/a"
+    },
+    {
+      "id": "int_0fc5c237",
+      "cliente_id": "cliente_026",
+      "timestamp": "2025-06-15T13:37:49.851001Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 94,
+      "agente_id": "agente_009",
+      "resultado": "disputa",
+      "sentimiento": "frustrado"
+    },
+    {
+      "id": "int_47218b2f",
+      "cliente_id": "cliente_031",
+      "timestamp": "2025-06-15T13:37:49.851318Z",
+      "tipo": "llamada_entrante",
+      "duracion_segundos": 471,
+      "agente_id": "agente_002",
+      "resultado": "renegociacion",
+      "sentimiento": "frustrado",
+      "nuevo_plan_pago": {
+        "cuotas": 7,
+        "monto_mensual": 143
+      }
+    },
+    {
+      "id": "int_0fa9a4b4",
+      "cliente_id": "cliente_036",
+      "timestamp": "2025-06-15T13:37:49.851601Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 422,
+      "agente_id": "agente_010",
+      "resultado": "sin_respuesta",
+      "sentimiento": "n/a"
+    },
+    {
+      "id": "int_cb13d936",
+      "cliente_id": "cliente_046",
+      "timestamp": "2025-06-15T13:37:49.852301Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 58,
+      "agente_id": "agente_002",
+      "resultado": "sin_respuesta",
+      "sentimiento": "n/a"
+    },
+    {
+      "id": "int_7d920a69",
+      "cliente_id": "cliente_048",
+      "timestamp": "2025-06-15T13:37:49.852433Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 523,
+      "agente_id": "agente_008",
+      "resultado": "pago_inmediato",
+      "sentimiento": "cooperativo"
+    },
+    {
+      "id": "int_0788fe89",
+      "cliente_id": "cliente_003",
+      "timestamp": "2025-06-16T13:37:49.849383Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 227,
+      "agente_id": "agente_002",
+      "resultado": "renegociacion",
+      "sentimiento": "cooperativo",
+      "nuevo_plan_pago": {
+        "cuotas": 4,
+        "monto_mensual": 250
+      }
+    },
+    {
+      "id": "int_73a19b5b",
+      "cliente_id": "cliente_010",
+      "timestamp": "2025-06-16T13:37:49.849784Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 125,
+      "agente_id": "agente_009",
+      "resultado": "promesa_pago",
+      "sentimiento": "neutral",
+      "monto_prometido": 7852,
+      "fecha_promesa": "2025-06-21"
+    },
+    {
+      "id": "int_eafe2921",
+      "cliente_id": "cliente_012",
+      "timestamp": "2025-06-16T13:37:49.849925Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 356,
+      "agente_id": "agente_006",
+      "resultado": "se_niega_pagar",
+      "sentimiento": "hostil"
+    },
+    {
+      "id": "int_665e9fdf",
+      "cliente_id": "cliente_022",
+      "timestamp": "2025-06-16T13:37:49.850688Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 372,
+      "agente_id": "agente_007",
+      "resultado": "promesa_pago",
+      "sentimiento": "cooperativo",
+      "monto_prometido": 1032,
+      "fecha_promesa": "2025-06-22"
+    },
+    {
+      "id": "int_1698394f",
+      "cliente_id": "cliente_029",
+      "timestamp": "2025-06-16T13:37:49.851196Z",
+      "tipo": "email"
+    },
+    {
+      "id": "int_2b797965",
+      "cliente_id": "cliente_032",
+      "timestamp": "2025-06-16T13:37:49.851403Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 360,
+      "agente_id": "agente_005",
+      "resultado": "promesa_pago",
+      "sentimiento": "cooperativo",
+      "monto_prometido": 1086,
+      "fecha_promesa": "2025-06-23"
+    },
+    {
+      "id": "int_e64c91c7",
+      "cliente_id": "cliente_033",
+      "timestamp": "2025-06-16T13:37:49.851452Z",
+      "tipo": "sms"
+    },
+    {
+      "id": "int_17a0ec0c",
+      "cliente_id": "cliente_043",
+      "timestamp": "2025-06-16T13:37:49.852078Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 255,
+      "agente_id": "agente_006",
+      "resultado": "pago_inmediato",
+      "sentimiento": "cooperativo"
+    },
+    {
+      "id": "int_dac03353",
+      "cliente_id": "cliente_008",
+      "timestamp": "2025-06-17T13:37:49.849709Z",
+      "tipo": "pago_recibido",
+      "monto": 192,
+      "metodo_pago": "transferencia",
+      "pago_completo": true
+    },
+    {
+      "id": "int_13c53a7a",
+      "cliente_id": "cliente_009",
+      "timestamp": "2025-06-17T13:37:49.849750Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 475,
+      "agente_id": "agente_002",
+      "resultado": "sin_respuesta",
+      "sentimiento": "n/a"
+    },
+    {
+      "id": "int_2f3c8f12",
+      "cliente_id": "cliente_027",
+      "timestamp": "2025-06-17T13:37:49.851073Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 406,
+      "agente_id": "agente_001",
+      "resultado": "pago_inmediato",
+      "sentimiento": "cooperativo"
+    },
+    {
+      "id": "int_b7db6bda",
+      "cliente_id": "cliente_034",
+      "timestamp": "2025-06-17T13:37:49.851481Z",
+      "tipo": "pago_recibido",
+      "monto": 1568,
+      "metodo_pago": "efectivo",
+      "pago_completo": true
+    },
+    {
+      "id": "int_6fe15e5e",
+      "cliente_id": "cliente_038",
+      "timestamp": "2025-06-17T13:37:49.851727Z",
+      "tipo": "llamada_entrante",
+      "duracion_segundos": 137,
+      "agente_id": "agente_001",
+      "resultado": "renegociacion",
+      "sentimiento": "frustrado",
+      "nuevo_plan_pago": {
+        "cuotas": 3,
+        "monto_mensual": 373
+      }
+    },
+    {
+      "id": "int_732f183c",
+      "cliente_id": "cliente_045",
+      "timestamp": "2025-06-17T13:37:49.852204Z",
+      "tipo": "pago_recibido",
+      "monto": 2567,
+      "metodo_pago": "tarjeta",
+      "pago_completo": false
+    },
+    {
+      "id": "int_6ccb7515",
+      "cliente_id": "cliente_006",
+      "timestamp": "2025-06-18T13:37:49.849630Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 100,
+      "agente_id": "agente_009",
+      "resultado": "sin_respuesta",
+      "sentimiento": "n/a"
+    },
+    {
+      "id": "int_3a5b8802",
+      "cliente_id": "cliente_011",
+      "timestamp": "2025-06-18T13:37:49.849851Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 472,
+      "agente_id": "agente_008",
+      "resultado": "se_niega_pagar",
+      "sentimiento": "hostil"
+    },
+    {
+      "id": "int_8430d1f8",
+      "cliente_id": "cliente_016",
+      "timestamp": "2025-06-18T13:37:49.850235Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 235,
+      "agente_id": "agente_010",
+      "resultado": "promesa_pago",
+      "sentimiento": "cooperativo",
+      "monto_prometido": 1990,
+      "fecha_promesa": "2025-07-02"
+    },
+    {
+      "id": "int_b33121cc",
+      "cliente_id": "cliente_017",
+      "timestamp": "2025-06-18T13:37:49.850286Z",
+      "tipo": "llamada_entrante",
+      "duracion_segundos": 67,
+      "agente_id": "agente_001",
+      "resultado": "pago_inmediato",
+      "sentimiento": "cooperativo"
+    },
+    {
+      "id": "int_f2b6fb6c",
+      "cliente_id": "cliente_023",
+      "timestamp": "2025-06-18T13:37:49.850766Z",
+      "tipo": "llamada_entrante",
+      "duracion_segundos": 414,
+      "agente_id": "agente_003",
+      "resultado": "renegociacion",
+      "sentimiento": "cooperativo",
+      "nuevo_plan_pago": {
+        "cuotas": 12,
+        "monto_mensual": 706
+      }
+    },
+    {
+      "id": "int_6cfb4e80",
+      "cliente_id": "cliente_041",
+      "timestamp": "2025-06-18T13:37:49.851982Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 406,
+      "agente_id": "agente_007",
+      "resultado": "renegociacion",
+      "sentimiento": "frustrado",
+      "nuevo_plan_pago": {
+        "cuotas": 7,
+        "monto_mensual": 265
+      }
+    },
+    {
+      "id": "int_bf78898a",
+      "cliente_id": "cliente_048",
+      "timestamp": "2025-06-18T13:37:49.852433Z",
+      "tipo": "llamada_entrante",
+      "duracion_segundos": 572,
+      "agente_id": "agente_009",
+      "resultado": "promesa_pago",
+      "sentimiento": "cooperativo",
+      "monto_prometido": 324,
+      "fecha_promesa": "2025-06-26"
+    },
+    {
+      "id": "int_0b0eb98d",
+      "cliente_id": "cliente_007",
+      "timestamp": "2025-06-19T13:37:49.849681Z",
+      "tipo": "llamada_entrante",
+      "duracion_segundos": 600,
+      "agente_id": "agente_008",
+      "resultado": "pago_inmediato",
+      "sentimiento": "cooperativo"
+    },
+    {
+      "id": "int_bbbb8c3b",
+      "cliente_id": "cliente_012",
+      "timestamp": "2025-06-19T13:37:49.849925Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 292,
+      "agente_id": "agente_009",
+      "resultado": "promesa_pago",
+      "sentimiento": "neutral",
+      "monto_prometido": 2703,
+      "fecha_promesa": "2025-06-27"
+    },
+    {
+      "id": "int_3acce1e5",
+      "cliente_id": "cliente_015",
+      "timestamp": "2025-06-19T13:37:49.850173Z",
+      "tipo": "pago_recibido",
+      "monto": 703,
+      "metodo_pago": "transferencia",
+      "pago_completo": true
+    },
+    {
+      "id": "int_5f65ec6e",
+      "cliente_id": "cliente_025",
+      "timestamp": "2025-06-19T13:37:49.850942Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 413,
+      "agente_id": "agente_002",
+      "resultado": "sin_respuesta",
+      "sentimiento": "n/a"
+    },
+    {
+      "id": "int_3cf46224",
+      "cliente_id": "cliente_037",
+      "timestamp": "2025-06-19T13:37:49.851651Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 177,
+      "agente_id": "agente_009",
+      "resultado": "renegociacion",
+      "sentimiento": "cooperativo",
+      "nuevo_plan_pago": {
+        "cuotas": 11,
+        "monto_mensual": 442
+      }
+    },
+    {
+      "id": "int_532fbbc8",
+      "cliente_id": "cliente_046",
+      "timestamp": "2025-06-19T13:37:49.852301Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 326,
+      "agente_id": "agente_006",
+      "resultado": "disputa",
+      "sentimiento": "frustrado"
+    },
+    {
+      "id": "int_55c5e5e9",
+      "cliente_id": "cliente_049",
+      "timestamp": "2025-06-19T13:37:49.852504Z",
+      "tipo": "email"
+    },
+    {
+      "id": "int_68b6fc47",
+      "cliente_id": "cliente_002",
+      "timestamp": "2025-06-20T13:37:49.849331Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 54,
+      "agente_id": "agente_005",
+      "resultado": "disputa",
+      "sentimiento": "frustrado"
+    },
+    {
+      "id": "int_e6f31ab5",
+      "cliente_id": "cliente_018",
+      "timestamp": "2025-06-20T13:37:49.850373Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 181,
+      "agente_id": "agente_007",
+      "resultado": "promesa_pago",
+      "sentimiento": "cooperativo",
+      "monto_prometido": 190,
+      "fecha_promesa": "2025-06-22"
+    },
+    {
+      "id": "int_b691cf1e",
+      "cliente_id": "cliente_019",
+      "timestamp": "2025-06-20T13:37:49.850453Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 214,
+      "agente_id": "agente_005",
+      "resultado": "sin_respuesta",
+      "sentimiento": "n/a"
+    },
+    {
+      "id": "int_563edce4",
+      "cliente_id": "cliente_020",
+      "timestamp": "2025-06-20T13:37:49.850548Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 122,
+      "agente_id": "agente_005",
+      "resultado": "promesa_pago",
+      "sentimiento": "neutral",
+      "monto_prometido": 4051,
+      "fecha_promesa": "2025-06-29"
+    },
+    {
+      "id": "int_53f65660",
+      "cliente_id": "cliente_026",
+      "timestamp": "2025-06-20T13:37:49.851001Z",
+      "tipo": "pago_recibido",
+      "monto": 2999,
+      "metodo_pago": "tarjeta",
+      "pago_completo": true
+    },
+    {
+      "id": "int_c1825daa",
+      "cliente_id": "cliente_028",
+      "timestamp": "2025-06-20T13:37:49.851159Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 566,
+      "agente_id": "agente_001",
+      "resultado": "sin_respuesta",
+      "sentimiento": "n/a"
+    },
+    {
+      "id": "int_5f3f2518",
+      "cliente_id": "cliente_031",
+      "timestamp": "2025-06-20T13:37:49.851318Z",
+      "tipo": "sms"
+    },
+    {
+      "id": "int_03c85508",
+      "cliente_id": "cliente_034",
+      "timestamp": "2025-06-20T13:37:49.851481Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 594,
+      "agente_id": "agente_006",
+      "resultado": "promesa_pago",
+      "sentimiento": "cooperativo",
+      "monto_prometido": 2383,
+      "fecha_promesa": "2025-07-05"
+    },
+    {
+      "id": "int_ff969d41",
+      "cliente_id": "cliente_038",
+      "timestamp": "2025-06-20T13:37:49.851727Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 344,
+      "agente_id": "agente_008",
+      "resultado": "disputa",
+      "sentimiento": "frustrado"
+    },
+    {
+      "id": "int_a58dd85c",
+      "cliente_id": "cliente_040",
+      "timestamp": "2025-06-20T13:37:49.851887Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 112,
+      "agente_id": "agente_005",
+      "resultado": "promesa_pago",
+      "sentimiento": "cooperativo",
+      "monto_prometido": 2595,
+      "fecha_promesa": "2025-06-21"
+    },
+    {
+      "id": "int_f648066a",
+      "cliente_id": "cliente_044",
+      "timestamp": "2025-06-20T13:37:49.852130Z",
+      "tipo": "sms"
+    },
+    {
+      "id": "int_c1e7ff35",
+      "cliente_id": "cliente_000",
+      "timestamp": "2025-06-21T13:37:49.849120Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 508,
+      "agente_id": "agente_005",
+      "resultado": "promesa_pago",
+      "sentimiento": "neutral",
+      "monto_prometido": 2013,
+      "fecha_promesa": "2025-07-01"
+    },
+    {
+      "id": "int_9fc18eac",
+      "cliente_id": "cliente_010",
+      "timestamp": "2025-06-21T13:37:49.849784Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 76,
+      "agente_id": "agente_008",
+      "resultado": "sin_respuesta",
+      "sentimiento": "n/a"
+    },
+    {
+      "id": "int_8a53ad4a",
+      "cliente_id": "cliente_017",
+      "timestamp": "2025-06-21T13:37:49.850286Z",
+      "tipo": "llamada_entrante",
+      "duracion_segundos": 349,
+      "agente_id": "agente_003",
+      "resultado": "sin_respuesta",
+      "sentimiento": "n/a"
+    },
+    {
+      "id": "int_039ab9fa",
+      "cliente_id": "cliente_021",
+      "timestamp": "2025-06-21T13:37:49.850592Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 118,
+      "agente_id": "agente_008",
+      "resultado": "promesa_pago",
+      "sentimiento": "cooperativo",
+      "monto_prometido": 545,
+      "fecha_promesa": "2025-06-30"
+    },
+    {
+      "id": "int_3ec70a71",
+      "cliente_id": "cliente_029",
+      "timestamp": "2025-06-21T13:37:49.851196Z",
+      "tipo": "llamada_entrante",
+      "duracion_segundos": 123,
+      "agente_id": "agente_004",
+      "resultado": "sin_respuesta",
+      "sentimiento": "n/a"
+    },
+    {
+      "id": "int_88127d45",
+      "cliente_id": "cliente_042",
+      "timestamp": "2025-06-21T13:37:49.852046Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 234,
+      "agente_id": "agente_009",
+      "resultado": "promesa_pago",
+      "sentimiento": "cooperativo",
+      "monto_prometido": 8390,
+      "fecha_promesa": "2025-07-02"
+    },
+    {
+      "id": "int_3b5da42e",
+      "cliente_id": "cliente_047",
+      "timestamp": "2025-06-21T13:37:49.852394Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 540,
+      "agente_id": "agente_008",
+      "resultado": "renegociacion",
+      "sentimiento": "frustrado",
+      "nuevo_plan_pago": {
+        "cuotas": 9,
+        "monto_mensual": 294
+      }
+    },
+    {
+      "id": "int_90cca169",
+      "cliente_id": "cliente_001",
+      "timestamp": "2025-06-22T13:37:49.849237Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 545,
+      "agente_id": "agente_005",
+      "resultado": "promesa_pago",
+      "sentimiento": "cooperativo",
+      "monto_prometido": 3262,
+      "fecha_promesa": "2025-07-01"
+    },
+    {
+      "id": "int_bb8b4d40",
+      "cliente_id": "cliente_004",
+      "timestamp": "2025-06-22T13:37:49.849476Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 596,
+      "agente_id": "agente_003",
+      "resultado": "promesa_pago",
+      "sentimiento": "cooperativo",
+      "monto_prometido": 1168,
+      "fecha_promesa": "2025-07-05"
+    },
+    {
+      "id": "int_971e300a",
+      "cliente_id": "cliente_039",
+      "timestamp": "2025-06-22T13:37:49.851809Z",
+      "tipo": "pago_recibido",
+      "monto": 2018,
+      "metodo_pago": "tarjeta",
+      "pago_completo": true
+    },
+    {
+      "id": "int_cb720400",
+      "cliente_id": "cliente_005",
+      "timestamp": "2025-06-23T13:37:49.849536Z",
+      "tipo": "llamada_entrante",
+      "duracion_segundos": 73,
+      "agente_id": "agente_007",
+      "resultado": "disputa",
+      "sentimiento": "frustrado"
+    },
+    {
+      "id": "int_0628790c",
+      "cliente_id": "cliente_006",
+      "timestamp": "2025-06-23T13:37:49.849630Z",
+      "tipo": "llamada_entrante",
+      "duracion_segundos": 562,
+      "agente_id": "agente_009",
+      "resultado": "se_niega_pagar",
+      "sentimiento": "hostil"
+    },
+    {
+      "id": "int_630df8ee",
+      "cliente_id": "cliente_014",
+      "timestamp": "2025-06-23T13:37:49.850081Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 190,
+      "agente_id": "agente_001",
+      "resultado": "sin_respuesta",
+      "sentimiento": "n/a"
+    },
+    {
+      "id": "int_b19b6394",
+      "cliente_id": "cliente_016",
+      "timestamp": "2025-06-23T13:37:49.850235Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 112,
+      "agente_id": "agente_010",
+      "resultado": "promesa_pago",
+      "sentimiento": "cooperativo",
+      "monto_prometido": 1486,
+      "fecha_promesa": "2025-07-03"
+    },
+    {
+      "id": "int_ee49a35e",
+      "cliente_id": "cliente_024",
+      "timestamp": "2025-06-23T13:37:49.850861Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 321,
+      "agente_id": "agente_005",
+      "resultado": "promesa_pago",
+      "sentimiento": "cooperativo",
+      "monto_prometido": 1398,
+      "fecha_promesa": "2025-07-01"
+    },
+    {
+      "id": "int_c7ebc414",
+      "cliente_id": "cliente_027",
+      "timestamp": "2025-06-23T13:37:49.851073Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 533,
+      "agente_id": "agente_005",
+      "resultado": "disputa",
+      "sentimiento": "frustrado"
+    },
+    {
+      "id": "int_3cb1ac64",
+      "cliente_id": "cliente_034",
+      "timestamp": "2025-06-23T13:37:49.851481Z",
+      "tipo": "email"
+    },
+    {
+      "id": "int_d630f7f5",
+      "cliente_id": "cliente_035",
+      "timestamp": "2025-06-23T13:37:49.851533Z",
+      "tipo": "sms"
+    },
+    {
+      "id": "int_bbab05a7",
+      "cliente_id": "cliente_002",
+      "timestamp": "2025-06-24T13:37:49.849331Z",
+      "tipo": "llamada_entrante",
+      "duracion_segundos": 562,
+      "agente_id": "agente_002",
+      "resultado": "disputa",
+      "sentimiento": "frustrado"
+    },
+    {
+      "id": "int_57f8d818",
+      "cliente_id": "cliente_012",
+      "timestamp": "2025-06-24T13:37:49.849925Z",
+      "tipo": "pago_recibido",
+      "monto": 1580,
+      "metodo_pago": "tarjeta",
+      "pago_completo": false
+    },
+    {
+      "id": "int_80328e46",
+      "cliente_id": "cliente_013",
+      "timestamp": "2025-06-24T13:37:49.850018Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 415,
+      "agente_id": "agente_009",
+      "resultado": "sin_respuesta",
+      "sentimiento": "n/a"
+    },
+    {
+      "id": "int_46f45c85",
+      "cliente_id": "cliente_022",
+      "timestamp": "2025-06-24T13:37:49.850688Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 56,
+      "agente_id": "agente_003",
+      "resultado": "se_niega_pagar",
+      "sentimiento": "hostil"
+    },
+    {
+      "id": "int_b5489c2c",
+      "cliente_id": "cliente_025",
+      "timestamp": "2025-06-24T13:37:49.850942Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 391,
+      "agente_id": "agente_008",
+      "resultado": "promesa_pago",
+      "sentimiento": "cooperativo",
+      "monto_prometido": 1414,
+      "fecha_promesa": "2025-07-02"
+    },
+    {
+      "id": "int_9576b6d3",
+      "cliente_id": "cliente_045",
+      "timestamp": "2025-06-24T13:37:49.852204Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 281,
+      "agente_id": "agente_002",
+      "resultado": "sin_respuesta",
+      "sentimiento": "n/a"
+    },
+    {
+      "id": "int_9e607099",
+      "cliente_id": "cliente_011",
+      "timestamp": "2025-06-25T13:37:49.849851Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 114,
+      "agente_id": "agente_001",
+      "resultado": "pago_inmediato",
+      "sentimiento": "cooperativo"
+    },
+    {
+      "id": "int_f0d3cef7",
+      "cliente_id": "cliente_026",
+      "timestamp": "2025-06-25T13:37:49.851001Z",
+      "tipo": "email"
+    },
+    {
+      "id": "int_d9c688f2",
+      "cliente_id": "cliente_032",
+      "timestamp": "2025-06-25T13:37:49.851403Z",
+      "tipo": "llamada_entrante",
+      "duracion_segundos": 208,
+      "agente_id": "agente_002",
+      "resultado": "promesa_pago",
+      "sentimiento": "cooperativo",
+      "monto_prometido": 6023,
+      "fecha_promesa": "2025-07-09"
+    },
+    {
+      "id": "int_9784bee4",
+      "cliente_id": "cliente_036",
+      "timestamp": "2025-06-25T13:37:49.851601Z",
+      "tipo": "llamada_entrante",
+      "duracion_segundos": 519,
+      "agente_id": "agente_002",
+      "resultado": "disputa",
+      "sentimiento": "frustrado"
+    },
+    {
+      "id": "int_ef2d3b98",
+      "cliente_id": "cliente_038",
+      "timestamp": "2025-06-25T13:37:49.851727Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 264,
+      "agente_id": "agente_002",
+      "resultado": "renegociacion",
+      "sentimiento": "frustrado",
+      "nuevo_plan_pago": {
+        "cuotas": 6,
+        "monto_mensual": 417
+      }
+    },
+    {
+      "id": "int_85271f74",
+      "cliente_id": "cliente_040",
+      "timestamp": "2025-06-25T13:37:49.851887Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 73,
+      "agente_id": "agente_003",
+      "resultado": "renegociacion",
+      "sentimiento": "frustrado",
+      "nuevo_plan_pago": {
+        "cuotas": 8,
+        "monto_mensual": 487
+      }
+    },
+    {
+      "id": "int_51e851a9",
+      "cliente_id": "cliente_048",
+      "timestamp": "2025-06-25T13:37:49.852433Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 42,
+      "agente_id": "agente_009",
+      "resultado": "sin_respuesta",
+      "sentimiento": "n/a"
+    },
+    {
+      "id": "int_2fa392f3",
+      "cliente_id": "cliente_049",
+      "timestamp": "2025-06-25T13:37:49.852504Z",
+      "tipo": "email"
+    },
+    {
+      "id": "int_bb302c88",
+      "cliente_id": "cliente_003",
+      "timestamp": "2025-06-26T13:37:49.849383Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 166,
+      "agente_id": "agente_006",
+      "resultado": "disputa",
+      "sentimiento": "hostil"
+    },
+    {
+      "id": "int_18680f4d",
+      "cliente_id": "cliente_010",
+      "timestamp": "2025-06-26T13:37:49.849784Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 456,
+      "agente_id": "agente_006",
+      "resultado": "sin_respuesta",
+      "sentimiento": "n/a"
+    },
+    {
+      "id": "int_9a2e87e0",
+      "cliente_id": "cliente_023",
+      "timestamp": "2025-06-26T13:37:49.850766Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 267,
+      "agente_id": "agente_003",
+      "resultado": "renegociacion",
+      "sentimiento": "frustrado",
+      "nuevo_plan_pago": {
+        "cuotas": 7,
+        "monto_mensual": 882
+      }
+    },
+    {
+      "id": "int_6838910c",
+      "cliente_id": "cliente_041",
+      "timestamp": "2025-06-26T13:37:49.851982Z",
+      "tipo": "email"
+    },
+    {
+      "id": "int_c86049af",
+      "cliente_id": "cliente_044",
+      "timestamp": "2025-06-26T13:37:49.852130Z",
+      "tipo": "sms"
+    },
+    {
+      "id": "int_3a607fa9",
+      "cliente_id": "cliente_017",
+      "timestamp": "2025-06-27T13:37:49.850286Z",
+      "tipo": "sms"
+    },
+    {
+      "id": "int_833c1be2",
+      "cliente_id": "cliente_022",
+      "timestamp": "2025-06-27T13:37:49.850688Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 318,
+      "agente_id": "agente_001",
+      "resultado": "disputa",
+      "sentimiento": "hostil"
+    },
+    {
+      "id": "int_8941148d",
+      "cliente_id": "cliente_029",
+      "timestamp": "2025-06-27T13:37:49.851196Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 488,
+      "agente_id": "agente_004",
+      "resultado": "sin_respuesta",
+      "sentimiento": "n/a"
+    },
+    {
+      "id": "int_27cb67c7",
+      "cliente_id": "cliente_000",
+      "timestamp": "2025-06-28T13:37:49.849120Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 357,
+      "agente_id": "agente_007",
+      "resultado": "disputa",
+      "sentimiento": "hostil"
+    },
+    {
+      "id": "int_40980b5d",
+      "cliente_id": "cliente_012",
+      "timestamp": "2025-06-28T13:37:49.849925Z",
+      "tipo": "pago_recibido",
+      "monto": 886,
+      "metodo_pago": "efectivo",
+      "pago_completo": true
+    },
+    {
+      "id": "int_840e60fa",
+      "cliente_id": "cliente_014",
+      "timestamp": "2025-06-28T13:37:49.850081Z",
+      "tipo": "llamada_entrante",
+      "duracion_segundos": 490,
+      "agente_id": "agente_001",
+      "resultado": "promesa_pago",
+      "sentimiento": "cooperativo",
+      "monto_prometido": 464,
+      "fecha_promesa": "2025-07-08"
+    },
+    {
+      "id": "int_babb1b93",
+      "cliente_id": "cliente_015",
+      "timestamp": "2025-06-28T13:37:49.850173Z",
+      "tipo": "email"
+    },
+    {
+      "id": "int_42ba0466",
+      "cliente_id": "cliente_031",
+      "timestamp": "2025-06-28T13:37:49.851318Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 574,
+      "agente_id": "agente_004",
+      "resultado": "se_niega_pagar",
+      "sentimiento": "hostil"
+    },
+    {
+      "id": "int_b722d479",
+      "cliente_id": "cliente_046",
+      "timestamp": "2025-06-28T13:37:49.852301Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 378,
+      "agente_id": "agente_010",
+      "resultado": "sin_respuesta",
+      "sentimiento": "n/a"
+    },
+    {
+      "id": "int_fbe0591b",
+      "cliente_id": "cliente_004",
+      "timestamp": "2025-06-29T13:37:49.849476Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 203,
+      "agente_id": "agente_007",
+      "resultado": "sin_respuesta",
+      "sentimiento": "n/a"
+    },
+    {
+      "id": "int_3a05d44b",
+      "cliente_id": "cliente_011",
+      "timestamp": "2025-06-29T13:37:49.849851Z",
+      "tipo": "email"
+    },
+    {
+      "id": "int_b17104d7",
+      "cliente_id": "cliente_020",
+      "timestamp": "2025-06-29T13:37:49.850548Z",
+      "tipo": "llamada_entrante",
+      "duracion_segundos": 589,
+      "agente_id": "agente_002",
+      "resultado": "promesa_pago",
+      "sentimiento": "neutral",
+      "monto_prometido": 929,
+      "fecha_promesa": "2025-07-06"
+    },
+    {
+      "id": "int_a6305aa9",
+      "cliente_id": "cliente_032",
+      "timestamp": "2025-06-29T13:37:49.851403Z",
+      "tipo": "llamada_entrante",
+      "duracion_segundos": 491,
+      "agente_id": "agente_003",
+      "resultado": "promesa_pago",
+      "sentimiento": "cooperativo",
+      "monto_prometido": 6716,
+      "fecha_promesa": "2025-07-07"
+    },
+    {
+      "id": "int_44ae95ea",
+      "cliente_id": "cliente_037",
+      "timestamp": "2025-06-29T13:37:49.851651Z",
+      "tipo": "llamada_entrante",
+      "duracion_segundos": 127,
+      "agente_id": "agente_008",
+      "resultado": "pago_inmediato",
+      "sentimiento": "cooperativo"
+    },
+    {
+      "id": "int_cb63a627",
+      "cliente_id": "cliente_040",
+      "timestamp": "2025-06-29T13:37:49.851887Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 305,
+      "agente_id": "agente_001",
+      "resultado": "sin_respuesta",
+      "sentimiento": "n/a"
+    },
+    {
+      "id": "int_0700d597",
+      "cliente_id": "cliente_003",
+      "timestamp": "2025-06-30T13:37:49.849383Z",
+      "tipo": "llamada_entrante",
+      "duracion_segundos": 69,
+      "agente_id": "agente_005",
+      "resultado": "renegociacion",
+      "sentimiento": "frustrado",
+      "nuevo_plan_pago": {
+        "cuotas": 4,
+        "monto_mensual": 158
+      }
+    },
+    {
+      "id": "int_fcee69b0",
+      "cliente_id": "cliente_005",
+      "timestamp": "2025-06-30T13:37:49.849536Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 393,
+      "agente_id": "agente_009",
+      "resultado": "renegociacion",
+      "sentimiento": "cooperativo",
+      "nuevo_plan_pago": {
+        "cuotas": 3,
+        "monto_mensual": 919
+      }
+    },
+    {
+      "id": "int_e5ffd91f",
+      "cliente_id": "cliente_016",
+      "timestamp": "2025-06-30T13:37:49.850235Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 329,
+      "agente_id": "agente_004",
+      "resultado": "promesa_pago",
+      "sentimiento": "cooperativo",
+      "monto_prometido": 1502,
+      "fecha_promesa": "2025-07-12"
+    },
+    {
+      "id": "int_5d4b44a3",
+      "cliente_id": "cliente_018",
+      "timestamp": "2025-06-30T13:37:49.850373Z",
+      "tipo": "llamada_entrante",
+      "duracion_segundos": 588,
+      "agente_id": "agente_008",
+      "resultado": "sin_respuesta",
+      "sentimiento": "n/a"
+    },
+    {
+      "id": "int_0a8915a1",
+      "cliente_id": "cliente_019",
+      "timestamp": "2025-06-30T13:37:49.850453Z",
+      "tipo": "pago_recibido",
+      "monto": 305,
+      "metodo_pago": "efectivo",
+      "pago_completo": true
+    },
+    {
+      "id": "int_7677efdc",
+      "cliente_id": "cliente_024",
+      "timestamp": "2025-06-30T13:37:49.850861Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 437,
+      "agente_id": "agente_006",
+      "resultado": "sin_respuesta",
+      "sentimiento": "n/a"
+    },
+    {
+      "id": "int_67ee831c",
+      "cliente_id": "cliente_029",
+      "timestamp": "2025-06-30T13:37:49.851196Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 409,
+      "agente_id": "agente_005",
+      "resultado": "sin_respuesta",
+      "sentimiento": "n/a"
+    },
+    {
+      "id": "int_af70b178",
+      "cliente_id": "cliente_045",
+      "timestamp": "2025-06-30T13:37:49.852204Z",
+      "tipo": "llamada_entrante",
+      "duracion_segundos": 536,
+      "agente_id": "agente_010",
+      "resultado": "renegociacion",
+      "sentimiento": "cooperativo",
+      "nuevo_plan_pago": {
+        "cuotas": 12,
+        "monto_mensual": 453
+      }
+    },
+    {
+      "id": "int_df0f65b0",
+      "cliente_id": "cliente_001",
+      "timestamp": "2025-07-01T13:37:49.849237Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 245,
+      "agente_id": "agente_008",
+      "resultado": "renegociacion",
+      "sentimiento": "cooperativo",
+      "nuevo_plan_pago": {
+        "cuotas": 11,
+        "monto_mensual": 378
+      }
+    },
+    {
+      "id": "int_31e4c2e6",
+      "cliente_id": "cliente_013",
+      "timestamp": "2025-07-01T13:37:49.850018Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 489,
+      "agente_id": "agente_004",
+      "resultado": "promesa_pago",
+      "sentimiento": "cooperativo",
+      "monto_prometido": 869,
+      "fecha_promesa": "2025-07-04"
+    },
+    {
+      "id": "int_062c3236",
+      "cliente_id": "cliente_021",
+      "timestamp": "2025-07-01T13:37:49.850592Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 163,
+      "agente_id": "agente_001",
+      "resultado": "pago_inmediato",
+      "sentimiento": "cooperativo"
+    },
+    {
+      "id": "int_87b8725a",
+      "cliente_id": "cliente_027",
+      "timestamp": "2025-07-01T13:37:49.851073Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 417,
+      "agente_id": "agente_005",
+      "resultado": "pago_inmediato",
+      "sentimiento": "cooperativo"
+    },
+    {
+      "id": "int_0114cf15",
+      "cliente_id": "cliente_035",
+      "timestamp": "2025-07-01T13:37:49.851533Z",
+      "tipo": "pago_recibido",
+      "monto": 1243,
+      "metodo_pago": "efectivo",
+      "pago_completo": false
+    },
+    {
+      "id": "int_bb458bbf",
+      "cliente_id": "cliente_039",
+      "timestamp": "2025-07-01T13:37:49.851809Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 104,
+      "agente_id": "agente_004",
+      "resultado": "renegociacion",
+      "sentimiento": "cooperativo",
+      "nuevo_plan_pago": {
+        "cuotas": 11,
+        "monto_mensual": 210
+      }
+    },
+    {
+      "id": "int_5b5727e4",
+      "cliente_id": "cliente_006",
+      "timestamp": "2025-07-02T13:37:49.849630Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 406,
+      "agente_id": "agente_005",
+      "resultado": "promesa_pago",
+      "sentimiento": "neutral",
+      "monto_prometido": 357,
+      "fecha_promesa": "2025-07-09"
+    },
+    {
+      "id": "int_55cdac86",
+      "cliente_id": "cliente_026",
+      "timestamp": "2025-07-02T13:37:49.851001Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 154,
+      "agente_id": "agente_002",
+      "resultado": "se_niega_pagar",
+      "sentimiento": "hostil"
+    },
+    {
+      "id": "int_fa3727d1",
+      "cliente_id": "cliente_034",
+      "timestamp": "2025-07-02T13:37:49.851481Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 362,
+      "agente_id": "agente_009",
+      "resultado": "renegociacion",
+      "sentimiento": "cooperativo",
+      "nuevo_plan_pago": {
+        "cuotas": 4,
+        "monto_mensual": 258
+      }
+    },
+    {
+      "id": "int_7fbea348",
+      "cliente_id": "cliente_038",
+      "timestamp": "2025-07-02T13:37:49.851727Z",
+      "tipo": "llamada_entrante",
+      "duracion_segundos": 157,
+      "agente_id": "agente_001",
+      "resultado": "disputa",
+      "sentimiento": "hostil"
+    },
+    {
+      "id": "int_6422d80e",
+      "cliente_id": "cliente_011",
+      "timestamp": "2025-07-03T13:37:49.849851Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 411,
+      "agente_id": "agente_008",
+      "resultado": "pago_inmediato",
+      "sentimiento": "cooperativo"
+    },
+    {
+      "id": "int_99a728cd",
+      "cliente_id": "cliente_012",
+      "timestamp": "2025-07-03T13:37:49.849925Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 300,
+      "agente_id": "agente_007",
+      "resultado": "sin_respuesta",
+      "sentimiento": "n/a"
+    },
+    {
+      "id": "int_0744cc55",
+      "cliente_id": "cliente_048",
+      "timestamp": "2025-07-03T13:37:49.852433Z",
+      "tipo": "llamada_entrante",
+      "duracion_segundos": 451,
+      "agente_id": "agente_010",
+      "resultado": "sin_respuesta",
+      "sentimiento": "n/a"
+    },
+    {
+      "id": "int_38bea86c",
+      "cliente_id": "cliente_049",
+      "timestamp": "2025-07-03T13:37:49.852504Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 320,
+      "agente_id": "agente_010",
+      "resultado": "promesa_pago",
+      "sentimiento": "neutral",
+      "monto_prometido": 1462,
+      "fecha_promesa": "2025-07-09"
+    },
+    {
+      "id": "int_a57d1a05",
+      "cliente_id": "cliente_003",
+      "timestamp": "2025-07-04T13:37:49.849383Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 121,
+      "agente_id": "agente_006",
+      "resultado": "promesa_pago",
+      "sentimiento": "cooperativo",
+      "monto_prometido": 885,
+      "fecha_promesa": "2025-07-11"
+    },
+    {
+      "id": "int_1c9d23e3",
+      "cliente_id": "cliente_010",
+      "timestamp": "2025-07-04T13:37:49.849784Z",
+      "tipo": "email"
+    },
+    {
+      "id": "int_7fc8f65d",
+      "cliente_id": "cliente_017",
+      "timestamp": "2025-07-04T13:37:49.850286Z",
+      "tipo": "email"
+    },
+    {
+      "id": "int_077a6802",
+      "cliente_id": "cliente_019",
+      "timestamp": "2025-07-04T13:37:49.850453Z",
+      "tipo": "llamada_entrante",
+      "duracion_segundos": 354,
+      "agente_id": "agente_009",
+      "resultado": "promesa_pago",
+      "sentimiento": "cooperativo",
+      "monto_prometido": 583,
+      "fecha_promesa": "2025-07-06"
+    },
+    {
+      "id": "int_d1163029",
+      "cliente_id": "cliente_025",
+      "timestamp": "2025-07-04T13:37:49.850942Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 289,
+      "agente_id": "agente_001",
+      "resultado": "promesa_pago",
+      "sentimiento": "neutral",
+      "monto_prometido": 446,
+      "fecha_promesa": "2025-07-09"
+    },
+    {
+      "id": "int_94fd6651",
+      "cliente_id": "cliente_044",
+      "timestamp": "2025-07-04T13:37:49.852130Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 434,
+      "agente_id": "agente_005",
+      "resultado": "promesa_pago",
+      "sentimiento": "neutral",
+      "monto_prometido": 7835,
+      "fecha_promesa": "2025-07-15"
+    },
+    {
+      "id": "int_137c87b2",
+      "cliente_id": "cliente_016",
+      "timestamp": "2025-07-05T13:37:49.850235Z",
+      "tipo": "sms"
+    },
+    {
+      "id": "int_13cf0041",
+      "cliente_id": "cliente_029",
+      "timestamp": "2025-07-05T13:37:49.851196Z",
+      "tipo": "pago_recibido",
+      "monto": 587,
+      "metodo_pago": "transferencia",
+      "pago_completo": true
+    },
+    {
+      "id": "int_df3907aa",
+      "cliente_id": "cliente_034",
+      "timestamp": "2025-07-05T13:37:49.851481Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 325,
+      "agente_id": "agente_006",
+      "resultado": "se_niega_pagar",
+      "sentimiento": "hostil"
+    },
+    {
+      "id": "int_12192f22",
+      "cliente_id": "cliente_045",
+      "timestamp": "2025-07-05T13:37:49.852204Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 199,
+      "agente_id": "agente_005",
+      "resultado": "promesa_pago",
+      "sentimiento": "neutral",
+      "monto_prometido": 4336,
+      "fecha_promesa": "2025-07-17"
+    },
+    {
+      "id": "int_9b183ed0",
+      "cliente_id": "cliente_000",
+      "timestamp": "2025-07-06T13:37:49.849120Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 376,
+      "agente_id": "agente_002",
+      "resultado": "pago_inmediato",
+      "sentimiento": "cooperativo"
+    },
+    {
+      "id": "int_063db592",
+      "cliente_id": "cliente_004",
+      "timestamp": "2025-07-06T13:37:49.849476Z",
+      "tipo": "pago_recibido",
+      "monto": 886,
+      "metodo_pago": "tarjeta",
+      "pago_completo": false
+    },
+    {
+      "id": "int_3e3f49b5",
+      "cliente_id": "cliente_011",
+      "timestamp": "2025-07-06T13:37:49.849851Z",
+      "tipo": "llamada_entrante",
+      "duracion_segundos": 338,
+      "agente_id": "agente_008",
+      "resultado": "promesa_pago",
+      "sentimiento": "cooperativo",
+      "monto_prometido": 5254,
+      "fecha_promesa": "2025-07-14"
+    },
+    {
+      "id": "int_bbae919d",
+      "cliente_id": "cliente_015",
+      "timestamp": "2025-07-06T13:37:49.850173Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 477,
+      "agente_id": "agente_006",
+      "resultado": "se_niega_pagar",
+      "sentimiento": "hostil"
+    },
+    {
+      "id": "int_92d14c16",
+      "cliente_id": "cliente_023",
+      "timestamp": "2025-07-06T13:37:49.850766Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 570,
+      "agente_id": "agente_001",
+      "resultado": "promesa_pago",
+      "sentimiento": "neutral",
+      "monto_prometido": 6495,
+      "fecha_promesa": "2025-07-08"
+    },
+    {
+      "id": "int_4d2730e9",
+      "cliente_id": "cliente_026",
+      "timestamp": "2025-07-06T13:37:49.851001Z",
+      "tipo": "llamada_entrante",
+      "duracion_segundos": 256,
+      "agente_id": "agente_004",
+      "resultado": "pago_inmediato",
+      "sentimiento": "cooperativo"
+    },
+    {
+      "id": "int_e7be1ff9",
+      "cliente_id": "cliente_041",
+      "timestamp": "2025-07-06T13:37:49.851982Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 499,
+      "agente_id": "agente_010",
+      "resultado": "pago_inmediato",
+      "sentimiento": "cooperativo"
+    },
+    {
+      "id": "int_b001072f",
+      "cliente_id": "cliente_003",
+      "timestamp": "2025-07-07T13:37:49.849383Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 455,
+      "agente_id": "agente_004",
+      "resultado": "se_niega_pagar",
+      "sentimiento": "hostil"
+    },
+    {
+      "id": "int_6ebbb88d",
+      "cliente_id": "cliente_022",
+      "timestamp": "2025-07-07T13:37:49.850688Z",
+      "tipo": "sms"
+    },
+    {
+      "id": "int_d6dc61c6",
+      "cliente_id": "cliente_031",
+      "timestamp": "2025-07-07T13:37:49.851318Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 384,
+      "agente_id": "agente_010",
+      "resultado": "disputa",
+      "sentimiento": "frustrado"
+    },
+    {
+      "id": "int_92f369d0",
+      "cliente_id": "cliente_039",
+      "timestamp": "2025-07-07T13:37:49.851809Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 274,
+      "agente_id": "agente_005",
+      "resultado": "disputa",
+      "sentimiento": "hostil"
+    },
+    {
+      "id": "int_5efd40c9",
+      "cliente_id": "cliente_005",
+      "timestamp": "2025-07-08T13:37:49.849536Z",
+      "tipo": "email"
+    },
+    {
+      "id": "int_1d74076b",
+      "cliente_id": "cliente_014",
+      "timestamp": "2025-07-08T13:37:49.850081Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 399,
+      "agente_id": "agente_002",
+      "resultado": "sin_respuesta",
+      "sentimiento": "n/a"
+    },
+    {
+      "id": "int_67935625",
+      "cliente_id": "cliente_046",
+      "timestamp": "2025-07-08T13:37:49.852301Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 106,
+      "agente_id": "agente_005",
+      "resultado": "disputa",
+      "sentimiento": "hostil"
+    },
+    {
+      "id": "int_78be8178",
+      "cliente_id": "cliente_000",
+      "timestamp": "2025-07-09T13:37:49.849120Z",
+      "tipo": "pago_recibido",
+      "monto": 503,
+      "metodo_pago": "transferencia",
+      "pago_completo": false
+    },
+    {
+      "id": "int_f59acbbf",
+      "cliente_id": "cliente_013",
+      "timestamp": "2025-07-09T13:37:49.850018Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 215,
+      "agente_id": "agente_009",
+      "resultado": "pago_inmediato",
+      "sentimiento": "cooperativo"
+    },
+    {
+      "id": "int_2cdc2961",
+      "cliente_id": "cliente_019",
+      "timestamp": "2025-07-09T13:37:49.850453Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 219,
+      "agente_id": "agente_005",
+      "resultado": "renegociacion",
+      "sentimiento": "cooperativo",
+      "nuevo_plan_pago": {
+        "cuotas": 12,
+        "monto_mensual": 63
+      }
+    },
+    {
+      "id": "int_95c4e273",
+      "cliente_id": "cliente_021",
+      "timestamp": "2025-07-09T13:37:49.850592Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 65,
+      "agente_id": "agente_004",
+      "resultado": "renegociacion",
+      "sentimiento": "frustrado",
+      "nuevo_plan_pago": {
+        "cuotas": 10,
+        "monto_mensual": 526
+      }
+    },
+    {
+      "id": "int_4a82afa7",
+      "cliente_id": "cliente_024",
+      "timestamp": "2025-07-09T13:37:49.850861Z",
+      "tipo": "sms"
+    },
+    {
+      "id": "int_5af49f23",
+      "cliente_id": "cliente_037",
+      "timestamp": "2025-07-09T13:37:49.851651Z",
+      "tipo": "llamada_entrante",
+      "duracion_segundos": 190,
+      "agente_id": "agente_003",
+      "resultado": "sin_respuesta",
+      "sentimiento": "n/a"
+    },
+    {
+      "id": "int_577d8b65",
+      "cliente_id": "cliente_038",
+      "timestamp": "2025-07-09T13:37:49.851727Z",
+      "tipo": "email"
+    },
+    {
+      "id": "int_355f8dec",
+      "cliente_id": "cliente_040",
+      "timestamp": "2025-07-09T13:37:49.851887Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 519,
+      "agente_id": "agente_008",
+      "resultado": "sin_respuesta",
+      "sentimiento": "n/a"
+    },
+    {
+      "id": "int_9c4b629e",
+      "cliente_id": "cliente_003",
+      "timestamp": "2025-07-10T13:37:49.849383Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 45,
+      "agente_id": "agente_006",
+      "resultado": "disputa",
+      "sentimiento": "hostil"
+    },
+    {
+      "id": "int_fb77a8e1",
+      "cliente_id": "cliente_011",
+      "timestamp": "2025-07-10T13:37:49.849851Z",
+      "tipo": "email"
+    },
+    {
+      "id": "int_8d9ce430",
+      "cliente_id": "cliente_017",
+      "timestamp": "2025-07-10T13:37:49.850286Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 476,
+      "agente_id": "agente_004",
+      "resultado": "sin_respuesta",
+      "sentimiento": "n/a"
+    },
+    {
+      "id": "int_73843782",
+      "cliente_id": "cliente_018",
+      "timestamp": "2025-07-10T13:37:49.850373Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 577,
+      "agente_id": "agente_010",
+      "resultado": "renegociacion",
+      "sentimiento": "cooperativo",
+      "nuevo_plan_pago": {
+        "cuotas": 5,
+        "monto_mensual": 531
+      }
+    },
+    {
+      "id": "int_0c7a42ba",
+      "cliente_id": "cliente_035",
+      "timestamp": "2025-07-10T13:37:49.851533Z",
+      "tipo": "pago_recibido",
+      "monto": 948,
+      "metodo_pago": "efectivo",
+      "pago_completo": true
+    },
+    {
+      "id": "int_bfbfcdad",
+      "cliente_id": "cliente_001",
+      "timestamp": "2025-07-11T13:37:49.849237Z",
+      "tipo": "llamada_entrante",
+      "duracion_segundos": 82,
+      "agente_id": "agente_003",
+      "resultado": "se_niega_pagar",
+      "sentimiento": "hostil"
+    },
+    {
+      "id": "int_95c5c2e7",
+      "cliente_id": "cliente_005",
+      "timestamp": "2025-07-11T13:37:49.849536Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 521,
+      "agente_id": "agente_006",
+      "resultado": "se_niega_pagar",
+      "sentimiento": "hostil"
+    },
+    {
+      "id": "int_a6cf5afd",
+      "cliente_id": "cliente_012",
+      "timestamp": "2025-07-11T13:37:49.849925Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 575,
+      "agente_id": "agente_001",
+      "resultado": "renegociacion",
+      "sentimiento": "frustrado",
+      "nuevo_plan_pago": {
+        "cuotas": 11,
+        "monto_mensual": 333
+      }
+    },
+    {
+      "id": "int_052e2879",
+      "cliente_id": "cliente_027",
+      "timestamp": "2025-07-11T13:37:49.851073Z",
+      "tipo": "email"
+    },
+    {
+      "id": "int_9cdcec6d",
+      "cliente_id": "cliente_048",
+      "timestamp": "2025-07-11T13:37:49.852433Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 207,
+      "agente_id": "agente_002",
+      "resultado": "promesa_pago",
+      "sentimiento": "cooperativo",
+      "monto_prometido": 1163,
+      "fecha_promesa": "2025-07-25"
+    },
+    {
+      "id": "int_d56150a9",
+      "cliente_id": "cliente_022",
+      "timestamp": "2025-07-12T13:37:49.850688Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 185,
+      "agente_id": "agente_009",
+      "resultado": "sin_respuesta",
+      "sentimiento": "n/a"
+    },
+    {
+      "id": "int_13cebd5b",
+      "cliente_id": "cliente_024",
+      "timestamp": "2025-07-12T13:37:49.850861Z",
+      "tipo": "pago_recibido",
+      "monto": 829,
+      "metodo_pago": "tarjeta",
+      "pago_completo": true
+    },
+    {
+      "id": "int_8905173c",
+      "cliente_id": "cliente_031",
+      "timestamp": "2025-07-12T13:37:49.851318Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 142,
+      "agente_id": "agente_001",
+      "resultado": "promesa_pago",
+      "sentimiento": "cooperativo",
+      "monto_prometido": 1504,
+      "fecha_promesa": "2025-07-26"
+    },
+    {
+      "id": "int_6a733608",
+      "cliente_id": "cliente_040",
+      "timestamp": "2025-07-12T13:37:49.851887Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 283,
+      "agente_id": "agente_002",
+      "resultado": "promesa_pago",
+      "sentimiento": "cooperativo",
+      "monto_prometido": 1230,
+      "fecha_promesa": "2025-07-19"
+    },
+    {
+      "id": "int_f801b07f",
+      "cliente_id": "cliente_010",
+      "timestamp": "2025-07-13T13:37:49.849784Z",
+      "tipo": "llamada_entrante",
+      "duracion_segundos": 156,
+      "agente_id": "agente_005",
+      "resultado": "sin_respuesta",
+      "sentimiento": "n/a"
+    },
+    {
+      "id": "int_21c26ed3",
+      "cliente_id": "cliente_041",
+      "timestamp": "2025-07-13T13:37:49.851982Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 515,
+      "agente_id": "agente_001",
+      "resultado": "se_niega_pagar",
+      "sentimiento": "hostil"
+    },
+    {
+      "id": "int_bfc7bff8",
+      "cliente_id": "cliente_044",
+      "timestamp": "2025-07-13T13:37:49.852130Z",
+      "tipo": "pago_recibido",
+      "monto": 1124,
+      "metodo_pago": "transferencia",
+      "pago_completo": true
+    },
+    {
+      "id": "int_231d85f3",
+      "cliente_id": "cliente_045",
+      "timestamp": "2025-07-13T13:37:49.852204Z",
+      "tipo": "llamada_entrante",
+      "duracion_segundos": 171,
+      "agente_id": "agente_006",
+      "resultado": "se_niega_pagar",
+      "sentimiento": "hostil"
+    },
+    {
+      "id": "int_d4c8fff1",
+      "cliente_id": "cliente_049",
+      "timestamp": "2025-07-13T13:37:49.852504Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 115,
+      "agente_id": "agente_006",
+      "resultado": "disputa",
+      "sentimiento": "frustrado"
+    },
+    {
+      "id": "int_db9e8b90",
+      "cliente_id": "cliente_012",
+      "timestamp": "2025-07-14T13:37:49.849925Z",
+      "tipo": "sms"
+    },
+    {
+      "id": "int_e2b2ad95",
+      "cliente_id": "cliente_023",
+      "timestamp": "2025-07-14T13:37:49.850766Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 216,
+      "agente_id": "agente_008",
+      "resultado": "disputa",
+      "sentimiento": "hostil"
+    },
+    {
+      "id": "int_591fc121",
+      "cliente_id": "cliente_026",
+      "timestamp": "2025-07-14T13:37:49.851001Z",
+      "tipo": "llamada_entrante",
+      "duracion_segundos": 435,
+      "agente_id": "agente_008",
+      "resultado": "disputa",
+      "sentimiento": "hostil"
+    },
+    {
+      "id": "int_73cb5362",
+      "cliente_id": "cliente_029",
+      "timestamp": "2025-07-14T13:37:49.851196Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 338,
+      "agente_id": "agente_003",
+      "resultado": "promesa_pago",
+      "sentimiento": "cooperativo",
+      "monto_prometido": 7022,
+      "fecha_promesa": "2025-07-17"
+    },
+    {
+      "id": "int_a301e84f",
+      "cliente_id": "cliente_001",
+      "timestamp": "2025-07-15T13:37:49.849237Z",
+      "tipo": "llamada_entrante",
+      "duracion_segundos": 506,
+      "agente_id": "agente_008",
+      "resultado": "promesa_pago",
+      "sentimiento": "cooperativo",
+      "monto_prometido": 1937,
+      "fecha_promesa": "2025-07-23"
+    },
+    {
+      "id": "int_e031b190",
+      "cliente_id": "cliente_011",
+      "timestamp": "2025-07-15T13:37:49.849851Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 570,
+      "agente_id": "agente_002",
+      "resultado": "se_niega_pagar",
+      "sentimiento": "hostil"
+    },
+    {
+      "id": "int_bd8ea947",
+      "cliente_id": "cliente_013",
+      "timestamp": "2025-07-15T13:37:49.850018Z",
+      "tipo": "email"
+    },
+    {
+      "id": "int_5ddb28dc",
+      "cliente_id": "cliente_015",
+      "timestamp": "2025-07-15T13:37:49.850173Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 378,
+      "agente_id": "agente_008",
+      "resultado": "sin_respuesta",
+      "sentimiento": "n/a"
+    },
+    {
+      "id": "int_afd6627d",
+      "cliente_id": "cliente_035",
+      "timestamp": "2025-07-15T13:37:49.851533Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 105,
+      "agente_id": "agente_005",
+      "resultado": "se_niega_pagar",
+      "sentimiento": "hostil"
+    },
+    {
+      "id": "int_e895907f",
+      "cliente_id": "cliente_039",
+      "timestamp": "2025-07-15T13:37:49.851809Z",
+      "tipo": "llamada_entrante",
+      "duracion_segundos": 205,
+      "agente_id": "agente_008",
+      "resultado": "renegociacion",
+      "sentimiento": "frustrado",
+      "nuevo_plan_pago": {
+        "cuotas": 11,
+        "monto_mensual": 210
+      }
+    },
+    {
+      "id": "int_c8be8a5c",
+      "cliente_id": "cliente_048",
+      "timestamp": "2025-07-15T13:37:49.852433Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 156,
+      "agente_id": "agente_004",
+      "resultado": "renegociacion",
+      "sentimiento": "cooperativo",
+      "nuevo_plan_pago": {
+        "cuotas": 3,
+        "monto_mensual": 104
+      }
+    },
+    {
+      "id": "int_5566a797",
+      "cliente_id": "cliente_038",
+      "timestamp": "2025-07-16T13:37:49.851727Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 414,
+      "agente_id": "agente_007",
+      "resultado": "sin_respuesta",
+      "sentimiento": "n/a"
+    },
+    {
+      "id": "int_6ba42f7c",
+      "cliente_id": "cliente_040",
+      "timestamp": "2025-07-16T13:37:49.851887Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 423,
+      "agente_id": "agente_003",
+      "resultado": "promesa_pago",
+      "sentimiento": "neutral",
+      "monto_prometido": 2810,
+      "fecha_promesa": "2025-07-26"
+    },
+    {
+      "id": "int_58a646e3",
+      "cliente_id": "cliente_000",
+      "timestamp": "2025-07-17T13:37:49.849120Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 562,
+      "agente_id": "agente_004",
+      "resultado": "renegociacion",
+      "sentimiento": "cooperativo",
+      "nuevo_plan_pago": {
+        "cuotas": 8,
+        "monto_mensual": 206
+      }
+    },
+    {
+      "id": "int_5f3edb5d",
+      "cliente_id": "cliente_014",
+      "timestamp": "2025-07-17T13:37:49.850081Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 598,
+      "agente_id": "agente_008",
+      "resultado": "sin_respuesta",
+      "sentimiento": "n/a"
+    },
+    {
+      "id": "int_d278591c",
+      "cliente_id": "cliente_019",
+      "timestamp": "2025-07-17T13:37:49.850453Z",
+      "tipo": "email"
+    },
+    {
+      "id": "int_3fe36c03",
+      "cliente_id": "cliente_027",
+      "timestamp": "2025-07-17T13:37:49.851073Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 240,
+      "agente_id": "agente_008",
+      "resultado": "promesa_pago",
+      "sentimiento": "neutral",
+      "monto_prometido": 3869,
+      "fecha_promesa": "2025-07-31"
+    },
+    {
+      "id": "int_3747f5a2",
+      "cliente_id": "cliente_037",
+      "timestamp": "2025-07-17T13:37:49.851651Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 113,
+      "agente_id": "agente_007",
+      "resultado": "disputa",
+      "sentimiento": "frustrado"
+    },
+    {
+      "id": "int_8e4e381a",
+      "cliente_id": "cliente_045",
+      "timestamp": "2025-07-17T13:37:49.852204Z",
+      "tipo": "llamada_entrante",
+      "duracion_segundos": 434,
+      "agente_id": "agente_003",
+      "resultado": "pago_inmediato",
+      "sentimiento": "cooperativo"
+    },
+    {
+      "id": "int_536d7d6c",
+      "cliente_id": "cliente_010",
+      "timestamp": "2025-07-18T13:37:49.849784Z",
+      "tipo": "pago_recibido",
+      "monto": 2734,
+      "metodo_pago": "transferencia",
+      "pago_completo": true
+    },
+    {
+      "id": "int_3fc48d1b",
+      "cliente_id": "cliente_017",
+      "timestamp": "2025-07-18T13:37:49.850286Z",
+      "tipo": "llamada_entrante",
+      "duracion_segundos": 572,
+      "agente_id": "agente_008",
+      "resultado": "se_niega_pagar",
+      "sentimiento": "hostil"
+    },
+    {
+      "id": "int_ffcda8ff",
+      "cliente_id": "cliente_021",
+      "timestamp": "2025-07-18T13:37:49.850592Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 77,
+      "agente_id": "agente_003",
+      "resultado": "sin_respuesta",
+      "sentimiento": "n/a"
+    },
+    {
+      "id": "int_9685c5d9",
+      "cliente_id": "cliente_024",
+      "timestamp": "2025-07-18T13:37:49.850861Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 528,
+      "agente_id": "agente_010",
+      "resultado": "disputa",
+      "sentimiento": "frustrado"
+    },
+    {
+      "id": "int_f3c0e4e7",
+      "cliente_id": "cliente_046",
+      "timestamp": "2025-07-18T13:37:49.852301Z",
+      "tipo": "email"
+    },
+    {
+      "id": "int_3130e44e",
+      "cliente_id": "cliente_038",
+      "timestamp": "2025-07-19T13:37:49.851727Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 300,
+      "agente_id": "agente_010",
+      "resultado": "pago_inmediato",
+      "sentimiento": "cooperativo"
+    },
+    {
+      "id": "int_7181e420",
+      "cliente_id": "cliente_003",
+      "timestamp": "2025-07-20T13:37:49.849383Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 381,
+      "agente_id": "agente_009",
+      "resultado": "se_niega_pagar",
+      "sentimiento": "hostil"
+    },
+    {
+      "id": "int_15e85289",
+      "cliente_id": "cliente_018",
+      "timestamp": "2025-07-20T13:37:49.850373Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 509,
+      "agente_id": "agente_010",
+      "resultado": "pago_inmediato",
+      "sentimiento": "cooperativo"
+    },
+    {
+      "id": "int_30fc59a2",
+      "cliente_id": "cliente_027",
+      "timestamp": "2025-07-20T13:37:49.851073Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 108,
+      "agente_id": "agente_005",
+      "resultado": "disputa",
+      "sentimiento": "frustrado"
+    },
+    {
+      "id": "int_d5df9904",
+      "cliente_id": "cliente_029",
+      "timestamp": "2025-07-20T13:37:49.851196Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 319,
+      "agente_id": "agente_003",
+      "resultado": "promesa_pago",
+      "sentimiento": "neutral",
+      "monto_prometido": 6754,
+      "fecha_promesa": "2025-08-04"
+    },
+    {
+      "id": "int_4419647d",
+      "cliente_id": "cliente_039",
+      "timestamp": "2025-07-20T13:37:49.851809Z",
+      "tipo": "sms"
+    },
+    {
+      "id": "int_2b80403c",
+      "cliente_id": "cliente_041",
+      "timestamp": "2025-07-20T13:37:49.851982Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 88,
+      "agente_id": "agente_006",
+      "resultado": "pago_inmediato",
+      "sentimiento": "cooperativo"
+    },
+    {
+      "id": "int_71770de1",
+      "cliente_id": "cliente_049",
+      "timestamp": "2025-07-20T13:37:49.852504Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 249,
+      "agente_id": "agente_006",
+      "resultado": "promesa_pago",
+      "sentimiento": "neutral",
+      "monto_prometido": 989,
+      "fecha_promesa": "2025-07-24"
+    },
+    {
+      "id": "int_0f061af5",
+      "cliente_id": "cliente_000",
+      "timestamp": "2025-07-21T13:37:49.849120Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 299,
+      "agente_id": "agente_003",
+      "resultado": "promesa_pago",
+      "sentimiento": "neutral",
+      "monto_prometido": 2042,
+      "fecha_promesa": "2025-07-29"
+    },
+    {
+      "id": "int_9c5dbeaf",
+      "cliente_id": "cliente_005",
+      "timestamp": "2025-07-21T13:37:49.849536Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 188,
+      "agente_id": "agente_006",
+      "resultado": "promesa_pago",
+      "sentimiento": "neutral",
+      "monto_prometido": 1749,
+      "fecha_promesa": "2025-07-24"
+    },
+    {
+      "id": "int_2b87189e",
+      "cliente_id": "cliente_022",
+      "timestamp": "2025-07-21T13:37:49.850688Z",
+      "tipo": "llamada_entrante",
+      "duracion_segundos": 310,
+      "agente_id": "agente_006",
+      "resultado": "pago_inmediato",
+      "sentimiento": "cooperativo"
+    },
+    {
+      "id": "int_b6f1038a",
+      "cliente_id": "cliente_035",
+      "timestamp": "2025-07-21T13:37:49.851533Z",
+      "tipo": "llamada_entrante",
+      "duracion_segundos": 228,
+      "agente_id": "agente_001",
+      "resultado": "disputa",
+      "sentimiento": "hostil"
+    },
+    {
+      "id": "int_71b047e0",
+      "cliente_id": "cliente_015",
+      "timestamp": "2025-07-22T13:37:49.850173Z",
+      "tipo": "email"
+    },
+    {
+      "id": "int_06249656",
+      "cliente_id": "cliente_017",
+      "timestamp": "2025-07-22T13:37:49.850286Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 235,
+      "agente_id": "agente_002",
+      "resultado": "pago_inmediato",
+      "sentimiento": "cooperativo"
+    },
+    {
+      "id": "int_d1a89ac7",
+      "cliente_id": "cliente_023",
+      "timestamp": "2025-07-22T13:37:49.850766Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 133,
+      "agente_id": "agente_009",
+      "resultado": "renegociacion",
+      "sentimiento": "cooperativo",
+      "nuevo_plan_pago": {
+        "cuotas": 12,
+        "monto_mensual": 336
+      }
+    },
+    {
+      "id": "int_38b9493c",
+      "cliente_id": "cliente_031",
+      "timestamp": "2025-07-22T13:37:49.851318Z",
+      "tipo": "pago_recibido",
+      "monto": 794,
+      "metodo_pago": "transferencia",
+      "pago_completo": true
+    },
+    {
+      "id": "int_918c73e6",
+      "cliente_id": "cliente_044",
+      "timestamp": "2025-07-22T13:37:49.852130Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 274,
+      "agente_id": "agente_008",
+      "resultado": "renegociacion",
+      "sentimiento": "cooperativo",
+      "nuevo_plan_pago": {
+        "cuotas": 4,
+        "monto_mensual": 482
+      }
+    },
+    {
+      "id": "int_2f28292a",
+      "cliente_id": "cliente_001",
+      "timestamp": "2025-07-24T13:37:49.849237Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 138,
+      "agente_id": "agente_008",
+      "resultado": "se_niega_pagar",
+      "sentimiento": "hostil"
+    },
+    {
+      "id": "int_24f60580",
+      "cliente_id": "cliente_012",
+      "timestamp": "2025-07-24T13:37:49.849925Z",
+      "tipo": "sms"
+    },
+    {
+      "id": "int_a5d46048",
+      "cliente_id": "cliente_024",
+      "timestamp": "2025-07-24T13:37:49.850861Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 362,
+      "agente_id": "agente_008",
+      "resultado": "pago_inmediato",
+      "sentimiento": "cooperativo"
+    },
+    {
+      "id": "int_71b5b5ac",
+      "cliente_id": "cliente_026",
+      "timestamp": "2025-07-24T13:37:49.851001Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 342,
+      "agente_id": "agente_009",
+      "resultado": "sin_respuesta",
+      "sentimiento": "n/a"
+    },
+    {
+      "id": "int_3c6223d9",
+      "cliente_id": "cliente_038",
+      "timestamp": "2025-07-24T13:37:49.851727Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 53,
+      "agente_id": "agente_009",
+      "resultado": "disputa",
+      "sentimiento": "hostil"
+    },
+    {
+      "id": "int_be70adc0",
+      "cliente_id": "cliente_040",
+      "timestamp": "2025-07-24T13:37:49.851887Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 254,
+      "agente_id": "agente_006",
+      "resultado": "disputa",
+      "sentimiento": "hostil"
+    },
+    {
+      "id": "int_475c06b7",
+      "cliente_id": "cliente_017",
+      "timestamp": "2025-07-25T13:37:49.850286Z",
+      "tipo": "pago_recibido",
+      "monto": 169,
+      "metodo_pago": "efectivo",
+      "pago_completo": true
+    },
+    {
+      "id": "int_7ea56884",
+      "cliente_id": "cliente_018",
+      "timestamp": "2025-07-25T13:37:49.850373Z",
+      "tipo": "email"
+    },
+    {
+      "id": "int_9f572e0b",
+      "cliente_id": "cliente_045",
+      "timestamp": "2025-07-25T13:37:49.852204Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 45,
+      "agente_id": "agente_001",
+      "resultado": "pago_inmediato",
+      "sentimiento": "cooperativo"
+    },
+    {
+      "id": "int_8b14cd9d",
+      "cliente_id": "cliente_046",
+      "timestamp": "2025-07-25T13:37:49.852301Z",
+      "tipo": "llamada_entrante",
+      "duracion_segundos": 554,
+      "agente_id": "agente_007",
+      "resultado": "pago_inmediato",
+      "sentimiento": "cooperativo"
+    },
+    {
+      "id": "int_adc469fb",
+      "cliente_id": "cliente_048",
+      "timestamp": "2025-07-25T13:37:49.852433Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 450,
+      "agente_id": "agente_002",
+      "resultado": "sin_respuesta",
+      "sentimiento": "n/a"
+    },
+    {
+      "id": "int_95551377",
+      "cliente_id": "cliente_003",
+      "timestamp": "2025-07-26T13:37:49.849383Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 526,
+      "agente_id": "agente_001",
+      "resultado": "sin_respuesta",
+      "sentimiento": "n/a"
+    },
+    {
+      "id": "int_d3731241",
+      "cliente_id": "cliente_010",
+      "timestamp": "2025-07-26T13:37:49.849784Z",
+      "tipo": "llamada_entrante",
+      "duracion_segundos": 423,
+      "agente_id": "agente_005",
+      "resultado": "se_niega_pagar",
+      "sentimiento": "hostil"
+    },
+    {
+      "id": "int_f8fa053a",
+      "cliente_id": "cliente_015",
+      "timestamp": "2025-07-26T13:37:49.850173Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 177,
+      "agente_id": "agente_002",
+      "resultado": "sin_respuesta",
+      "sentimiento": "n/a"
+    },
+    {
+      "id": "int_099472e3",
+      "cliente_id": "cliente_029",
+      "timestamp": "2025-07-26T13:37:49.851196Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 467,
+      "agente_id": "agente_007",
+      "resultado": "se_niega_pagar",
+      "sentimiento": "hostil"
+    },
+    {
+      "id": "int_49b7bbb3",
+      "cliente_id": "cliente_037",
+      "timestamp": "2025-07-26T13:37:49.851651Z",
+      "tipo": "pago_recibido",
+      "monto": 1836,
+      "metodo_pago": "transferencia",
+      "pago_completo": true
+    },
+    {
+      "id": "int_e6fd4394",
+      "cliente_id": "cliente_005",
+      "timestamp": "2025-07-27T13:37:49.849536Z",
+      "tipo": "llamada_entrante",
+      "duracion_segundos": 75,
+      "agente_id": "agente_009",
+      "resultado": "sin_respuesta",
+      "sentimiento": "n/a"
+    },
+    {
+      "id": "int_1362dd1c",
+      "cliente_id": "cliente_014",
+      "timestamp": "2025-07-27T13:37:49.850081Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 432,
+      "agente_id": "agente_005",
+      "resultado": "promesa_pago",
+      "sentimiento": "cooperativo",
+      "monto_prometido": 414,
+      "fecha_promesa": "2025-07-28"
+    },
+    {
+      "id": "int_645a208c",
+      "cliente_id": "cliente_019",
+      "timestamp": "2025-07-27T13:37:49.850453Z",
+      "tipo": "pago_recibido",
+      "monto": 508,
+      "metodo_pago": "transferencia",
+      "pago_completo": false
+    },
+    {
+      "id": "int_dee07309",
+      "cliente_id": "cliente_021",
+      "timestamp": "2025-07-28T13:37:49.850592Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 43,
+      "agente_id": "agente_003",
+      "resultado": "promesa_pago",
+      "sentimiento": "neutral",
+      "monto_prometido": 3972,
+      "fecha_promesa": "2025-07-29"
+    },
+    {
+      "id": "int_83e7c52d",
+      "cliente_id": "cliente_023",
+      "timestamp": "2025-07-28T13:37:49.850766Z",
+      "tipo": "pago_recibido",
+      "monto": 2720,
+      "metodo_pago": "tarjeta",
+      "pago_completo": true
+    },
+    {
+      "id": "int_449962b2",
+      "cliente_id": "cliente_039",
+      "timestamp": "2025-07-28T13:37:49.851809Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 438,
+      "agente_id": "agente_003",
+      "resultado": "disputa",
+      "sentimiento": "hostil"
+    },
+    {
+      "id": "int_1a73744a",
+      "cliente_id": "cliente_040",
+      "timestamp": "2025-07-28T13:37:49.851887Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 285,
+      "agente_id": "agente_005",
+      "resultado": "sin_respuesta",
+      "sentimiento": "n/a"
+    },
+    {
+      "id": "int_2f9aff4f",
+      "cliente_id": "cliente_046",
+      "timestamp": "2025-07-28T13:37:49.852301Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 176,
+      "agente_id": "agente_001",
+      "resultado": "renegociacion",
+      "sentimiento": "cooperativo",
+      "nuevo_plan_pago": {
+        "cuotas": 9,
+        "monto_mensual": 54
+      }
+    },
+    {
+      "id": "int_30691e01",
+      "cliente_id": "cliente_031",
+      "timestamp": "2025-07-29T13:37:49.851318Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 403,
+      "agente_id": "agente_002",
+      "resultado": "sin_respuesta",
+      "sentimiento": "n/a"
+    },
+    {
+      "id": "int_32671836",
+      "cliente_id": "cliente_045",
+      "timestamp": "2025-07-29T13:37:49.852204Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 114,
+      "agente_id": "agente_004",
+      "resultado": "se_niega_pagar",
+      "sentimiento": "hostil"
+    },
+    {
+      "id": "int_d34c89d1",
+      "cliente_id": "cliente_027",
+      "timestamp": "2025-07-30T13:37:49.851073Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 98,
+      "agente_id": "agente_003",
+      "resultado": "sin_respuesta",
+      "sentimiento": "n/a"
+    },
+    {
+      "id": "int_3c8076e9",
+      "cliente_id": "cliente_014",
+      "timestamp": "2025-07-31T13:37:49.850081Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 337,
+      "agente_id": "agente_010",
+      "resultado": "promesa_pago",
+      "sentimiento": "cooperativo",
+      "monto_prometido": 499,
+      "fecha_promesa": "2025-08-15"
+    },
+    {
+      "id": "int_9530dade",
+      "cliente_id": "cliente_022",
+      "timestamp": "2025-07-31T13:37:49.850688Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 117,
+      "agente_id": "agente_006",
+      "resultado": "sin_respuesta",
+      "sentimiento": "n/a"
+    },
+    {
+      "id": "int_c5521d4f",
+      "cliente_id": "cliente_024",
+      "timestamp": "2025-07-31T13:37:49.850861Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 127,
+      "agente_id": "agente_006",
+      "resultado": "promesa_pago",
+      "sentimiento": "neutral",
+      "monto_prometido": 4333,
+      "fecha_promesa": "2025-08-07"
+    },
+    {
+      "id": "int_36d76874",
+      "cliente_id": "cliente_029",
+      "timestamp": "2025-07-31T13:37:49.851196Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 532,
+      "agente_id": "agente_002",
+      "resultado": "pago_inmediato",
+      "sentimiento": "cooperativo"
+    },
+    {
+      "id": "int_60c9e39a",
+      "cliente_id": "cliente_012",
+      "timestamp": "2025-08-01T13:37:49.849925Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 316,
+      "agente_id": "agente_004",
+      "resultado": "disputa",
+      "sentimiento": "hostil"
+    },
+    {
+      "id": "int_97b9d16c",
+      "cliente_id": "cliente_017",
+      "timestamp": "2025-08-02T13:37:49.850286Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 221,
+      "agente_id": "agente_005",
+      "resultado": "se_niega_pagar",
+      "sentimiento": "hostil"
+    },
+    {
+      "id": "int_508d1ea3",
+      "cliente_id": "cliente_031",
+      "timestamp": "2025-08-02T13:37:49.851318Z",
+      "tipo": "email"
+    },
+    {
+      "id": "int_df2d4738",
+      "cliente_id": "cliente_001",
+      "timestamp": "2025-08-03T13:37:49.849237Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 308,
+      "agente_id": "agente_002",
+      "resultado": "renegociacion",
+      "sentimiento": "cooperativo",
+      "nuevo_plan_pago": {
+        "cuotas": 5,
+        "monto_mensual": 378
+      }
+    },
+    {
+      "id": "int_4c0b5fa4",
+      "cliente_id": "cliente_018",
+      "timestamp": "2025-08-03T13:37:49.850373Z",
+      "tipo": "llamada_entrante",
+      "duracion_segundos": 519,
+      "agente_id": "agente_007",
+      "resultado": "promesa_pago",
+      "sentimiento": "cooperativo",
+      "monto_prometido": 8007,
+      "fecha_promesa": "2025-08-13"
+    },
+    {
+      "id": "int_fd5fc6d2",
+      "cliente_id": "cliente_012",
+      "timestamp": "2025-08-04T13:37:49.849925Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 61,
+      "agente_id": "agente_001",
+      "resultado": "promesa_pago",
+      "sentimiento": "cooperativo",
+      "monto_prometido": 1081,
+      "fecha_promesa": "2025-08-07"
+    },
+    {
+      "id": "int_2e1ecd89",
+      "cliente_id": "cliente_019",
+      "timestamp": "2025-08-04T13:37:49.850453Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 134,
+      "agente_id": "agente_002",
+      "resultado": "sin_respuesta",
+      "sentimiento": "n/a"
+    },
+    {
+      "id": "int_7ae37829",
+      "cliente_id": "cliente_037",
+      "timestamp": "2025-08-04T13:37:49.851651Z",
+      "tipo": "email"
+    },
+    {
+      "id": "int_a3caf314",
+      "cliente_id": "cliente_045",
+      "timestamp": "2025-08-04T13:37:49.852204Z",
+      "tipo": "pago_recibido",
+      "monto": 435,
+      "metodo_pago": "tarjeta",
+      "pago_completo": true
+    },
+    {
+      "id": "int_86c86445",
+      "cliente_id": "cliente_046",
+      "timestamp": "2025-08-04T13:37:49.852301Z",
+      "tipo": "pago_recibido",
+      "monto": 308,
+      "metodo_pago": "efectivo",
+      "pago_completo": false
+    },
+    {
+      "id": "int_e785981a",
+      "cliente_id": "cliente_014",
+      "timestamp": "2025-08-05T13:37:49.850081Z",
+      "tipo": "email"
+    },
+    {
+      "id": "int_6d543518",
+      "cliente_id": "cliente_023",
+      "timestamp": "2025-08-05T13:37:49.850766Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 395,
+      "agente_id": "agente_007",
+      "resultado": "disputa",
+      "sentimiento": "hostil"
+    },
+    {
+      "id": "int_151dfd93",
+      "cliente_id": "cliente_027",
+      "timestamp": "2025-08-05T13:37:49.851073Z",
+      "tipo": "email"
+    },
+    {
+      "id": "int_e1482774",
+      "cliente_id": "cliente_005",
+      "timestamp": "2025-08-06T13:37:49.849536Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 543,
+      "agente_id": "agente_001",
+      "resultado": "sin_respuesta",
+      "sentimiento": "n/a"
+    },
+    {
+      "id": "int_73390586",
+      "cliente_id": "cliente_021",
+      "timestamp": "2025-08-06T13:37:49.850592Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 136,
+      "agente_id": "agente_003",
+      "resultado": "renegociacion",
+      "sentimiento": "frustrado",
+      "nuevo_plan_pago": {
+        "cuotas": 7,
+        "monto_mensual": 428
+      }
+    },
+    {
+      "id": "int_dcb8175b",
+      "cliente_id": "cliente_022",
+      "timestamp": "2025-08-06T13:37:49.850688Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 235,
+      "agente_id": "agente_007",
+      "resultado": "renegociacion",
+      "sentimiento": "cooperativo",
+      "nuevo_plan_pago": {
+        "cuotas": 8,
+        "monto_mensual": 276
+      }
+    },
+    {
+      "id": "int_f9302be3",
+      "cliente_id": "cliente_039",
+      "timestamp": "2025-08-06T13:37:49.851809Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 313,
+      "agente_id": "agente_006",
+      "resultado": "sin_respuesta",
+      "sentimiento": "n/a"
+    },
+    {
+      "id": "int_7a7609f9",
+      "cliente_id": "cliente_014",
+      "timestamp": "2025-08-08T13:37:49.850081Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 184,
+      "agente_id": "agente_001",
+      "resultado": "disputa",
+      "sentimiento": "frustrado"
+    },
+    {
+      "id": "int_6b88b527",
+      "cliente_id": "cliente_018",
+      "timestamp": "2025-08-09T13:37:49.850373Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 308,
+      "agente_id": "agente_010",
+      "resultado": "sin_respuesta",
+      "sentimiento": "n/a"
+    },
+    {
+      "id": "int_9c520928",
+      "cliente_id": "cliente_023",
+      "timestamp": "2025-08-09T13:37:49.850766Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 169,
+      "agente_id": "agente_003",
+      "resultado": "sin_respuesta",
+      "sentimiento": "n/a"
+    },
+    {
+      "id": "int_c9cef7f3",
+      "cliente_id": "cliente_037",
+      "timestamp": "2025-08-09T13:37:49.851651Z",
+      "tipo": "llamada_entrante",
+      "duracion_segundos": 66,
+      "agente_id": "agente_008",
+      "resultado": "disputa",
+      "sentimiento": "hostil"
+    },
+    {
+      "id": "int_0d91492a",
+      "cliente_id": "cliente_039",
+      "timestamp": "2025-08-09T13:37:49.851809Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 395,
+      "agente_id": "agente_002",
+      "resultado": "pago_inmediato",
+      "sentimiento": "cooperativo"
+    },
+    {
+      "id": "int_ab796891",
+      "cliente_id": "cliente_017",
+      "timestamp": "2025-08-10T13:37:49.850286Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 203,
+      "agente_id": "agente_009",
+      "resultado": "promesa_pago",
+      "sentimiento": "neutral",
+      "monto_prometido": 1181,
+      "fecha_promesa": "2025-08-12"
+    },
+    {
+      "id": "int_13f889ae",
+      "cliente_id": "cliente_031",
+      "timestamp": "2025-08-10T13:37:49.851318Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 319,
+      "agente_id": "agente_003",
+      "resultado": "se_niega_pagar",
+      "sentimiento": "hostil"
+    },
+    {
+      "id": "int_a7033e01",
+      "cliente_id": "cliente_045",
+      "timestamp": "2025-08-10T13:37:49.852204Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 76,
+      "agente_id": "agente_004",
+      "resultado": "sin_respuesta",
+      "sentimiento": "n/a"
+    },
+    {
+      "id": "int_4770dc3c",
+      "cliente_id": "cliente_001",
+      "timestamp": "2025-08-11T13:37:49.849237Z",
+      "tipo": "llamada_entrante",
+      "duracion_segundos": 507,
+      "agente_id": "agente_001",
+      "resultado": "promesa_pago",
+      "sentimiento": "neutral",
+      "monto_prometido": 2930,
+      "fecha_promesa": "2025-08-16"
+    },
+    {
+      "id": "int_878f219e",
+      "cliente_id": "cliente_014",
+      "timestamp": "2025-08-12T13:37:49.850081Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 592,
+      "agente_id": "agente_009",
+      "resultado": "renegociacion",
+      "sentimiento": "cooperativo",
+      "nuevo_plan_pago": {
+        "cuotas": 8,
+        "monto_mensual": 31
+      }
+    },
+    {
+      "id": "int_a03ad213",
+      "cliente_id": "cliente_027",
+      "timestamp": "2025-08-12T13:37:49.851073Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 503,
+      "agente_id": "agente_006",
+      "resultado": "renegociacion",
+      "sentimiento": "cooperativo",
+      "nuevo_plan_pago": {
+        "cuotas": 12,
+        "monto_mensual": 293
+      }
+    },
+    {
+      "id": "int_12317677",
+      "cliente_id": "cliente_037",
+      "timestamp": "2025-08-12T13:37:49.851651Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 154,
+      "agente_id": "agente_007",
+      "resultado": "renegociacion",
+      "sentimiento": "cooperativo",
+      "nuevo_plan_pago": {
+        "cuotas": 12,
+        "monto_mensual": 442
+      }
+    },
+    {
+      "id": "int_ce3f5d29",
+      "cliente_id": "cliente_023",
+      "timestamp": "2025-08-13T13:37:49.850766Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 360,
+      "agente_id": "agente_002",
+      "resultado": "sin_respuesta",
+      "sentimiento": "n/a"
+    },
+    {
+      "id": "int_7bab33ca",
+      "cliente_id": "cliente_046",
+      "timestamp": "2025-08-13T13:37:49.852301Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 361,
+      "agente_id": "agente_006",
+      "resultado": "promesa_pago",
+      "sentimiento": "neutral",
+      "monto_prometido": 420,
+      "fecha_promesa": "2025-08-21"
+    },
+    {
+      "id": "int_ec29a3a4",
+      "cliente_id": "cliente_019",
+      "timestamp": "2025-08-14T13:37:49.850453Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 336,
+      "agente_id": "agente_010",
+      "resultado": "promesa_pago",
+      "sentimiento": "cooperativo",
+      "monto_prometido": 883,
+      "fecha_promesa": "2025-08-25"
+    },
+    {
+      "id": "int_08ab3f43",
+      "cliente_id": "cliente_005",
+      "timestamp": "2025-08-15T13:37:49.849536Z",
+      "tipo": "pago_recibido",
+      "monto": 1308,
+      "metodo_pago": "transferencia",
+      "pago_completo": true
+    },
+    {
+      "id": "int_254d10d5",
+      "cliente_id": "cliente_031",
+      "timestamp": "2025-08-15T13:37:49.851318Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 94,
+      "agente_id": "agente_004",
+      "resultado": "renegociacion",
+      "sentimiento": "cooperativo",
+      "nuevo_plan_pago": {
+        "cuotas": 11,
+        "monto_mensual": 308
+      }
+    },
+    {
+      "id": "int_2a24ddae",
+      "cliente_id": "cliente_037",
+      "timestamp": "2025-08-15T13:37:49.851651Z",
+      "tipo": "sms"
+    },
+    {
+      "id": "int_6b312c58",
+      "cliente_id": "cliente_001",
+      "timestamp": "2025-08-16T13:37:49.849237Z",
+      "tipo": "sms"
+    },
+    {
+      "id": "int_9ba55a1d",
+      "cliente_id": "cliente_021",
+      "timestamp": "2025-08-16T13:37:49.850592Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 312,
+      "agente_id": "agente_004",
+      "resultado": "renegociacion",
+      "sentimiento": "frustrado",
+      "nuevo_plan_pago": {
+        "cuotas": 9,
+        "monto_mensual": 285
+      }
+    },
+    {
+      "id": "int_d736b0bc",
+      "cliente_id": "cliente_023",
+      "timestamp": "2025-08-16T13:37:49.850766Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 91,
+      "agente_id": "agente_010",
+      "resultado": "sin_respuesta",
+      "sentimiento": "n/a"
+    },
+    {
+      "id": "int_4b3ac1d9",
+      "cliente_id": "cliente_046",
+      "timestamp": "2025-08-21T13:37:49.852301Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 152,
+      "agente_id": "agente_008",
+      "resultado": "promesa_pago",
+      "sentimiento": "cooperativo",
+      "monto_prometido": 787,
+      "fecha_promesa": "2025-08-22"
+    },
+    {
+      "id": "int_a52e8e1f",
+      "cliente_id": "cliente_005",
+      "timestamp": "2025-08-22T13:37:49.849536Z",
+      "tipo": "email"
+    },
+    {
+      "id": "int_a778072a",
+      "cliente_id": "cliente_019",
+      "timestamp": "2025-08-24T13:37:49.850453Z",
+      "tipo": "email"
+    },
+    {
+      "id": "int_f2fd31ad",
+      "cliente_id": "cliente_021",
+      "timestamp": "2025-08-24T13:37:49.850592Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 281,
+      "agente_id": "agente_009",
+      "resultado": "sin_respuesta",
+      "sentimiento": "n/a"
+    },
+    {
+      "id": "int_86c66372",
+      "cliente_id": "cliente_046",
+      "timestamp": "2025-08-24T13:37:49.852301Z",
+      "tipo": "llamada_entrante",
+      "duracion_segundos": 58,
+      "agente_id": "agente_010",
+      "resultado": "se_niega_pagar",
+      "sentimiento": "hostil"
+    },
+    {
+      "id": "int_937a94a4",
+      "cliente_id": "cliente_019",
+      "timestamp": "2025-09-02T13:37:49.850453Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 286,
+      "agente_id": "agente_008",
+      "resultado": "se_niega_pagar",
+      "sentimiento": "hostil"
+    },
+    {
+      "id": "int_f60a9993",
+      "cliente_id": "cliente_021",
+      "timestamp": "2025-09-02T13:37:49.850592Z",
+      "tipo": "llamada_saliente",
+      "duracion_segundos": 245,
+      "agente_id": "agente_002",
+      "resultado": "promesa_pago",
+      "sentimiento": "cooperativo",
+      "monto_prometido": 456,
+      "fecha_promesa": "2025-09-08"
+    }
+  ]
+}

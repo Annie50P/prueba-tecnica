@@ -1,0 +1,5 @@
+{
+  "status": "ok",
+  "vistas_implementadas": ["dashboard", "cliente_detalle", "grafo"],
+  "dependencias_cdn": ["chart.js@4", "d3.v7"]
+}

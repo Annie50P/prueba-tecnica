@@ -1,0 +1,41 @@
+# Environment
+.env
+*.env
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+env/
+*.egg-info/
+dist/
+build/
+
+# SQLite
+*.db
+*.sqlite3
+
+# Node
+node_modules/
+npm-debug.log
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Ingestion / API output (generated, not source)
+ingesta/ingesta_completada.json
+api/api_verificada.json
+api/mcp_verificado.json
+frontend/frontend_verificado.json
