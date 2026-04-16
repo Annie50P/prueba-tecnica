@@ -8,9 +8,10 @@ Sistema de análisis y visualización de patrones de interacción con clientes d
 
 El sistema ingesta datos históricos de 50 clientes, 502 interacciones y 10 agentes, los modela como un grafo de conocimiento, y expone:
 
-- **API REST** (FastAPI) con 11 endpoints para consultas de negocio
-- **Frontend SPA** (vanilla JS + D3.js + Chart.js) con dashboard, vista de cliente y explorador de grafo
+- **API REST** (FastAPI) con 11+ endpoints para consultas de negocio
+- **Frontend SPA** (React + Vite + D3.js + Chart.js) con dashboard, vista de cliente y explorador de grafo
 - **Consultas en lenguaje natural** vía MCP + Claude (Anthropic)
+- **Pipeline ML offline** (predicción, anomalías, segmentación) con modelo persistido via `joblib`
 
 ---
 
@@ -18,7 +19,8 @@ El sistema ingesta datos históricos de 50 clientes, 502 interacciones y 10 agen
 
 ### Requisitos
 - Python 3.11+
-- No se requiere Docker ni Neo4j para el modo local (usa SQLite)
+- Node 20+ con `bun` (o `npm`) para el frontend
+- No se requiere Docker ni Neo4j para el modo local (usa SQLite como fallback)
 
 ### 1. Instalar dependencias
 
@@ -41,24 +43,38 @@ python ingest.py
 
 Esto crea `ingesta/local_graph.db` con 766 nodos y 1748 relaciones.
 
-### 3. Iniciar la API
+### 3. (Opcional) Entrenar el modelo ML offline
 
 ```bash
 cd ..   # raíz del proyecto
+python -m api.ml.train_offline
+```
+
+Esto persiste el artifact (`model + scaler`) en `api/models/` y registra metadata
+en `api/models/registry.json`. Si no se ejecuta, la API entrena on-demand al
+primer request (bajo lock singleflight).
+
+### 4. Iniciar la API
+
+```bash
 python -m uvicorn api.main:app --host 0.0.0.0 --port 8001 --reload
 ```
 
-API disponible en: http://localhost:8001  
+API disponible en: http://localhost:8001
 Swagger UI: http://localhost:8001/docs
 
-### 4. Iniciar el frontend
+### 5. Iniciar el frontend (React + Vite)
 
 ```bash
 cd frontend
-python -m http.server 3000
+bun install           # o: npm ci
+bun run dev           # o: npm run dev
 ```
 
-Frontend disponible en: http://localhost:3000
+Frontend disponible en: http://localhost:5173 (Vite dev server)
+
+En producción el frontend se sirve como estático vía nginx (ver
+`frontend/Dockerfile` + `frontend/nginx.conf`), expuesto en puerto 3000.
 
 ---
 
@@ -162,15 +178,23 @@ Un modelo relacional requeriría JOINs complejos para reconstruir la cadena temp
 ### Arquitectura
 
 ```
-features.py → train.py → inference.py
-     ↓          ↓         ↓
-  X, y      compare   predict
-           models()
+features.py  ─┐
+              │
+train.py  ◄───┼─── train_offline.py  (job offline: CLI / cron / Celery beat)
+              │         │
+              │         ▼
+              │    model_registry.py  (joblib dump + registry.json)
+              │         │
+              │         ▼
+inference.py ◄┴─── predictor.py  (load_latest en startup, lock singleflight)
 ```
 
 ### Modelos
 - **GradientBoosting** vs **XGBoost** vs **LightGBM**
 - Selección automática por ROC-AUC en CV estratificado
+- **Anti data-leakage**: `StandardScaler` dentro de `Pipeline` → se ajusta por fold, nunca ve validación
+- **Calibración**: `sigmoid` (Platt) si n<1000, `isotonic` si n≥1000
+- **Cutoff temporal derivado** de los timestamps reales del dataset (no hardcoded)
 
 ### Métricas
 - precision, recall, F1, ROC-AUC, accuracy
