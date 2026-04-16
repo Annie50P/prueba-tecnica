@@ -12,7 +12,88 @@ import sqlite3
 import json
 import os
 from typing import Any, Optional
-from datetime import datetime, date
+from datetime import datetime, date, timedelta, timezone
+
+try:
+    from api.config import settings as _settings  # type: ignore
+    _CUMPLIDA_MODE = (getattr(_settings, "promesa_cumplida_mode", "snapshot") or "snapshot").lower()
+    _GRACE_DAYS = int(getattr(_settings, "promesa_grace_days", 3) or 3)
+except Exception:  # pragma: no cover
+    _CUMPLIDA_MODE = os.environ.get("PROMESA_CUMPLIDA_MODE", "snapshot").lower()
+    try:
+        _GRACE_DAYS = int(os.environ.get("PROMESA_GRACE_DAYS", "3"))
+    except (TypeError, ValueError):
+        _GRACE_DAYS = 3
+
+
+def _parse_ts_safe(ts: Optional[str]) -> Optional[datetime]:
+    if not ts:
+        return None
+    try:
+        dt = datetime.fromisoformat(str(ts).replace("Z", "+00:00"))
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        return dt
+    except (ValueError, AttributeError):
+        return None
+
+
+def _is_cumplida_dynamic(
+    conn: sqlite3.Connection, promesa_props: dict, promesa_id: str
+) -> bool:
+    """
+    C4 — compute-on-read: verifica si existe algún Pago del mismo cliente
+    dentro de [fecha_promesa_ts, fecha_promesa + grace_days]. No depende
+    de `props.cumplida` (snapshot), soluciona el problema de pagos que
+    llegan tras la ingesta.
+    """
+    cliente_id = promesa_props.get("cliente_id")
+    fecha_promesa_raw = promesa_props.get("fecha_promesa") or promesa_props.get("fecha")
+    if not cliente_id or not fecha_promesa_raw:
+        return bool(promesa_props.get("cumplida"))
+
+    try:
+        fecha_promesa_date = date.fromisoformat(str(fecha_promesa_raw))
+    except ValueError:
+        return bool(promesa_props.get("cumplida"))
+
+    deadline = datetime.combine(
+        fecha_promesa_date + timedelta(days=_GRACE_DAYS), datetime.min.time()
+    ).replace(tzinfo=timezone.utc)
+
+    cur = conn.cursor()
+    cur.execute(
+        """
+        SELECT n.properties FROM relationships r
+        JOIN nodes n ON r.to_id = n.id
+        WHERE r.from_id = ? AND r.rel_type = 'TIENE_INTERACCION'
+          AND n.label = 'Interaccion'
+        """,
+        (cliente_id,),
+    )
+    for row in cur.fetchall():
+        props = _parse_props(row["properties"])
+        if props.get("tipo") != "pago_recibido":
+            continue
+        pago_ts = _parse_ts_safe(props.get("timestamp") or props.get("fecha"))
+        if pago_ts is None:
+            continue
+        # Pago debe caer entre fecha_promesa (inicio del día) y deadline
+        start = datetime.combine(fecha_promesa_date, datetime.min.time()).replace(
+            tzinfo=timezone.utc
+        )
+        if start <= pago_ts <= deadline:
+            return True
+    return False
+
+
+def _resolve_cumplida(
+    conn: sqlite3.Connection, promesa_props: dict, promesa_id: str
+) -> bool:
+    """Usa snapshot o dinámico según settings.promesa_cumplida_mode (C4)."""
+    if _CUMPLIDA_MODE == "dynamic":
+        return _is_cumplida_dynamic(conn, promesa_props, promesa_id)
+    return bool(promesa_props.get("cumplida"))
 
 
 # Resolve DB path relative to this file: ../../../ingesta/local_graph.db
@@ -24,10 +105,33 @@ DB_PATH = os.path.join(
 )
 
 
+_INDEXES_ENSURED = False
+
+
+def _ensure_indexes(conn: sqlite3.Connection) -> None:
+    """C1: índices idempotentes para evitar full-scan por label/from_id."""
+    global _INDEXES_ENSURED
+    if _INDEXES_ENSURED:
+        return
+    try:
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_nodes_label ON nodes(label)")
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_rel_from ON relationships(from_id)")
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_rel_to ON relationships(to_id)")
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_rel_type ON relationships(rel_type)")
+        conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_rel_from_type ON relationships(from_id, rel_type)"
+        )
+        conn.commit()
+        _INDEXES_ENSURED = True
+    except sqlite3.OperationalError:
+        pass
+
+
 def _get_connection() -> sqlite3.Connection:
     """Open and return a SQLite connection with row_factory set."""
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
+    _ensure_indexes(conn)
     return conn
 
 
@@ -101,10 +205,15 @@ def get_all_clientes() -> list[dict]:
             )
             promesa_rows = cursor.fetchall()
             total_promesas = len(promesa_rows)
+            # C4: cumplida puede calcularse on-read (PROMESA_CUMPLIDA_MODE=dynamic).
+            promesa_props_list = [
+                {**_parse_props(p["properties"]), "cliente_id": cliente_id}
+                for p in promesa_rows
+            ]
             promesas_cumplidas = sum(
                 1
-                for p in promesa_rows
-                if _parse_props(p["properties"]).get("cumplida") is True
+                for props_p in promesa_props_list
+                if _resolve_cumplida(conn, props_p, props_p.get("id", ""))
             )
             tasa_cumplimiento = (
                 round(promesas_cumplidas / total_promesas, 4) if total_promesas > 0 else 0.0
@@ -483,7 +592,14 @@ def get_promesas_incumplidas(fecha: Optional[str] = None) -> list[dict]:
     """
     Return PromesaPago nodes where cumplida is False.
     Optionally filter by fecha_promesa <= fecha parameter.
+
+    `dias_hasta_vencimiento` se computa ON-READ desde la fecha actual
+    (o la `fecha` provista), nunca se persiste stale (fix C3).
     """
+    from datetime import date as _date
+
+    ref_date = _date.fromisoformat(fecha) if fecha else _date.today()
+
     conn = _get_connection()
     try:
         cursor = conn.cursor()
@@ -496,16 +612,43 @@ def get_promesas_incumplidas(fecha: Optional[str] = None) -> list[dict]:
         result = []
         for row in rows:
             props = _parse_props(row["properties"])
-            cumplida = props.get("cumplida")
+            # C4: resolve dinámico si PROMESA_CUMPLIDA_MODE=dynamic.
+            # Necesitamos el cliente_id para el lookup dinámico.
+            if "cliente_id" not in props:
+                cur2 = conn.cursor()
+                cur2.execute(
+                    """
+                    SELECT r1.from_id AS cid
+                    FROM relationships r2
+                    JOIN relationships r1 ON r2.from_id = r1.to_id
+                    WHERE r2.to_id = ? AND r2.rel_type = 'GENERO_PROMESA'
+                      AND r1.rel_type = 'TIENE_INTERACCION'
+                    LIMIT 1
+                    """,
+                    (row["id"],),
+                )
+                cid_row = cur2.fetchone()
+                if cid_row:
+                    props["cliente_id"] = cid_row["cid"]
+
+            cumplida = _resolve_cumplida(conn, props, row["id"])
 
             # Only unfulfilled promises
             if cumplida is True:
                 continue
 
-            if fecha:
-                fecha_promesa = props.get("fecha_promesa") or props.get("fecha") or ""
-                if fecha_promesa and fecha_promesa > fecha:
-                    continue
+            fecha_promesa_str = props.get("fecha_promesa") or props.get("fecha") or ""
+
+            if fecha and fecha_promesa_str and fecha_promesa_str > fecha:
+                continue
+
+            # ON-READ: días hasta vencimiento respecto a la fecha de referencia
+            dias_hasta = None
+            if fecha_promesa_str:
+                try:
+                    dias_hasta = (_date.fromisoformat(fecha_promesa_str) - ref_date).days
+                except ValueError:
+                    dias_hasta = None
 
             # Find client associated with this promise
             # Path: Cliente -TIENE_INTERACCION-> Interaccion -GENERO_PROMESA-> PromesaPago
@@ -524,13 +667,16 @@ def get_promesas_incumplidas(fecha: Optional[str] = None) -> list[dict]:
             rel = cursor.fetchone()
             cliente_id = rel["cliente_id"] if rel else None
 
-            result.append(
-                {
-                    "id": row["id"],
-                    "cliente_id": cliente_id,
-                    **props,
-                }
-            )
+            enriched = {
+                "id": row["id"],
+                "cliente_id": cliente_id,
+                **props,
+                "dias_hasta_vencimiento": dias_hasta,
+                "dias_vencida": (
+                    -dias_hasta if dias_hasta is not None and dias_hasta < 0 else 0
+                ),
+            }
+            result.append(enriched)
 
         return result
     finally:
@@ -653,13 +799,21 @@ def get_dashboard() -> dict:
         )
 
         # promesas_cumplidas / promesas_incumplidas
-        cursor.execute("SELECT properties FROM nodes WHERE label = 'PromesaPago'")
+        # C4: resolver snapshot vs dynamic según settings.
+        cursor.execute("SELECT id, properties FROM nodes WHERE label = 'PromesaPago'")
         promesa_rows = cursor.fetchall()
-        promesas_cumplidas = sum(
-            1
-            for r in promesa_rows
-            if _parse_props(r["properties"]).get("cumplida") is True
-        )
+        if _CUMPLIDA_MODE == "dynamic":
+            promesas_cumplidas = 0
+            for r in promesa_rows:
+                props_p = _parse_props(r["properties"])
+                if _resolve_cumplida(conn, props_p, r["id"]):
+                    promesas_cumplidas += 1
+        else:
+            promesas_cumplidas = sum(
+                1
+                for r in promesa_rows
+                if _parse_props(r["properties"]).get("cumplida") is True
+            )
         promesas_incumplidas = len(promesa_rows) - promesas_cumplidas
 
         # actividad_por_dia: group interactions and payments by date

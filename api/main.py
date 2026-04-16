@@ -8,11 +8,16 @@ Or from the project root:
     uvicorn api.main:app --host 0.0.0.0 --port 8001 --reload
 """
 
+import logging
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from api.config import settings
+from api.ml import model_registry
 from api.routers import clientes, agentes, analytics, analytics_avanzado, grafo, mcp_query
+
+logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
 # App initialization
@@ -31,16 +36,40 @@ app = FastAPI(
 )
 
 # ---------------------------------------------------------------------------
-# CORS
+# CORS — spec-compliant:
+#   * allow_credentials=True requires a concrete origins list (no wildcard).
+#   * If cors_origins == ["*"] we disable credentials to stay valid.
 # ---------------------------------------------------------------------------
+
+_origins = settings.cors_origins or ["*"]
+_allow_credentials = _origins != ["*"]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
+    allow_origins=_origins,
+    allow_credentials=_allow_credentials,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+# ---------------------------------------------------------------------------
+# Startup: precargar modelo ML persistido (si existe).
+# Si no hay artefacto todavía, el primer request entrena on-demand con un
+# lock en predictor.py (C8). Job offline: `python -m api.ml.train_offline`.
+# ---------------------------------------------------------------------------
+
+
+@app.on_event("startup")
+def _load_ml_model() -> None:
+    try:
+        loaded = model_registry.load_latest()
+        if loaded:
+            logger.info("ml: loaded pre-trained model from %s", loaded)
+        else:
+            logger.info("ml: no pre-trained artifact; will train on first request")
+    except Exception as exc:  # pragma: no cover — model is optional
+        logger.warning("ml: failed to load persisted model: %s", exc)
 
 # ---------------------------------------------------------------------------
 # Routers

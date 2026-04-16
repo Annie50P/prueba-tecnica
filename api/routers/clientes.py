@@ -2,21 +2,32 @@
 Router for /clientes endpoints.
 """
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Query
 from api.services import graphiti_service as svc
 
 router = APIRouter(prefix="/clientes", tags=["Clientes"])
 
 
 @router.get("", summary="List all clients with derived metrics")
-def list_clientes():
+def list_clientes(
+    limite: int = Query(default=100, ge=1, le=1000, description="Page size"),
+    offset: int = Query(default=0, ge=0, description="Offset for pagination"),
+):
     """
-    Return all Cliente nodes with:
+    Return Cliente nodes (paginados) con:
     - total_pagado
     - monto_pendiente
     - tasa_cumplimiento
     """
-    return svc.get_all_clientes()
+    all_clientes = svc.get_all_clientes()
+    total = len(all_clientes)
+    page = all_clientes[offset : offset + limite]
+    return {
+        "total": total,
+        "limite": limite,
+        "offset": offset,
+        "clientes": page,
+    }
 
 
 @router.get("/{cliente_id}", summary="Get full client detail")

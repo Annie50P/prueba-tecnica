@@ -32,9 +32,35 @@ DB_PATH = os.path.join(
 )
 
 
+_INDEXES_ENSURED = False
+
+
+def _ensure_indexes(conn: sqlite3.Connection) -> None:
+    """
+    C1: garantiza índices en la tabla `nodes`/`relationships` para que los
+    endpoints no hagan full-scan. Idempotente, se ejecuta una sola vez por proceso.
+    """
+    global _INDEXES_ENSURED
+    if _INDEXES_ENSURED:
+        return
+    try:
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_nodes_label ON nodes(label)")
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_rel_from ON relationships(from_id)")
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_rel_to ON relationships(to_id)")
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_rel_type ON relationships(rel_type)")
+        conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_rel_from_type ON relationships(from_id, rel_type)"
+        )
+        conn.commit()
+        _INDEXES_ENSURED = True
+    except sqlite3.OperationalError as exc:
+        logger.warning("analytics_service: no se pudieron crear índices: %s", exc)
+
+
 def _conn():
     c = sqlite3.connect(DB_PATH)
     c.row_factory = sqlite3.Row
+    _ensure_indexes(c)
     return c
 
 
