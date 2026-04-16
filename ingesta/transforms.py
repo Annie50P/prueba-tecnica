@@ -3,32 +3,60 @@ Transforms a validated RawDataset into graph nodes and relationships.
 
 Derived properties computed here:
 - Interaccion : hora_del_dia, dia_semana
-- PromesaPago : cumplida, dias_hasta_vencimiento
+- PromesaPago : cumplida   (dias_hasta_vencimiento se calcula on-read en la API)
 - PlanPago    : monto_total_plan, fecha_inicio
 - Cliente     : total_pagado, monto_pendiente, tasa_cumplimiento
 - Agente      : total_llamadas, tasa_promesa, tasa_pago_inmediato
 """
 from __future__ import annotations
 
+import os
 from collections import defaultdict
 from datetime import datetime, timedelta, timezone
 from typing import Dict, List, Tuple
 
-from models import (
-    AgenteNode,
-    ClienteNode,
-    InteraccionNode,
-    PagoNode,
-    PlanPagoNode,
-    PromesaPagoNode,
-    RawDataset,
-    RelationRecord,
-)
-
-# Reference date for "dias_hasta_vencimiento" – use today (UTC)
-_TODAY_UTC = datetime.now(tz=timezone.utc).date()
+try:
+    # Cuando `ingesta/` está en sys.path (ingest.py como script).
+    from models import (
+        AgenteNode,
+        ClienteNode,
+        InteraccionNode,
+        PagoNode,
+        PlanPagoNode,
+        PromesaPagoNode,
+        RawDataset,
+        RelationRecord,
+    )
+except ImportError:
+    # Cuando se importa como `from ingesta import transforms` (tests).
+    from ingesta.models import (  # type: ignore[no-redef]
+        AgenteNode,
+        ClienteNode,
+        InteraccionNode,
+        PagoNode,
+        PlanPagoNode,
+        PromesaPagoNode,
+        RawDataset,
+        RelationRecord,
+    )
 
 LLAMADA_TIPOS = {"llamada_saliente", "llamada_entrante"}
+
+# Días de gracia para considerar un pago como cumplimiento de una promesa vencida.
+# Parametrizable via env var: negocio puede mover esta política sin redeploy.
+GRACE_DAYS_DEFAULT = 3
+
+
+def _get_grace_days() -> int:
+    try:
+        return int(os.environ.get("PROMESA_GRACE_DAYS", GRACE_DAYS_DEFAULT))
+    except (TypeError, ValueError):
+        return GRACE_DAYS_DEFAULT
+
+
+def _today_utc():
+    """Fecha actual UTC. Función (no constante de módulo) para evitar drift."""
+    return datetime.now(tz=timezone.utc).date()
 
 
 def _parse_ts(ts_str: str) -> datetime:
@@ -66,6 +94,9 @@ def transform(
     # ------------------------------------------------------------------
     # Pass 1 – build Interaccion nodes and collect secondary nodes
     # ------------------------------------------------------------------
+    today_utc = _today_utc()
+    grace_days = _get_grace_days()
+
     interacciones: List[InteraccionNode] = []
     promesas: List[PromesaPagoNode] = []
     pagos: List[PagoNode] = []
@@ -104,9 +135,8 @@ def transform(
 
         # ---- PromesaPago ----
         if raw_ix.tipo in LLAMADA_TIPOS and raw_ix.resultado == "promesa_pago":
-            fecha_promesa_date = _parse_date(raw_ix.fecha_promesa)
-            dias_hasta = (fecha_promesa_date - _TODAY_UTC).days
-
+            # dias_hasta_vencimiento NO se precomputa: es función de la fecha actual.
+            # La API lo calcula on-read desde fecha_promesa.
             promesa = PromesaPagoNode(
                 id=f"{raw_ix.id}_promesa",
                 interaccion_id=raw_ix.id,
@@ -114,7 +144,6 @@ def transform(
                 monto_prometido=raw_ix.monto_prometido or 0.0,
                 fecha_promesa=raw_ix.fecha_promesa,
                 cumplida=False,          # resolved in pass 2
-                dias_hasta_vencimiento=dias_hasta,
             )
             promesas.append(promesa)
             cliente_promesas[raw_ix.cliente_id].append(promesa)
@@ -160,7 +189,7 @@ def transform(
         promesa_dt = ix_ts_map[promesa.interaccion_id]
         fecha_promesa_date = _parse_date(promesa.fecha_promesa)
         deadline = datetime.combine(
-            fecha_promesa_date + timedelta(days=3), datetime.min.time()
+            fecha_promesa_date + timedelta(days=grace_days), datetime.min.time()
         ).replace(tzinfo=timezone.utc)
 
         # Find any payment from same client after promesa timestamp and within deadline
@@ -301,7 +330,7 @@ def transform(
             promesa_dt = ix_ts_map[promesa.interaccion_id]
             fecha_promesa_date = _parse_date(promesa.fecha_promesa)
             deadline = datetime.combine(
-                fecha_promesa_date + timedelta(days=3), datetime.min.time()
+                fecha_promesa_date + timedelta(days=grace_days), datetime.min.time()
             ).replace(tzinfo=timezone.utc)
             for pago in cliente_pagos.get(promesa.cliente_id, []):
                 pago_dt = _parse_ts(pago.timestamp)
@@ -313,19 +342,24 @@ def transform(
                     ))
                     break
 
-    # SIGUIENTE: chain interactions per client (chronological order)
-    cliente_ix_map: Dict[str, List[InteraccionNode]] = defaultdict(list)
-    for ix in interacciones:
-        cliente_ix_map[ix.cliente_id].append(ix)
+    # SIGUIENTE: chain interactions per client (chronological order).
+    # C5: aristas N-1 por cliente ≈ 10M a 1M clientes. Por default se emiten
+    # (comportamiento histórico); a gran escala esta relación es redundante
+    # — ORDER BY timestamp + índice da el mismo resultado sin materializar la
+    # cadena. Para desactivarla: export CREATE_SIGUIENTE=0
+    if os.environ.get("CREATE_SIGUIENTE", "1") != "0":
+        cliente_ix_map: Dict[str, List[InteraccionNode]] = defaultdict(list)
+        for ix in interacciones:
+            cliente_ix_map[ix.cliente_id].append(ix)
 
-    for cliente_id, ix_list in cliente_ix_map.items():
-        sorted_ixs = sorted(ix_list, key=lambda x: ix_ts_map[x.id])
-        for i in range(len(sorted_ixs) - 1):
-            relationships.append(RelationRecord(
-                from_id=sorted_ixs[i].id,
-                rel_type="SIGUIENTE",
-                to_id=sorted_ixs[i + 1].id,
-                properties={"orden": i + 1},
-            ))
+        for cliente_id, ix_list in cliente_ix_map.items():
+            sorted_ixs = sorted(ix_list, key=lambda x: ix_ts_map[x.id])
+            for i in range(len(sorted_ixs) - 1):
+                relationships.append(RelationRecord(
+                    from_id=sorted_ixs[i].id,
+                    rel_type="SIGUIENTE",
+                    to_id=sorted_ixs[i + 1].id,
+                    properties={"orden": i + 1},
+                ))
 
     return agentes, clientes, interacciones, promesas, pagos, planes, relationships

@@ -46,6 +46,18 @@ logger = logging.getLogger(__name__)
 # Resultados que indican gestión exitosa
 OUTCOME_SUCCESS = {"promesa_pago", "pago_inmediato", "renegociacion"}
 
+# Constantes operativas del análisis (antes magic numbers)
+MIN_CLIENTS_FOR_CLUSTERING = 5
+KMEANS_N_INIT = 15
+MIN_LLAMADAS_PARA_HORA = 5     # mínimo muestras por franja horaria
+MIN_LLAMADAS_POR_AGENTE = 3    # mínimo para incluir a un agente en ranking
+SEGMENT_LOW_DEBT_MAX = 0.35
+SEGMENT_HIGH_ENGAGE_RATIO = 0.4
+SEGMENT_HIGH_ENGAGE_FREQ = 2
+SEGMENT_RECENT_DAYS = 60
+SEGMENT_COOPERATIVE_SENT = 0.6
+SEGMENT_COOPERATIVE_CUMPL = 0.5
+
 
 def _select_optimal_k(X_scaled: np.ndarray, k_range: range) -> tuple[int, dict]:
     """
@@ -59,7 +71,7 @@ def _select_optimal_k(X_scaled: np.ndarray, k_range: range) -> tuple[int, dict]:
     best_score = -1.0
 
     for k in k_range:
-        km = KMeans(n_clusters=k, random_state=42, n_init=15)
+        km = KMeans(n_clusters=k, random_state=42, n_init=KMEANS_N_INIT)
         labels = km.fit_predict(X_scaled)
 
         # Silhouette requiere al menos 2 clusters con >= 2 muestras
@@ -102,9 +114,14 @@ def _name_cluster(
 
     # Clasificar según 4 arquetipos definidos por los ejes más importantes
     # (deuda_pend y engagement son los más informativos en cobranza)
-    low_debt = deuda_pend < 0.35
-    high_engage = (ratio_exito > 0.4 or rfm_freq > 2) and rfm_rec < 60
-    cooperative = avg_sent >= 0.6 or tasa_cumpl >= 0.5
+    low_debt = deuda_pend < SEGMENT_LOW_DEBT_MAX
+    high_engage = (
+        (ratio_exito > SEGMENT_HIGH_ENGAGE_RATIO or rfm_freq > SEGMENT_HIGH_ENGAGE_FREQ)
+        and rfm_rec < SEGMENT_RECENT_DAYS
+    )
+    cooperative = (
+        avg_sent >= SEGMENT_COOPERATIVE_SENT or tasa_cumpl >= SEGMENT_COOPERATIVE_CUMPL
+    )
 
     if low_debt and high_engage:
         return (
@@ -163,9 +180,9 @@ def get_estrategias(data: dict) -> dict:
     Retorna estrategias de cobranza basadas en segmentación
     con k óptimo + análisis de horas y agentes.
     """
-    client_ids, X, meta, _ = build_feature_matrix(data)
+    client_ids, X, meta, _ = build_feature_matrix(data, cutoff_date=None)
 
-    if len(client_ids) < 5:
+    if len(client_ids) < MIN_CLIENTS_FOR_CLUSTERING:
         return {"error": "Insuficientes datos para clustering"}
 
     scaler = StandardScaler()
@@ -189,7 +206,7 @@ def get_estrategias(data: dict) -> dict:
     # ═══════════════════════════════════════════════════════════════
     # 2. KMeans con k óptimo
     # ═══════════════════════════════════════════════════════════════
-    kmeans = KMeans(n_clusters=k_optimal, random_state=42, n_init=15)
+    kmeans = KMeans(n_clusters=k_optimal, random_state=42, n_init=KMEANS_N_INIT)
     labels = kmeans.fit_predict(X_scaled)
     centroids_scaled = kmeans.cluster_centers_
     centroids_raw = scaler.inverse_transform(centroids_scaled)
@@ -282,9 +299,23 @@ def get_estrategias(data: dict) -> dict:
     # ═══════════════════════════════════════════════════════════════
     hora_stats: dict[int, dict] = {}
     for inter in data["all_inters"]:
+        # hora_del_dia puede no existir; extraer desde timestamp si es así
         hora = inter.get("hora_del_dia")
-        resultado = inter.get("resultado", "")
         if hora is None:
+            ts_str = inter.get("timestamp") or inter.get("fecha", "")
+            if ts_str:
+                try:
+                    hora = datetime.fromisoformat(
+                        ts_str.replace("Z", "+00:00")
+                    ).hour
+                except (ValueError, AttributeError):
+                    pass
+        if hora is None:
+            continue
+        resultado = inter.get("resultado", "")
+        # Solo llamadas (no pagos ni emails que distorsionan el análisis de horario)
+        tipo = inter.get("tipo", "")
+        if tipo not in ("llamada_saliente", "llamada_entrante"):
             continue
         if hora not in hora_stats:
             hora_stats[hora] = {"total": 0, "exitosas": 0}
@@ -292,10 +323,9 @@ def get_estrategias(data: dict) -> dict:
         if resultado in OUTCOME_SUCCESS:
             hora_stats[hora]["exitosas"] += 1
 
-    MIN_LLAMADAS = 5  # umbral mínimo para estadística confiable
     mejores_horas = []
     for h, s in sorted(hora_stats.items()):
-        if s["total"] < MIN_LLAMADAS:
+        if s["total"] < MIN_LLAMADAS_PARA_HORA:
             continue
         tasa = s["exitosas"] / s["total"]
         mejores_horas.append(
@@ -337,7 +367,7 @@ def get_estrategias(data: dict) -> dict:
                 "por_tipo": s["por_tipo"],
             }
             for aid, s in agente_stats.items()
-            if s["total"] >= 3
+            if s["total"] >= MIN_LLAMADAS_POR_AGENTE
         ],
         key=lambda x: x["tasa_exito"],
         reverse=True,
@@ -382,7 +412,7 @@ def get_estrategias(data: dict) -> dict:
             {
                 "categoria": "horario",
                 "titulo": "Horarios óptimos de contacto",
-                "descripcion": f"Concentrar llamadas en: {horas_str} (mín. {MIN_LLAMADAS} llamadas por franja)",
+                "descripcion": f"Concentrar llamadas en: {horas_str} (mín. {MIN_LLAMADAS_PARA_HORA} llamadas por franja)",
                 "impacto": "alto",
             }
         )

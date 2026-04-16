@@ -49,6 +49,18 @@ from .features import (
 
 logger = logging.getLogger(__name__)
 
+# ── Constantes de configuración (extraídas de magic numbers) ────────
+CONTAMINATION_MIN = 0.05
+CONTAMINATION_MAX = 0.35
+IQR_MULTIPLIER = 1.5
+Z_SCORE_THRESHOLD = 2.5
+Z_SCORE_HIGH_SEVERITY = 3.5
+IF_ESTIMATORS = 200
+MIN_CLIENTS_FOR_ENSEMBLE = 10
+MIN_PAYMENTS_FOR_ANOMALY = 10
+PROMESA_EXCEDE_FACTOR = 1.5   # promesa > 150% deuda → anomalía
+SENTIMENT_DROP_THRESHOLD = 1.0  # caída absoluta de sentimiento (escala 0-3)
+
 
 def _estimate_contamination(scores: np.ndarray) -> float:
     """
@@ -60,9 +72,9 @@ def _estimate_contamination(scores: np.ndarray) -> float:
     q1, q3 = np.percentile(scores, [25, 75])
     iqr = q3 - q1
     # Outliers clásicos: menor que Q1 - 1.5*IQR
-    threshold_low = q1 - 1.5 * iqr
+    threshold_low = q1 - IQR_MULTIPLIER * iqr
     estimated = float(np.mean(scores < threshold_low))
-    return float(np.clip(estimated, 0.05, 0.35))
+    return float(np.clip(estimated, CONTAMINATION_MIN, CONTAMINATION_MAX))
 
 
 def _ensemble_scores(
@@ -82,7 +94,7 @@ def _ensemble_scores(
 
     # IsolationForest
     iso = IsolationForest(
-        n_estimators=200,
+        n_estimators=IF_ESTIMATORS,
         contamination=contamination,
         random_state=random_state,
     )
@@ -117,7 +129,7 @@ def _z_score_anomalies(
     X_scaled: np.ndarray,
     client_ids: list[str],
     meta: list[dict],
-    threshold: float = 2.5,
+    threshold: float = Z_SCORE_THRESHOLD,
 ) -> list[dict]:
     """
     Detecta anomalías univariadas por z-score individual.
@@ -132,7 +144,7 @@ def _z_score_anomalies(
                 anomalias.append(
                     {
                         "tipo": "outlier_univariado",
-                        "severidad": "media" if z > 3.5 else "baja",
+                        "severidad": "media" if z > Z_SCORE_HIGH_SEVERITY else "baja",
                         "descripcion": (
                             f"{meta[i]['nombre']}: {fname} {direction} "
                             f"(z={z:.1f}, valor={X[i, j]:.2f})"
@@ -154,18 +166,18 @@ def get_anomalias(data: dict) -> dict:
     """
     anomalias: list[dict] = []
 
-    client_ids, X, meta, _ = build_feature_matrix(data)
+    client_ids, X, meta, _ = build_feature_matrix(data, cutoff_date=None)
 
     # ═══════════════════════════════════════════════════════════════
     # A) Anomalías de perfil de cliente (ensemble multivariado)
     # ═══════════════════════════════════════════════════════════════
-    if len(client_ids) >= 10:
+    if len(client_ids) >= MIN_CLIENTS_FOR_ENSEMBLE:
         scaler = StandardScaler()
         X_scaled = scaler.fit_transform(X)
 
         # 1. Estimar contamination desde los datos
         iso_raw = IsolationForest(
-            n_estimators=200,
+            n_estimators=IF_ESTIMATORS,
             contamination="auto",  # sin asumir tasa
             random_state=42,
         )
@@ -264,13 +276,13 @@ def get_anomalias(data: dict) -> dict:
             pagos_data.append([monto, float(hora)])
             pagos_meta_list.append(p)
 
-    if len(pagos_data) >= 10:
+    if len(pagos_data) >= MIN_PAYMENTS_FOR_ANOMALY:
         X_p = np.array(pagos_data)
         sc_p = StandardScaler()
         X_ps = sc_p.fit_transform(X_p)
 
         iso_p_raw = IsolationForest(
-            n_estimators=200,
+            n_estimators=IF_ESTIMATORS,
             contamination="auto",
             random_state=42,
         )
@@ -279,7 +291,7 @@ def get_anomalias(data: dict) -> dict:
         cont_p = _estimate_contamination(raw_p)
 
         iso_p = IsolationForest(
-            n_estimators=200,
+            n_estimators=IF_ESTIMATORS,
             contamination=cont_p,
             random_state=42,
         )
@@ -312,7 +324,7 @@ def get_anomalias(data: dict) -> dict:
         monto_p = float(p.get("monto_prometido", 0) or 0)
         cliente = data["clientes"].get(cid, {})
         deuda = float(cliente.get("monto_deuda_inicial", 0) or 0)
-        if deuda > 0 and monto_p > deuda * 1.5:
+        if deuda > 0 and monto_p > deuda * PROMESA_EXCEDE_FACTOR:
             anomalias.append(
                 {
                     "tipo": "promesa_excede_deuda",
@@ -351,7 +363,7 @@ def get_anomalias(data: dict) -> dict:
                     for i in sorted_inters[mitad:]
                 ]
             )
-            if avg_ant - avg_rec > 1.0:
+            if avg_ant - avg_rec > SENTIMENT_DROP_THRESHOLD:
                 nombre = data["clientes"].get(cid, {}).get("nombre", cid)
                 anomalias.append(
                     {
@@ -370,7 +382,9 @@ def get_anomalias(data: dict) -> dict:
     sev_order = {"alta": 0, "media": 1, "baja": 2}
     anomalias.sort(key=lambda a: sev_order.get(a["severidad"], 3))
 
-    cont = round(contamination, 3) if len(client_ids) >= 10 else None
+    cont = (
+        round(contamination, 3) if len(client_ids) >= MIN_CLIENTS_FOR_ENSEMBLE else None
+    )
 
     return {
         "total_anomalias": len(anomalias),

@@ -46,9 +46,28 @@ class Settings(BaseSettings):
         default=False,
         description="Use Neo4j instead of SQLite",
     )
+    graph_backend: str = Field(
+        default="sqlite",
+        description="Active read backend: 'sqlite' (default, dev) or 'neo4j'",
+    )
+    promesa_cumplida_mode: str = Field(
+        default="snapshot",
+        description=(
+            "'snapshot' (leer props.cumplida, rápido) o 'dynamic' (compute-on-read "
+            "a partir de Pago dentro de grace_days — C4 event-free)."
+        ),
+    )
+    promesa_grace_days: int = Field(
+        default=3,
+        description="Ventana de gracia para considerar una promesa cumplida (C6).",
+    )
 
-    # CORS
-    cors_origins: list[str] = Field(default=["*"], description="Allowed CORS origins")
+    # CORS — list expected (comma-separated in env). Use explicit origins when you
+    # need credentials; leave ["*"] for public read-only APIs.
+    cors_origins: list[str] = Field(
+        default=["http://localhost:3000", "http://localhost:5173"],
+        description="Allowed CORS origins",
+    )
 
     # LLM providers (for /mcp/query natural language endpoint)
     anthropic_api_key: str = Field(default="", description="Anthropic API key (Claude)")
