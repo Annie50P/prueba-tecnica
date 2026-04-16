@@ -89,6 +89,15 @@ class GraphitiClient:
             )
             """
         )
+        # C1: índices para evitar full-scan en _load_all_data y endpoints grafo.
+        # Idempotentes; coste despreciable, ganan O(log n) vs O(n).
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_nodes_label ON nodes(label)")
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_rel_from ON relationships(from_id)")
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_rel_to ON relationships(to_id)")
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_rel_type ON relationships(rel_type)")
+        conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_rel_from_type ON relationships(from_id, rel_type)"
+        )
         conn.commit()
         return conn
 

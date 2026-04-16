@@ -111,7 +111,11 @@ class InteraccionNode(BaseModel):
 
 
 class PromesaPagoNode(BaseModel):
-    """Graph node: PromesaPago  (id = {interaccion_id}_promesa)"""
+    """Graph node: PromesaPago  (id = {interaccion_id}_promesa)
+
+    Nota: `dias_hasta_vencimiento` NO se persiste (es función de la fecha actual).
+    La API lo calcula on-read desde `fecha_promesa`.
+    """
     id: str
     interaccion_id: str
     cliente_id: str
@@ -119,7 +123,6 @@ class PromesaPagoNode(BaseModel):
     fecha_promesa: str       # YYYY-MM-DD
     # Derived
     cumplida: bool = False
-    dias_hasta_vencimiento: int = 0   # positive = future, negative = overdue
 
 
 class PagoNode(BaseModel):
