@@ -5,6 +5,14 @@ pydantic-settings>=2.0
 python-dotenv>=1.0
 anthropic>=0.25
 google-genai>=1.0.0
+openai>=1.30
+
+# MCP client — conecta al servidor Graphiti MCP oficial
+mcp>=1.1.0
+
+# Graphiti — capa de acceso al grafo de conocimiento (fuente única de verdad)
+graphiti-core>=0.3
+neo4j>=5.0
 
 # Machine Learning
 scikit-learn>=1.4

@@ -1,16 +1,16 @@
 """
 Capa de repositorios (B1).
 
-Objetivo: aislar el backend de lectura (SQLite vs Neo4j+Graphiti) detrás de una
-interfaz estable. Los services NO deben hablar SQL directo; deben resolver
-`get_backend()` y llamar métodos del repo.
+Objetivo: aislar el backend de lectura detrás de una interfaz estable.
+Los services NO deben hablar SQL/Cypher directo; deben resolver `get_backend()`
+y llamar métodos del repo.
 
-Estado actual (prueba técnica, sin Neo4j corriendo):
-  - SqliteGraphRepository es la implementación activa por defecto.
-  - Neo4jGraphRepository es un stub que levanta NotImplementedError con
-    instrucciones claras de cableado (wiring point para producción real).
-
-Switch:  GRAPH_BACKEND=sqlite  (default)  |  GRAPH_BACKEND=neo4j
+Switch via GRAPH_BACKEND:
+  graphiti  (default con Neo4j) — GraphitiGraphRepository: acceso a Neo4j
+             a través de graphiti-core. Graphiti gestiona la conexión, los
+             índices y la capa semántica. API y MCP leen el mismo grafo.
+  neo4j     — Neo4jGraphRepository: driver neo4j directo (sin Graphiti).
+  sqlite    — SqliteGraphRepository: fallback local sin Neo4j.
 """
 from __future__ import annotations
 
@@ -26,16 +26,26 @@ def get_backend() -> GraphRepository:
     """
     Singleton lazy. Resuelve el repo según settings.graph_backend.
 
-    Para producción con Neo4j, setear GRAPH_BACKEND=neo4j y proveer
-    NEO4J_URI/NEO4J_USER/NEO4J_PASSWORD. La implementación neo4j es un
-    stub — completar queries Cypher en neo4j_repository.py.
+      GRAPH_BACKEND=graphiti  →  GraphitiGraphRepository (fuente única de verdad)
+      GRAPH_BACKEND=neo4j     →  Neo4jGraphRepository (driver directo)
+      GRAPH_BACKEND=sqlite    →  SqliteGraphRepository (dev/offline)
     """
     global _backend
     if _backend is not None:
         return _backend
 
-    kind = (settings.graph_backend or "sqlite").lower()
-    if kind == "neo4j":
+    kind = (settings.graph_backend or "graphiti").lower()
+
+    if kind == "graphiti":
+        from .graphiti_repository import GraphitiGraphRepository
+
+        _backend = GraphitiGraphRepository(
+            uri=settings.neo4j_uri,
+            user=settings.neo4j_user,
+            password=settings.neo4j_password,
+            group_id=settings.graphiti_group_id,
+        )
+    elif kind == "neo4j":
         from .neo4j_repository import Neo4jGraphRepository
 
         _backend = Neo4jGraphRepository(
@@ -45,6 +55,7 @@ def get_backend() -> GraphRepository:
         )
     else:
         _backend = SqliteGraphRepository(db_path=settings.db_path)
+
     return _backend
 
 

@@ -2,18 +2,23 @@
 llm_providers.py — Abstracción intercambiable de proveedores LLM.
 
 Proveedores disponibles:
-  - GeminiProvider  : Google Gemini (free tier con GEMINI_API_KEY)
+  - GroqProvider     : Groq (GRATIS, sin tarjeta — llama-3.3-70b con function calling)
+  - OpenAIProvider   : OpenAI GPT (requiere créditos)
+  - GeminiProvider   : Google Gemini (free tier con límites)
   - AnthropicProvider: Anthropic Claude (requiere créditos)
 
 Selección automática via factory `get_provider(settings)`:
-  - llm_provider = "auto"      → Gemini si hay GEMINI_API_KEY, sino Anthropic
-  - llm_provider = "gemini"    → Gemini (falla si no hay key)
-  - llm_provider = "anthropic" → Anthropic (falla si no hay key)
+  - llm_provider = "auto"      → Groq > OpenAI > Gemini > Anthropic
+  - llm_provider = "groq"      → Groq (falla si no hay key)
+  - llm_provider = "openai"    → OpenAI
+  - llm_provider = "gemini"    → Gemini
+  - llm_provider = "anthropic" → Anthropic
 """
 
 import json
 import logging
 from abc import ABC, abstractmethod
+from collections.abc import Awaitable
 from typing import Any, Callable
 
 logger = logging.getLogger(__name__)
@@ -31,7 +36,7 @@ class BaseLLMProvider(ABC):
         query: str,
         system_prompt: str,
         tools: list[dict],
-        execute_tool: Callable[[str, dict], Any],
+        execute_tool: Callable[[str, dict], Awaitable[Any]],
         max_iterations: int = 5,
     ) -> dict[str, Any]:
         """
@@ -150,7 +155,7 @@ class GeminiProvider(BaseLLMProvider):
         query: str,
         system_prompt: str,
         tools: list[dict],
-        execute_tool: Callable[[str, dict], Any],
+        execute_tool: Callable[[str, dict], Awaitable[Any]],
         max_iterations: int = 5,
     ) -> dict[str, Any]:
         from google import genai
@@ -196,7 +201,7 @@ class GeminiProvider(BaseLLMProvider):
                     queries_ejecutadas.append(fc.name)
                     logger.info("[gemini] tool=%s args=%s", fc.name, dict(fc.args))
 
-                    result = execute_tool(fc.name, dict(fc.args))
+                    result = await execute_tool(fc.name, dict(fc.args))
                     logger.info("[gemini] tool=%s → %d chars", fc.name, len(str(result)))
 
                     fn_response_parts.append(
@@ -273,6 +278,329 @@ class GeminiProvider(BaseLLMProvider):
 
 
 # ─────────────────────────────────────────────────────────────────
+# Groq Provider  (OpenAI-compatible API — gratis, sin tarjeta)
+# ─────────────────────────────────────────────────────────────────
+
+class GroqProvider(BaseLLMProvider):
+    """
+    Groq — free tier generoso (14 400 req/día, sin tarjeta).
+    Usa la API compatible con OpenAI, modelo llama-3.3-70b-versatile
+    que soporta function calling completo.
+    Registro: https://console.groq.com
+    """
+
+    BASE_URL = "https://api.groq.com/openai/v1"
+    DEFAULT_MODEL = "llama-3.3-70b-versatile"
+
+    def __init__(self, api_key: str, model: str | None = None):
+        self.api_key = api_key
+        self.model = model or self.DEFAULT_MODEL
+
+    @staticmethod
+    def _build_tools(tools: list[dict]) -> list[dict]:
+        return [
+            {
+                "type": "function",
+                "function": {
+                    "name": t["name"],
+                    "description": t["description"],
+                    "parameters": t.get("input_schema", {"type": "object", "properties": {}}),
+                },
+            }
+            for t in tools
+        ]
+
+    async def run(
+        self,
+        query: str,
+        system_prompt: str,
+        tools: list[dict],
+        execute_tool: Callable[[str, dict], Awaitable[Any]],
+        max_iterations: int = 5,
+    ) -> dict[str, Any]:
+        from openai import OpenAI, AuthenticationError, RateLimitError, BadRequestError, APIStatusError
+
+        queries_ejecutadas: list[str] = []
+        tokens_usados = 0
+        messages: list[dict] = [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": query},
+        ]
+        groq_tools = self._build_tools(tools)
+
+        try:
+            client = OpenAI(api_key=self.api_key, base_url=self.BASE_URL)
+
+            for _ in range(max_iterations):
+                response = client.chat.completions.create(
+                    model=self.model,
+                    messages=messages,  # type: ignore[arg-type]
+                    tools=groq_tools,   # type: ignore[arg-type]
+                    temperature=0.1,
+                )
+
+                if response.usage:
+                    tokens_usados += (response.usage.prompt_tokens or 0) + (
+                        response.usage.completion_tokens or 0
+                    )
+
+                msg = response.choices[0].message
+                tool_calls = msg.tool_calls or []
+
+                if not tool_calls:
+                    return {
+                        "status": "ok",
+                        "respuesta": (msg.content or "").strip(),
+                        "datos": [],
+                        "queries_ejecutadas": queries_ejecutadas,
+                        "tokens_usados": tokens_usados,
+                        "proveedor": f"groq/{self.model}",
+                    }
+
+                messages.append({
+                    "role": "assistant",
+                    "content": msg.content or "",
+                    "tool_calls": [
+                        {"id": tc.id, "type": "function",
+                         "function": {"name": tc.function.name, "arguments": tc.function.arguments}}
+                        for tc in tool_calls
+                    ],
+                })
+
+                for tc in tool_calls:
+                    name = tc.function.name
+                    try:
+                        args = json.loads(tc.function.arguments or "{}")
+                    except json.JSONDecodeError:
+                        args = {}
+                    queries_ejecutadas.append(name)
+                    logger.info("[groq] tool=%s args=%s", name, args)
+                    result = await execute_tool(name, args)
+                    logger.info("[groq] tool=%s → %d chars", name, len(str(result)))
+                    messages.append({
+                        "role": "tool",
+                        "tool_call_id": tc.id,
+                        "content": json.dumps(result, ensure_ascii=False, default=str),
+                    })
+
+        except AuthenticationError:
+            return {"status": "error", "error": "auth_error",
+                    "message": "GROQ_API_KEY inválida.", "respuesta": "", "datos": []}
+        except RateLimitError as e:
+            return {"status": "error", "error": "quota_exceeded",
+                    "message": f"Rate limit de Groq alcanzado: {str(e)[:150]}",
+                    "respuesta": "", "datos": []}
+        except BadRequestError as e:
+            return {"status": "error", "error": "bad_request",
+                    "message": f"Error en solicitud a Groq: {str(e)[:200]}",
+                    "respuesta": "", "datos": []}
+        except APIStatusError as e:
+            if e.status_code == 413:
+                return {"status": "error", "error": "bad_request",
+                        "message": "Respuesta demasiado grande para el modelo. Intenta una consulta más específica.",
+                        "respuesta": "", "datos": []}
+            return {"status": "error", "error": "api_error",
+                    "message": f"Error API Groq (HTTP {e.status_code})",
+                    "respuesta": "", "datos": []}
+        except Exception as e:
+            logger.exception("[groq] unexpected error: %s", e)
+            return {"status": "error", "error": "internal_error",
+                    "message": f"Error interno con Groq: {type(e).__name__}",
+                    "respuesta": "", "datos": []}
+
+        return {
+            "status": "ok",
+            "respuesta": "Se alcanzó el límite de iteraciones.",
+            "datos": [], "queries_ejecutadas": queries_ejecutadas,
+            "tokens_usados": tokens_usados, "proveedor": f"groq/{self.model}",
+        }
+
+
+# ─────────────────────────────────────────────────────────────────
+# OpenAI Provider
+# ─────────────────────────────────────────────────────────────────
+
+class OpenAIProvider(BaseLLMProvider):
+    """
+    Proveedor OpenAI GPT con function calling (Chat Completions API).
+
+    Schema de tools en formato Claude → convertido a OpenAI `tools=[{type,function}]`.
+    """
+
+    DEFAULT_MODEL = "gpt-4o-mini"
+
+    def __init__(self, api_key: str, model: str | None = None):
+        self.api_key = api_key
+        self.model = model or self.DEFAULT_MODEL
+
+    @staticmethod
+    def _build_openai_tools(tools: list[dict]) -> list[dict]:
+        """Convierte schema Claude → OpenAI tools."""
+        return [
+            {
+                "type": "function",
+                "function": {
+                    "name": t["name"],
+                    "description": t["description"],
+                    "parameters": t.get("input_schema", {"type": "object", "properties": {}}),
+                },
+            }
+            for t in tools
+        ]
+
+    async def run(
+        self,
+        query: str,
+        system_prompt: str,
+        tools: list[dict],
+        execute_tool: Callable[[str, dict], Awaitable[Any]],
+        max_iterations: int = 5,
+    ) -> dict[str, Any]:
+        from openai import (
+            OpenAI,
+            AuthenticationError,
+            RateLimitError,
+            BadRequestError,
+            APIStatusError,
+        )
+
+        queries_ejecutadas: list[str] = []
+        tokens_usados = 0
+
+        messages: list[dict] = [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": query},
+        ]
+        openai_tools = self._build_openai_tools(tools)
+
+        try:
+            client = OpenAI(api_key=self.api_key)
+
+            for _ in range(max_iterations):
+                response = client.chat.completions.create(
+                    model=self.model,
+                    messages=messages,  # type: ignore[arg-type]
+                    tools=openai_tools,  # type: ignore[arg-type]
+                    temperature=0.1,
+                )
+
+                if response.usage:
+                    tokens_usados += (response.usage.prompt_tokens or 0) + (
+                        response.usage.completion_tokens or 0
+                    )
+
+                msg = response.choices[0].message
+                tool_calls = msg.tool_calls or []
+
+                if not tool_calls:
+                    return {
+                        "status": "ok",
+                        "respuesta": (msg.content or "").strip(),
+                        "datos": [],
+                        "queries_ejecutadas": queries_ejecutadas,
+                        "tokens_usados": tokens_usados,
+                        "proveedor": f"openai/{self.model}",
+                    }
+
+                # Persistir el turno assistant con tool_calls
+                messages.append(
+                    {
+                        "role": "assistant",
+                        "content": msg.content or "",
+                        "tool_calls": [
+                            {
+                                "id": tc.id,
+                                "type": "function",
+                                "function": {
+                                    "name": tc.function.name,
+                                    "arguments": tc.function.arguments,
+                                },
+                            }
+                            for tc in tool_calls
+                        ],
+                    }
+                )
+
+                # Ejecutar cada tool_call y añadir el resultado como rol "tool"
+                for tc in tool_calls:
+                    name = tc.function.name
+                    try:
+                        args = json.loads(tc.function.arguments or "{}")
+                    except json.JSONDecodeError:
+                        args = {}
+                    queries_ejecutadas.append(name)
+                    logger.info("[openai] tool=%s args=%s", name, args)
+
+                    result = await execute_tool(name, args)
+                    logger.info("[openai] tool=%s → %d chars", name, len(str(result)))
+
+                    messages.append(
+                        {
+                            "role": "tool",
+                            "tool_call_id": tc.id,
+                            "content": json.dumps(result, ensure_ascii=False, default=str),
+                        }
+                    )
+
+        except AuthenticationError:
+            return {
+                "status": "error",
+                "error": "auth_error",
+                "message": "OPENAI_API_KEY inválida.",
+                "respuesta": "", "datos": [],
+            }
+        except RateLimitError as e:
+            msg = str(e).lower()
+            if "insufficient_quota" in msg or "quota" in msg:
+                return {
+                    "status": "error",
+                    "error": "insufficient_credits",
+                    "message": (
+                        "Créditos insuficientes en OpenAI. "
+                        "Recarga tu cuenta en https://platform.openai.com/account/billing."
+                    ),
+                    "respuesta": "", "datos": [],
+                }
+            return {
+                "status": "error",
+                "error": "quota_exceeded",
+                "message": "Cuota de OpenAI agotada. Espera unos segundos e intenta de nuevo.",
+                "respuesta": "", "datos": [],
+            }
+        except BadRequestError as e:
+            return {
+                "status": "error",
+                "error": "bad_request",
+                "message": f"Error en la solicitud a OpenAI: {str(e)[:200]}",
+                "respuesta": "", "datos": [],
+            }
+        except APIStatusError as e:
+            return {
+                "status": "error",
+                "error": "api_error",
+                "message": f"Error de la API de OpenAI (HTTP {e.status_code})",
+                "respuesta": "", "datos": [],
+            }
+        except Exception as e:
+            logger.exception("[openai] unexpected error: %s", e)
+            return {
+                "status": "error",
+                "error": "internal_error",
+                "message": f"Error interno con OpenAI: {type(e).__name__}",
+                "respuesta": "", "datos": [],
+            }
+
+        return {
+            "status": "ok",
+            "respuesta": "Se alcanzó el límite de iteraciones sin una respuesta final.",
+            "datos": [],
+            "queries_ejecutadas": queries_ejecutadas,
+            "tokens_usados": tokens_usados,
+            "proveedor": f"openai/{self.model}",
+        }
+
+
+# ─────────────────────────────────────────────────────────────────
 # Anthropic Provider
 # ─────────────────────────────────────────────────────────────────
 
@@ -293,7 +621,7 @@ class AnthropicProvider(BaseLLMProvider):
         query: str,
         system_prompt: str,
         tools: list[dict],
-        execute_tool: Callable[[str, dict], Any],
+        execute_tool: Callable[[str, dict], Awaitable[Any]],
         max_iterations: int = 5,
     ) -> dict[str, Any]:
         import anthropic
@@ -346,7 +674,7 @@ class AnthropicProvider(BaseLLMProvider):
                         if block.type == "tool_use":
                             queries_ejecutadas.append(block.name)
                             logger.info("[anthropic] tool=%s args=%s", block.name, block.input)
-                            result = execute_tool(block.name, block.input)
+                            result = await execute_tool(block.name, block.input)
                             logger.info("[anthropic] tool=%s → %d chars", block.name, len(str(result)))
                             tool_results.append(
                                 {
@@ -419,22 +747,39 @@ def get_provider(settings) -> BaseLLMProvider | None:
     Devuelve el proveedor activo según la configuración.
 
     Lógica de selección con llm_provider = "auto":
-      1. Gemini si GEMINI_API_KEY está presente
-      2. Anthropic si ANTHROPIC_API_KEY está presente
-      3. None si no hay ninguna key configurada
+      1. Groq     si GROQ_API_KEY presente (gratis, sin tarjeta)
+      2. OpenAI   si OPENAI_API_KEY presente
+      3. Gemini   si GEMINI_API_KEY presente
+      4. Anthropic si ANTHROPIC_API_KEY presente
     """
     mode = (settings.llm_provider or "auto").lower()
 
+    if mode in ("groq", "auto"):
+        key = getattr(settings, "groq_api_key", "")
+        if key:
+            logger.info("[factory] proveedor seleccionado: Groq")
+            return GroqProvider(api_key=key)
+        if mode == "groq":
+            return None
+
+    if mode in ("openai", "auto"):
+        key = getattr(settings, "openai_api_key", "")
+        if key and key.startswith("sk-"):
+            logger.info("[factory] proveedor seleccionado: OpenAI")
+            return OpenAIProvider(api_key=key)
+        if mode == "openai":
+            return None
+
     if mode in ("gemini", "auto"):
-        key = settings.gemini_api_key
+        key = getattr(settings, "gemini_api_key", "")
         if key:
             logger.info("[factory] proveedor seleccionado: Gemini")
             return GeminiProvider(api_key=key)
         if mode == "gemini":
-            return None  # explícitamente solicitado pero sin key
+            return None
 
     if mode in ("anthropic", "auto"):
-        key = settings.anthropic_api_key
+        key = getattr(settings, "anthropic_api_key", "")
         if key and key.startswith("sk-ant-"):
             logger.info("[factory] proveedor seleccionado: Anthropic")
             return AnthropicProvider(api_key=key)

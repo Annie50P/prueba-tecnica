@@ -32,7 +32,13 @@ async def mcp_query(body: MCPQueryRequest):
     result = await query_mcp(query=body.query)
 
     error = result.get("error")
-    if error in ("mcp_not_configured", "auth_error", "insufficient_credits", "api_error"):
+    if error in (
+        "mcp_not_configured",
+        "auth_error",
+        "insufficient_credits",
+        "quota_exceeded",
+        "api_error",
+    ):
         raise HTTPException(
             status_code=503,
             detail={

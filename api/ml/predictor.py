@@ -72,15 +72,23 @@ def get_prediccion_clientes(data: dict) -> list[dict]:
     artifact = model_registry.get_loaded_artifact()
 
     if artifact is None:
+        # C9: intentar cargar desde disco antes de re-entrenar. Útil si el
+        # proceso no pasó por @app.on_event("startup") (tests, CLI, worker).
+        if model_registry.load_latest():
+            artifact = model_registry.get_loaded_artifact()
+
+    if artifact is None:
         # Fallback: entrenar on-demand bajo singleflight lock (C8).
         with _TRAIN_LOCK:
             artifact = model_registry.get_loaded_artifact()
+            if artifact is None and model_registry.load_latest():
+                artifact = model_registry.get_loaded_artifact()
             if artifact is None:
                 from .train import compare_models
 
                 logger.warning(
-                    "prediccion: sin artifact persistido; entrenando on-demand (considera "
-                    "correr `python -m api.ml.train_offline`)"
+                    "prediccion: sin artifact persistido; entrenando on-demand "
+                    "(considera correr `python -m api.ml.train_offline`)"
                 )
                 comparison = compare_models(X, y_gt)
                 model_registry.register_model(

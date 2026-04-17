@@ -1,96 +1,121 @@
 """
-GraphitiClient – HTTP client for the Graphiti/Neo4j API with automatic
-SQLite fallback when the remote service is unavailable.
+GraphitiClient — ingesta de datos vía graphiti-core con fallback SQLite.
 
-SQLite schema
--------------
+Responsabilidades:
+  - Conectar al Neo4j que gestiona Graphiti (graphiti-core SDK).
+  - write_domain_node() / write_domain_relationship(): escribe nodos/aristas
+    estructurados del dominio al Neo4j de Graphiti (mismo grafo que usa MCP).
+  - add_episode(): ingesta semántica via Graphiti (extracción LLM opcional).
+  - Fallback transparente a SQLite local cuando Graphiti/Neo4j no está disponible.
+
+SQLite schema (fallback):
     nodes         (id TEXT PRIMARY KEY, label TEXT, properties TEXT)
     relationships (id INTEGER PRIMARY KEY AUTOINCREMENT,
                    from_id TEXT, rel_type TEXT, to_id TEXT, properties TEXT)
 """
 from __future__ import annotations
 
+import asyncio
+import concurrent.futures
 import json
+import logging
 import os
 import sqlite3
-import time
 import uuid
+from datetime import datetime, timezone
 from typing import Any, Dict, Optional
 
-try:
-    import requests
-    from requests.exceptions import ConnectionError, RequestException, Timeout
-    _REQUESTS_AVAILABLE = True
-except ImportError:
-    _REQUESTS_AVAILABLE = False
+logger = logging.getLogger(__name__)
 
-# ---------------------------------------------------------------------------
-# Default configuration (overridden by environment variables / constructor)
-# ---------------------------------------------------------------------------
-_DEFAULT_BASE_URL = "http://localhost:8000"
-_DEFAULT_TIMEOUT = 5        # seconds per request attempt
-_DEFAULT_MAX_RETRIES = 3
-_DEFAULT_RETRY_DELAY = 1.0  # seconds between retries
 _DEFAULT_DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "local_graph.db")
+_DEFAULT_NEO4J_URI = "bolt://localhost:7687"
+_DEFAULT_NEO4J_USER = "neo4j"
+_DEFAULT_NEO4J_PASSWORD = "password123"
+_DEFAULT_GROUP_ID = "prueba-tecnica"
+
+
+def _run_sync(coro):
+    """Ejecuta una coroutine desde contexto síncrono."""
+    try:
+        loop = asyncio.get_event_loop()
+        if loop.is_running():
+            with concurrent.futures.ThreadPoolExecutor(max_workers=1) as ex:
+                return ex.submit(asyncio.run, coro).result()
+    except RuntimeError:
+        pass
+    return asyncio.run(coro)
+
+
+def _sanitize(props: dict) -> dict:
+    """Neo4j solo acepta primitivos o listas de primitivos como propiedades."""
+    out = {}
+    for k, v in props.items():
+        if v is None or isinstance(v, (str, int, float, bool)):
+            out[k] = v
+        elif isinstance(v, list) and all(
+            isinstance(x, (str, int, float, bool)) for x in v
+        ):
+            out[k] = v
+        else:
+            out[k] = json.dumps(v, ensure_ascii=False, default=str)
+    return out
 
 
 class GraphitiClient:
-    """Thin wrapper around the Graphiti HTTP API.
+    """
+    Cliente de ingesta que escribe en el Neo4j gestionado por Graphiti.
 
-    Falls back to a local SQLite database automatically when the Graphiti
-    service is not reachable.  All public methods have identical signatures
-    regardless of which backend is active.
+    Cuando graphiti-core no está disponible o Neo4j está caído, cae
+    automáticamente a SQLite local con el mismo schema de dominio.
     """
 
     def __init__(
         self,
-        base_url: Optional[str] = None,
-        timeout: int = _DEFAULT_TIMEOUT,
-        max_retries: int = _DEFAULT_MAX_RETRIES,
-        retry_delay: float = _DEFAULT_RETRY_DELAY,
+        neo4j_uri: Optional[str] = None,
+        neo4j_user: Optional[str] = None,
+        neo4j_password: Optional[str] = None,
         db_path: Optional[str] = None,
+        group_id: Optional[str] = None,
     ) -> None:
-        self.base_url = (base_url or os.environ.get("GRAPHITI_URL", _DEFAULT_BASE_URL)).rstrip("/")
-        self.timeout = int(os.environ.get("GRAPHITI_TIMEOUT", timeout))
-        self.max_retries = max_retries
-        self.retry_delay = retry_delay
+        self._neo4j_uri = (
+            neo4j_uri
+            or os.environ.get("NEO4J_URI", _DEFAULT_NEO4J_URI)
+        )
+        self._neo4j_user = (
+            neo4j_user
+            or os.environ.get("NEO4J_USER", _DEFAULT_NEO4J_USER)
+        )
+        self._neo4j_password = (
+            neo4j_password
+            or os.environ.get("NEO4J_PASSWORD", _DEFAULT_NEO4J_PASSWORD)
+        )
         self.db_path = db_path or os.environ.get("GRAPHITI_DB_PATH", _DEFAULT_DB_PATH)
+        self.group_id = group_id or os.environ.get("GRAPHITI_GROUP_ID", _DEFAULT_GROUP_ID)
 
-        # Will be set to True once health_check() confirms the service is up
+        self._graphiti = None
         self._graphiti_available: Optional[bool] = None
 
-        # Initialise SQLite (always – used as fallback or primary)
+        # SQLite siempre se inicializa (fallback o primario en dev)
         self._sqlite_conn = self._init_sqlite()
 
     # ------------------------------------------------------------------
-    # SQLite helpers
+    # SQLite helpers (fallback)
     # ------------------------------------------------------------------
 
     def _init_sqlite(self) -> sqlite3.Connection:
         conn = sqlite3.connect(self.db_path, check_same_thread=False)
         conn.execute("PRAGMA journal_mode=WAL;")
         conn.execute(
-            """
-            CREATE TABLE IF NOT EXISTS nodes (
-                id         TEXT PRIMARY KEY,
-                label      TEXT,
-                properties TEXT
-            )
-            """
+            """CREATE TABLE IF NOT EXISTS nodes (
+                id TEXT PRIMARY KEY, label TEXT, properties TEXT
+            )"""
         )
         conn.execute(
-            """
-            CREATE TABLE IF NOT EXISTS relationships (
-                id         INTEGER PRIMARY KEY AUTOINCREMENT,
-                from_id    TEXT,
-                rel_type   TEXT,
-                to_id      TEXT,
-                properties TEXT
-            )
-            """
+            """CREATE TABLE IF NOT EXISTS relationships (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                from_id TEXT, rel_type TEXT, to_id TEXT, properties TEXT
+            )"""
         )
-        # C1: índices para evitar full-scan en _load_all_data y endpoints grafo.
-        # Idempotentes; coste despreciable, ganan O(log n) vs O(n).
         conn.execute("CREATE INDEX IF NOT EXISTS idx_nodes_label ON nodes(label)")
         conn.execute("CREATE INDEX IF NOT EXISTS idx_rel_from ON relationships(from_id)")
         conn.execute("CREATE INDEX IF NOT EXISTS idx_rel_to ON relationships(to_id)")
@@ -101,144 +126,211 @@ class GraphitiClient:
         conn.commit()
         return conn
 
-    def _sqlite_create_node(self, label: str, properties: Dict[str, Any]) -> str:
-        node_id = properties.get("id") or str(uuid.uuid4())
-        props_json = json.dumps(properties, ensure_ascii=False, default=str)
+    def _sqlite_write_node(self, label: str, props: dict) -> str:
+        node_id = props.get("id") or str(uuid.uuid4())
         self._sqlite_conn.execute(
             "INSERT OR REPLACE INTO nodes (id, label, properties) VALUES (?, ?, ?)",
-            (node_id, label, props_json),
+            (node_id, label, json.dumps(props, ensure_ascii=False, default=str)),
         )
         self._sqlite_conn.commit()
         return node_id
 
-    def _sqlite_create_relationship(
-        self,
-        from_id: str,
-        rel_type: str,
-        to_id: str,
-        properties: Dict[str, Any],
-    ) -> bool:
-        props_json = json.dumps(properties, ensure_ascii=False, default=str)
+    def _sqlite_write_rel(
+        self, from_id: str, rel_type: str, to_id: str, props: dict
+    ) -> None:
         self._sqlite_conn.execute(
-            "INSERT INTO relationships (from_id, rel_type, to_id, properties) VALUES (?, ?, ?, ?)",
-            (from_id, rel_type, to_id, props_json),
+            "INSERT INTO relationships (from_id, rel_type, to_id, properties) "
+            "VALUES (?, ?, ?, ?)",
+            (from_id, rel_type, to_id, json.dumps(props, ensure_ascii=False, default=str)),
         )
         self._sqlite_conn.commit()
-        return True
 
     # ------------------------------------------------------------------
-    # HTTP helpers
+    # graphiti-core helpers
     # ------------------------------------------------------------------
 
-    def _http_post(self, endpoint: str, payload: Dict[str, Any]) -> Optional[Dict]:
-        """POST to Graphiti API with retry logic.  Returns parsed JSON or None."""
-        if not _REQUESTS_AVAILABLE:
-            return None
-
-        url = f"{self.base_url}{endpoint}"
-        last_exc: Optional[Exception] = None
-
-        for attempt in range(1, self.max_retries + 1):
-            try:
-                resp = requests.post(
-                    url,
-                    json=payload,
-                    timeout=self.timeout,
-                    headers={"Content-Type": "application/json"},
-                )
-                resp.raise_for_status()
-                return resp.json()
-            except (ConnectionError, Timeout) as exc:
-                last_exc = exc
-                if attempt < self.max_retries:
-                    time.sleep(self.retry_delay * attempt)
-            except RequestException as exc:
-                # Non-connection error (e.g. 4xx/5xx) – don't retry
-                raise
-
-        # All retries exhausted
-        return None
-
-    def _http_get(self, endpoint: str) -> Optional[Dict]:
-        if not _REQUESTS_AVAILABLE:
-            return None
-
-        url = f"{self.base_url}{endpoint}"
+    def _get_graphiti(self):
+        """Devuelve la instancia Graphiti inicializada, o None si no disponible."""
+        if self._graphiti is not None:
+            return self._graphiti
         try:
-            resp = requests.get(url, timeout=self.timeout)
-            resp.raise_for_status()
-            return resp.json()
-        except Exception:
-            return None
+            from graphiti_core import Graphiti
+            g = Graphiti(
+                uri=self._neo4j_uri,
+                user=self._neo4j_user,
+                password=self._neo4j_password,
+            )
+            _run_sync(g.driver.verify_connectivity())
+            self._graphiti = g
+            self._graphiti_available = True
+            logger.info(
+                "[graphiti-client] Conectado a Neo4j en %s (group=%s)",
+                self._neo4j_uri,
+                self.group_id,
+            )
+        except ImportError:
+            logger.warning(
+                "[graphiti-client] graphiti-core no instalado — usando SQLite fallback."
+            )
+            self._graphiti_available = False
+        except Exception as exc:
+            logger.warning(
+                "[graphiti-client] Neo4j no accesible en %s: %s — usando SQLite fallback.",
+                self._neo4j_uri,
+                exc,
+            )
+            self._graphiti_available = False
+        return self._graphiti
+
+    async def _async_write_node(self, label: str, props: dict) -> str:
+        """Escribe un nodo de dominio en Neo4j vía Graphiti. MERGE por id."""
+        node_id = props.get("id") or str(uuid.uuid4())
+        sanitized = _sanitize(props)
+        sanitized["id"] = node_id
+        cypher = f"MERGE (n:{label} {{id: $node_id}}) SET n += $props"
+        g = self._get_graphiti()
+        async with g.driver.session() as session:
+            await session.run(cypher, node_id=node_id, props=sanitized)
+        return node_id
+
+    async def _async_write_rel(
+        self, from_id: str, rel_type: str, to_id: str, props: dict
+    ) -> None:
+        """Escribe una relación de dominio en Neo4j vía Graphiti. MERGE idempotente."""
+        sanitized = _sanitize(props)
+        cypher = (
+            f"MATCH (a {{id: $from_id}}), (b {{id: $to_id}}) "
+            f"MERGE (a)-[r:{rel_type}]->(b) SET r += $props"
+        )
+        g = self._get_graphiti()
+        async with g.driver.session() as session:
+            await session.run(cypher, from_id=from_id, to_id=to_id, props=sanitized)
+
+    async def _async_build_constraints(self) -> None:
+        """Crea constraints e índices de dominio en Neo4j (idempotente)."""
+        g = self._get_graphiti()
+        async with g.driver.session() as session:
+            for label in ("Cliente", "Agente", "Interaccion", "PromesaPago", "Pago", "PlanPago"):
+                await session.run(
+                    f"CREATE CONSTRAINT {label.lower()}_id IF NOT EXISTS "
+                    f"FOR (n:{label}) REQUIRE n.id IS UNIQUE"
+                )
+            await session.run(
+                "CREATE INDEX interaccion_ts IF NOT EXISTS "
+                "FOR (i:Interaccion) ON (i.timestamp)"
+            )
+            await session.run(
+                "CREATE INDEX promesa_fecha IF NOT EXISTS "
+                "FOR (p:PromesaPago) ON (p.fecha_promesa)"
+            )
 
     # ------------------------------------------------------------------
-    # Public API
+    # API pública
     # ------------------------------------------------------------------
 
     def health_check(self) -> bool:
-        """Return True if the Graphiti service is reachable and healthy."""
-        if not _REQUESTS_AVAILABLE:
-            self._graphiti_available = False
-            return False
+        """True si Neo4j es accesible vía graphiti-core."""
+        if self._graphiti_available is not None:
+            return self._graphiti_available
+        return self._get_graphiti() is not None
 
-        result = self._http_get("/health")
-        self._graphiti_available = result is not None
-        return self._graphiti_available
-
-    def _use_graphiti(self) -> bool:
-        """Decide whether to use the remote service for this call."""
-        if self._graphiti_available is None:
-            # Lazy first check
-            self.health_check()
-        return bool(self._graphiti_available)
+    def setup_constraints(self) -> None:
+        """Crea constraints e índices de dominio en Neo4j. Solo si disponible."""
+        if not self.health_check():
+            return
+        try:
+            _run_sync(self._async_build_constraints())
+            logger.info("[graphiti-client] Constraints e índices creados.")
+        except Exception as exc:
+            logger.warning("[graphiti-client] No se pudieron crear constraints: %s", exc)
 
     def create_node(self, label: str, properties: Dict[str, Any]) -> str:
-        """Create a node.  Returns the node id."""
-        if self._use_graphiti():
+        """
+        Escribe un nodo de dominio.
+        Ruta principal → Neo4j vía Graphiti. Fallback → SQLite.
+        """
+        if self.health_check():
             try:
-                result = self._http_post("/nodes", {"label": label, "properties": properties})
-                if result and "id" in result:
-                    return result["id"]
-                # Service returned unexpected payload – fall through to SQLite
+                return _run_sync(self._async_write_node(label, properties))
+            except Exception as exc:
+                logger.warning(
+                    "[graphiti-client] Error escribiendo nodo %s en Neo4j: %s — "
+                    "cayendo a SQLite.",
+                    label,
+                    exc,
+                )
                 self._graphiti_available = False
-            except Exception:
-                self._graphiti_available = False
-
-        # SQLite fallback
-        return self._sqlite_create_node(label, properties)
+        return self._sqlite_write_node(label, properties)
 
     def create_relationship(
         self,
         from_id: str,
         rel_type: str,
         to_id: str,
-        properties: Dict[str, Any] | None = None,
+        properties: Optional[Dict[str, Any]] = None,
     ) -> bool:
-        """Create a directed relationship.  Returns True on success."""
+        """
+        Escribe una relación de dominio.
+        Ruta principal → Neo4j vía Graphiti. Fallback → SQLite.
+        """
         props = properties or {}
-
-        if self._use_graphiti():
+        if self.health_check():
             try:
-                result = self._http_post(
-                    "/relationships",
-                    {
-                        "from_id": from_id,
-                        "rel_type": rel_type,
-                        "to_id": to_id,
-                        "properties": props,
-                    },
+                _run_sync(self._async_write_rel(from_id, rel_type, to_id, props))
+                return True
+            except Exception as exc:
+                logger.warning(
+                    "[graphiti-client] Error escribiendo relación %s en Neo4j: %s — "
+                    "cayendo a SQLite.",
+                    rel_type,
+                    exc,
                 )
-                if result is not None:
-                    return True
                 self._graphiti_available = False
-            except Exception:
-                self._graphiti_available = False
+        self._sqlite_write_rel(from_id, rel_type, to_id, props)
+        return True
 
-        # SQLite fallback
-        return self._sqlite_create_relationship(from_id, rel_type, to_id, props)
+    def add_episode(
+        self,
+        name: str,
+        body: str,
+        reference_time: Optional[datetime] = None,
+        source_description: str = "call data",
+    ) -> bool:
+        """
+        Ingesta semántica: añade un episodio a Graphiti para que extraiga
+        entidades y relaciones vía LLM. Silencioso si falla (el episodio
+        semántico es complementario a los nodos de dominio ya escritos).
+        """
+        if not self.health_check():
+            return False
+        try:
+            from graphiti_core.nodes import EpisodeType
+
+            ref_time = reference_time or datetime.now(tz=timezone.utc)
+
+            async def _add():
+                await self._graphiti.add_episode(
+                    name=name,
+                    episode_body=body,
+                    source=EpisodeType.json,
+                    source_description=source_description,
+                    reference_time=ref_time,
+                    group_id=self.group_id,
+                )
+
+            _run_sync(_add())
+            return True
+        except ImportError:
+            logger.debug("[graphiti-client] graphiti_core.nodes no disponible — skip episode.")
+            return False
+        except Exception as exc:
+            logger.debug(
+                "[graphiti-client] add_episode '%s' falló (no crítico): %s", name, exc
+            )
+            return False
 
     # ------------------------------------------------------------------
-    # Introspection helpers (useful for summaries / tests)
+    # Introspección (stats para el summary de ingest.py)
     # ------------------------------------------------------------------
 
     def count_nodes(self) -> int:
@@ -262,8 +354,12 @@ class GraphitiClient:
         return {r[0]: r[1] for r in rows}
 
     def close(self) -> None:
-        """Close the SQLite connection."""
         try:
             self._sqlite_conn.close()
         except Exception:
             pass
+        if self._graphiti:
+            try:
+                _run_sync(self._graphiti.close())
+            except Exception:
+                pass

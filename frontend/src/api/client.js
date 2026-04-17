@@ -43,7 +43,7 @@ export const getEstrategias = () => api.get('/analytics/estrategias', { timeout:
 
 // ── MCP / Chat ───────────────────────────────────────────
 export const queryMcp = (query) =>
-  api.post('/mcp/query', { query }).then(r => r.data);
+  api.post('/mcp/query', { query }, { timeout: 60000 }).then(r => r.data);
 
 // ── Health ───────────────────────────────────────────────
 export const checkHealth = () => api.get('/health').then(r => r.data).catch(() => null);
