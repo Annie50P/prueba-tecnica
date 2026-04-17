@@ -131,7 +131,8 @@ services:
       test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
       interval: 10s
       timeout: 10s
-      retries: 5
+      retries: 8
+      start_period: 40s
 
   frontend:
     build:

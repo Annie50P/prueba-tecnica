@@ -4,4 +4,4 @@ python-dotenv>=1.0
 
 # Graphiti — ingesta de nodos de dominio y episodios semánticos en Neo4j
 graphiti-core>=0.3
-neo4j>=5.0
+neo4j==5.25.0
