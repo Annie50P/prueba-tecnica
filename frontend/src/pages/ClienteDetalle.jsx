@@ -9,12 +9,12 @@ import {
 const SENT_STYLES = {
   positivo:     { cls: 'bg-emerald-50 text-emerald-700 border-emerald-200', icon: '+' },
   cooperativo:  { cls: 'bg-emerald-50 text-emerald-700 border-emerald-200', icon: '+' },
-  neutral:      { cls: 'bg-slate-50 text-slate-600 border-slate-200', icon: '~' },
-  'n/a':        { cls: 'bg-slate-50 text-slate-500 border-slate-200', icon: '-' },
-  negativo:     { cls: 'bg-red-50 text-red-700 border-red-200', icon: '!' },
-  frustrado:    { cls: 'bg-orange-50 text-orange-700 border-orange-200', icon: '!' },
-  hostil:       { cls: 'bg-red-100 text-red-800 border-red-300', icon: '!!' },
-  muy_negativo: { cls: 'bg-red-100 text-red-800 border-red-300', icon: '!!' },
+  neutral:      { cls: 'bg-slate-50 text-slate-600 border-slate-200',       icon: '~' },
+  'n/a':        { cls: 'bg-slate-50 text-slate-500 border-slate-200',       icon: '-' },
+  negativo:     { cls: 'bg-red-50 text-red-700 border-red-200',             icon: '!' },
+  frustrado:    { cls: 'bg-orange-50 text-orange-700 border-orange-200',    icon: '!' },
+  hostil:       { cls: 'bg-red-100 text-red-800 border-red-300',            icon: '!!' },
+  muy_negativo: { cls: 'bg-red-100 text-red-800 border-red-300',            icon: '!!' },
 };
 
 const RESULT_DOTS = {
@@ -36,6 +36,32 @@ function StatCard({ label, value, color = 'text-slate-800', sub }) {
   );
 }
 
+function getStatus(c) {
+  const pend  = c.monto_pendiente ?? 0;
+  const ini   = c.monto_deuda_inicial ?? 1;
+  const ratio = pend / ini;
+  const dias  = c.dias_sin_contacto ?? 0;
+  const cumpl = c.tasa_cumplimiento ?? 1;
+  const nllamadas = (c.interacciones ?? []).length;
+
+  if (pend === 0)
+    return { label: 'Liquidado',       cls: 'bg-emerald-100 text-emerald-700' };
+  if (ratio < 0.3)
+    return { label: 'Casi liquidado',  cls: 'bg-blue-100 text-blue-700' };
+  if (ratio >= 0.5 && cumpl < 0.25 && nllamadas > 2)
+    return { label: 'Alto riesgo',     cls: 'bg-red-200 text-red-800' };
+  if (dias > 60 && ratio >= 0.5)
+    return { label: 'Sin gestión',     cls: 'bg-orange-100 text-orange-700' };
+  if (ratio < 0.7)
+    return { label: 'En proceso',      cls: 'bg-amber-100 text-amber-700' };
+  return   { label: 'Pendiente alto',  cls: 'bg-red-100 text-red-700' };
+}
+
+function money(n) {
+  if (n == null) return '--';
+  return `$${Number(n).toLocaleString('es')}`;
+}
+
 export default function ClienteDetalle() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -44,7 +70,6 @@ export default function ClienteDetalle() {
     queryKey: ['cliente', id],
     queryFn: () => getClienteDetalle(id),
   });
-
   const { data: timeline, isLoading: l2 } = useQuery({
     queryKey: ['cliente-timeline', id],
     queryFn: () => getClienteTimeline(id),
@@ -54,9 +79,7 @@ export default function ClienteDetalle() {
     return (
       <div className="p-6 max-w-5xl mx-auto space-y-4">
         <div className="skeleton h-16" />
-        <div className="grid grid-cols-4 gap-4">
-          {[...Array(4)].map((_, i) => <div key={i} className="skeleton h-20" />)}
-        </div>
+        <div className="grid grid-cols-4 gap-4">{[...Array(4)].map((_, i) => <div key={i} className="skeleton h-20" />)}</div>
         <div className="skeleton h-64" />
       </div>
     );
@@ -75,15 +98,11 @@ export default function ClienteDetalle() {
   }
 
   const events = Array.isArray(timeline) ? timeline : (timeline?.timeline ?? []);
+  const ini  = cliente.monto_deuda_inicial ?? 1;
   const pend = cliente.monto_pendiente ?? 0;
-  const ini = cliente.monto_deuda_inicial ?? 1;
-  const ratio = pend / ini;
-  const status = pend === 0 ? { label: 'Liquidado', cls: 'bg-emerald-100 text-emerald-700' }
-    : ratio < 0.3 ? { label: 'Casi liquidado', cls: 'bg-blue-100 text-blue-700' }
-    : ratio < 0.7 ? { label: 'En proceso', cls: 'bg-amber-100 text-amber-700' }
-    : { label: 'Pendiente alto', cls: 'bg-red-100 text-red-700' };
+  const status = getStatus({ ...cliente, tasa_cumplimiento: cliente.tasa_cumplimiento });
 
-  // Debt evolution chart
+  // Gráfico evolución deuda
   const pagos = (cliente.pagos ?? [])
     .map(p => ({ monto: p.monto ?? 0, fecha: p.fecha ?? p.timestamp ?? '' }))
     .filter(p => p.fecha)
@@ -96,9 +115,12 @@ export default function ClienteDetalle() {
     evolution.push({ fecha: p.fecha.slice(0, 10), deuda: Math.max(0, ini - acum), pagado: acum });
   });
 
-  const pctRecuperado = ini > 0 ? ((cliente.total_pagado ?? 0) / ini * 100).toFixed(1) : 0;
-  const promesasCumplidas = (cliente.promesas ?? []).filter(p => p.cumplida).length;
-  const promesasTotal = (cliente.promesas ?? []).length;
+  const pctRecuperado  = ini > 0 ? ((cliente.total_pagado ?? 0) / ini * 100).toFixed(1) : 0;
+  const promesasTotal  = (cliente.promesas ?? []).length;
+  const promesasCumpl  = (cliente.promesas ?? []).filter(p => p.cumplida).length;
+  const tasaCumpl      = promesasTotal > 0 ? ((promesasCumpl / promesasTotal) * 100).toFixed(0) : '--';
+
+  const planes = cliente.planes ?? [];
 
   return (
     <div className="poll-container poll-space">
@@ -115,31 +137,74 @@ export default function ClienteDetalle() {
               {(cliente.nombre ?? 'C')[0]}
             </div>
             <div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <h1 className="text-xl font-bold text-slate-800">{cliente.nombre ?? cliente.id}</h1>
                 <span className={`text-[11px] font-semibold px-2.5 py-0.5 rounded-full ${status.cls}`}>{status.label}</span>
               </div>
-              <p className="text-xs text-slate-400 mt-0.5">{cliente.id} &middot; {cliente.telefono ?? ''} &middot; {(cliente.tipo_deuda ?? '').replace(/_/g, ' ')}</p>
+              <p className="text-xs text-slate-400 mt-0.5">
+                {cliente.id} · {cliente.telefono ?? ''} · {(cliente.tipo_deuda ?? '').replace(/_/g, ' ')}
+                {cliente.ultimo_agente_id && (
+                  <span className="ml-2 text-slate-300">· Último gestor: <span className="text-slate-500">{cliente.ultimo_agente_id}</span></span>
+                )}
+                {cliente.mejor_horario_contacto && (
+                  <span className="ml-2 text-slate-300">· Mejor horario: <span className="text-violet-600">{cliente.mejor_horario_contacto}</span></span>
+                )}
+              </p>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Stats */}
+      {/* KPIs fila 1 */}
       <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
-        <StatCard label="Deuda Inicial" value={`$${ini.toLocaleString('es')}`} />
-        <StatCard label="Total Pagado" value={`$${(cliente.total_pagado ?? 0).toLocaleString('es')}`} color="text-emerald-600" />
-        <StatCard label="Pendiente" value={`$${pend.toLocaleString('es')}`} color="text-red-500" />
-        <StatCard label="Recuperado" value={`${pctRecuperado}%`} color="text-blue-600" />
-        <StatCard label="Interacciones" value={cliente.interacciones?.length ?? events.length ?? 0} />
+        <StatCard label="Deuda Inicial"   value={money(ini)} />
+        <StatCard label="Total Pagado"    value={money(cliente.total_pagado)}   color="text-emerald-600" />
+        <StatCard label="Pendiente"       value={money(pend)}                   color="text-red-500" />
+        <StatCard label="Recuperado"      value={`${pctRecuperado}%`}           color="text-blue-600" />
+        <StatCard label="Interacciones"   value={(cliente.interacciones ?? events).length ?? 0} />
       </div>
 
-      {/* Debt evolution */}
+      {/* KPIs fila 2 */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <StatCard
+          label="Días sin contacto"
+          value={cliente.dias_sin_contacto != null ? `${cliente.dias_sin_contacto}d` : '--'}
+          color={
+            cliente.dias_sin_contacto == null ? 'text-slate-500' :
+            cliente.dias_sin_contacto <= 7  ? 'text-emerald-600' :
+            cliente.dias_sin_contacto <= 30 ? 'text-amber-600' : 'text-red-500'
+          }
+          sub={cliente.ultima_interaccion ? cliente.ultima_interaccion.slice(0, 10) : undefined}
+        />
+        <StatCard
+          label="Monto comprometido"
+          value={money(cliente.monto_prometido_pendiente)}
+          color="text-amber-600"
+          sub="en promesas pendientes"
+        />
+        <StatCard
+          label="Cumplimiento promesas"
+          value={promesasTotal > 0 ? `${promesasCumpl}/${promesasTotal}` : '--'}
+          color={Number(tasaCumpl) >= 50 ? 'text-emerald-600' : 'text-red-500'}
+          sub={promesasTotal > 0 ? `${tasaCumpl}% cumplidas` : undefined}
+        />
+        <StatCard
+          label="Sentimiento predominante"
+          value={cliente.sentimiento_predominante ?? '--'}
+          color={
+            cliente.sentimiento_predominante === 'cooperativo' ? 'text-emerald-600' :
+            cliente.sentimiento_predominante === 'hostil'      ? 'text-red-600' :
+            cliente.sentimiento_predominante === 'frustrado'   ? 'text-amber-600' : 'text-slate-600'
+          }
+        />
+      </div>
+
+      {/* Evolución de deuda */}
       <div className="bg-white rounded-xl border border-slate-200/60 shadow-sm p-5">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h2 className="text-sm font-semibold text-slate-700">Evolucion de la Deuda</h2>
-            <p className="text-[11px] text-slate-400">Progresion del pago a lo largo del tiempo</p>
+            <h2 className="text-sm font-semibold text-slate-700">Evolución de la Deuda</h2>
+            <p className="text-[11px] text-slate-400">Progresión del pago a lo largo del tiempo</p>
           </div>
           <div className="flex items-center gap-4 text-xs">
             <span className="flex items-center gap-1.5"><span className="w-3 h-0.5 bg-red-400 rounded" /> Deuda</span>
@@ -147,14 +212,13 @@ export default function ClienteDetalle() {
           </div>
         </div>
 
-        {/* Progress bar */}
         <div className="mb-5">
           <div className="flex items-center justify-between text-xs text-slate-500 mb-1.5">
-            <span>Progreso de recuperacion</span>
+            <span>Progreso de recuperación</span>
             <span className="font-semibold text-emerald-600">{pctRecuperado}%</span>
           </div>
           <div className="w-full bg-slate-100 rounded-full h-2.5">
-            <div className="h-2.5 rounded-full bg-gradient-to-r from-emerald-400 to-emerald-500 transition-all" style={{ width: `${Math.min(100, pctRecuperado)}%` }} />
+            <div className="h-2.5 rounded-full bg-gradient-to-r from-emerald-400 to-emerald-500 transition-all" style={{ width: `${Math.min(100, Number(pctRecuperado))}%` }} />
           </div>
         </div>
 
@@ -162,8 +226,8 @@ export default function ClienteDetalle() {
           <div className="space-y-3">
             <div className="bg-slate-50 rounded-lg p-3 border border-slate-100">
               <p className="text-[10px] text-slate-400 uppercase tracking-wide">Promesas</p>
-              <p className="text-lg font-bold text-slate-800 mt-0.5">{promesasCumplidas}/{promesasTotal}</p>
-              <p className="text-[11px] text-slate-400">{promesasTotal > 0 ? ((promesasCumplidas / promesasTotal) * 100).toFixed(0) : 0}% cumplidas</p>
+              <p className="text-lg font-bold text-slate-800 mt-0.5">{promesasCumpl}/{promesasTotal}</p>
+              <p className="text-[11px] text-slate-400">{tasaCumpl !== '--' ? `${tasaCumpl}% cumplidas` : 'Sin promesas'}</p>
             </div>
             <div className="bg-slate-50 rounded-lg p-3 border border-slate-100">
               <p className="text-[10px] text-slate-400 uppercase tracking-wide">Pagos</p>
@@ -189,8 +253,8 @@ export default function ClienteDetalle() {
                   <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
                   <XAxis dataKey="fecha" tick={{ fontSize: 9, fill: '#94a3b8' }} angle={-30} textAnchor="end" height={45} />
                   <YAxis tick={{ fontSize: 10, fill: '#94a3b8' }} />
-                  <Tooltip formatter={(val) => `$${Number(val).toLocaleString('es')}`} />
-                  <Area type="monotone" dataKey="deuda" stroke="#f87171" fill="url(#gradDeuda)" strokeWidth={2} name="Deuda" />
+                  <Tooltip formatter={(val) => money(val)} />
+                  <Area type="monotone" dataKey="deuda"  stroke="#f87171" fill="url(#gradDeuda)"  strokeWidth={2} name="Deuda" />
                   <Area type="monotone" dataKey="pagado" stroke="#34d399" fill="url(#gradPagado)" strokeWidth={2} name="Pagado" />
                 </AreaChart>
               </ResponsiveContainer>
@@ -201,8 +265,9 @@ export default function ClienteDetalle() {
         </div>
       </div>
 
-      {/* Promesas & Pagos */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      {/* Promesas, Pagos y Planes */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* Promesas */}
         <div className="bg-white rounded-xl border border-slate-200/60 shadow-sm p-5">
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-sm font-semibold text-slate-700">Promesas</h2>
@@ -211,7 +276,7 @@ export default function ClienteDetalle() {
           <div className="space-y-2 max-h-48 overflow-auto">
             {(cliente.promesas ?? []).map((p, i) => (
               <div key={i} className="flex items-center justify-between py-2 px-3 bg-slate-50 rounded-lg text-sm border border-slate-100">
-                <span className="font-medium text-slate-700">${(p.monto ?? 0).toLocaleString('es')}</span>
+                <span className="font-medium text-slate-700">{money(p.monto_prometido ?? p.monto)}</span>
                 <span className="text-slate-400 text-xs">{(p.fecha_promesa ?? p.fecha ?? p.timestamp ?? '--').slice(0, 10)}</span>
                 <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${p.cumplida ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-600'}`}>
                   {p.cumplida ? 'Cumplida' : 'Pendiente'}
@@ -222,20 +287,44 @@ export default function ClienteDetalle() {
           </div>
         </div>
 
+        {/* Pagos */}
         <div className="bg-white rounded-xl border border-slate-200/60 shadow-sm p-5">
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-sm font-semibold text-slate-700">Pagos</h2>
-            <span className="text-xs text-slate-400">{(cliente.pagos ?? []).length} total</span>
+            <span className="text-xs text-slate-400">{pagos.length} total</span>
           </div>
           <div className="space-y-2 max-h-48 overflow-auto">
-            {(cliente.pagos ?? []).map((p, i) => (
+            {pagos.map((p, i) => (
               <div key={i} className="flex items-center justify-between py-2 px-3 bg-slate-50 rounded-lg text-sm border border-slate-100">
-                <span className="font-semibold text-emerald-600">${(p.monto ?? 0).toLocaleString('es')}</span>
-                <span className="text-slate-400 text-xs">{(p.fecha ?? p.timestamp ?? '--').slice(0, 10)}</span>
+                <span className="font-semibold text-emerald-600">{money(p.monto)}</span>
+                <span className="text-slate-400 text-xs">{(p.fecha ?? '--').slice(0, 10)}</span>
                 <span className="text-[11px] text-slate-500 bg-white px-2 py-0.5 rounded border border-slate-200">{p.metodo_pago ?? ''}</span>
               </div>
             ))}
-            {(cliente.pagos ?? []).length === 0 && <p className="text-slate-400 text-sm text-center py-4">Sin pagos registrados</p>}
+            {pagos.length === 0 && <p className="text-slate-400 text-sm text-center py-4">Sin pagos registrados</p>}
+          </div>
+        </div>
+
+        {/* Planes de pago */}
+        <div className="bg-white rounded-xl border border-slate-200/60 shadow-sm p-5">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-sm font-semibold text-slate-700">Planes de Pago</h2>
+            <span className="text-xs text-slate-400">{planes.length} activo{planes.length !== 1 ? 's' : ''}</span>
+          </div>
+          <div className="space-y-2 max-h-48 overflow-auto">
+            {planes.map((p, i) => (
+              <div key={i} className="py-2 px-3 bg-violet-50 rounded-lg text-sm border border-violet-100">
+                <div className="flex items-center justify-between">
+                  <span className="font-semibold text-violet-700">{money(p.monto_mensual)}/mes</span>
+                  <span className="text-[11px] text-violet-500">{p.cuotas ?? p.num_cuotas ?? '?'} cuotas</span>
+                </div>
+                <p className="text-[11px] text-violet-400 mt-0.5">
+                  Total plan: {money(p.monto_total_plan)}
+                  {p.fecha_inicio ? ` · desde ${String(p.fecha_inicio).slice(0, 10)}` : ''}
+                </p>
+              </div>
+            ))}
+            {planes.length === 0 && <p className="text-slate-400 text-sm text-center py-4">Sin planes activos</p>}
           </div>
         </div>
       </div>
@@ -245,21 +334,24 @@ export default function ClienteDetalle() {
         <div className="flex items-center justify-between mb-5">
           <div>
             <h2 className="text-sm font-semibold text-slate-700">Timeline de Interacciones</h2>
-            <p className="text-[11px] text-slate-400">{events.length} eventos en orden cronologico</p>
+            <p className="text-[11px] text-slate-400">{events.length} eventos en orden cronológico</p>
           </div>
         </div>
         <div className="space-y-0 max-h-[500px] overflow-auto pr-2">
           {events.map((ev, i) => {
-            const sent = ev.sentimiento_cliente ?? ev.sentimiento ?? 'neutral';
+            const sent      = ev.sentimiento_cliente ?? ev.sentimiento ?? 'neutral';
             const sentStyle = SENT_STYLES[sent] ?? SENT_STYLES.neutral;
             const resultado = ev.resultado ?? ev.tipo ?? 'contacto';
-            const dotColor = RESULT_DOTS[resultado] ?? 'bg-slate-300';
+            const dotColor  = RESULT_DOTS[resultado] ?? 'bg-slate-300';
+            const duracion  = ev.duracion_segundos
+              ? `· ${ev.duracion_segundos}s`
+              : ev.duracion_minutos
+              ? `· ${ev.duracion_minutos} min`
+              : '';
 
             return (
               <div key={i} className="relative pl-8 pb-5 last:pb-0">
-                {/* Line */}
                 {i < events.length - 1 && <div className="absolute left-[11px] top-3 bottom-0 w-[2px] bg-slate-100" />}
-                {/* Dot */}
                 <div className={`absolute left-1.5 top-1 w-3 h-3 rounded-full ${dotColor} ring-2 ring-white`} />
 
                 <div className="bg-slate-50/80 rounded-lg p-3 border border-slate-100 hover:border-slate-200 transition-colors">
@@ -271,29 +363,26 @@ export default function ClienteDetalle() {
                         {ev.agente_id && <span className="text-[10px] text-slate-400">por {ev.agente_id}</span>}
                       </div>
                       <p className="text-[11px] text-slate-400 mt-0.5">
-                        {ev.timestamp ?? ev.fecha ?? '--'}
-                        {ev.duracion_minutos && ` &middot; ${ev.duracion_minutos} min`}
-                        {ev.duracion_segundos && !ev.duracion_minutos && ` · ${ev.duracion_segundos}s`}
+                        {ev.timestamp ?? ev.fecha ?? '--'} {duracion}
                       </p>
                     </div>
                   </div>
 
-                  {/* Sub-entities */}
                   {(ev.promesas?.length > 0 || ev.pagos?.length > 0 || ev.planes?.length > 0) && (
                     <div className="mt-2 pt-2 border-t border-slate-200/60 flex flex-wrap gap-2">
                       {(ev.promesas ?? []).map((p, j) => (
                         <span key={`pr-${j}`} className="text-[11px] bg-amber-50 text-amber-700 px-2 py-0.5 rounded border border-amber-200">
-                          Promesa: ${(p.monto ?? 0).toLocaleString('es')}
+                          Promesa: {money(p.monto_prometido ?? p.monto)}
                         </span>
                       ))}
                       {(ev.pagos ?? []).map((p, j) => (
                         <span key={`pa-${j}`} className="text-[11px] bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded border border-emerald-200">
-                          Pago: ${(p.monto ?? 0).toLocaleString('es')}
+                          Pago: {money(p.monto)}
                         </span>
                       ))}
                       {(ev.planes ?? []).map((p, j) => (
                         <span key={`pl-${j}`} className="text-[11px] bg-violet-50 text-violet-700 px-2 py-0.5 rounded border border-violet-200">
-                          Plan: {p.num_cuotas ?? '?'} cuotas
+                          Plan: {p.cuotas ?? p.num_cuotas ?? '?'} cuotas · {money(p.monto_mensual)}/mes
                         </span>
                       ))}
                     </div>

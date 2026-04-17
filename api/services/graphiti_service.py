@@ -106,17 +106,17 @@ async def _resolve_cumplida(promesa_props: dict) -> bool:
 
 async def get_all_clientes() -> list[dict]:
     """
-    Bulk load: 3 queries totales en vez de 2N.
-    Pago y PromesaPago tienen cliente_id en sus propiedades (escrito por la ingesta),
-    por lo que se pueden agrupar en memoria sin necesidad de traversal por cliente.
-    El modo dynamic se mantiene para _resolve_cumplida pero solo si está activo.
+    Bulk load: 4 queries totales.
+    Pago, PromesaPago e Interaccion tienen cliente_id en sus propiedades,
+    por lo que se agrupan en memoria sin traversal por cliente.
     """
     backend = get_backend()
 
-    clientes, all_pagos, all_promesas = await asyncio.gather(
+    clientes, all_pagos, all_promesas, all_inters = await asyncio.gather(
         backend.get_nodes_by_label("Cliente"),
         backend.get_nodes_by_label("Pago"),
         backend.get_nodes_by_label("PromesaPago"),
+        backend.get_nodes_by_label("Interaccion"),
     )
 
     pagos_by_client: dict[str, list] = defaultdict(list)
@@ -130,6 +130,14 @@ async def get_all_clientes() -> list[dict]:
         cid = p["properties"].get("cliente_id")
         if cid:
             promesas_by_client[cid].append(p)
+
+    inters_by_client: dict[str, list] = defaultdict(list)
+    for i in all_inters:
+        cid = i["properties"].get("cliente_id")
+        if cid:
+            inters_by_client[cid].append(i)
+
+    now = datetime.now(timezone.utc)
 
     result = []
     for c in clientes:
@@ -157,6 +165,44 @@ async def get_all_clientes() -> list[dict]:
         )
         monto_deuda = props.get("monto_deuda_inicial", 0) or 0
 
+        # Monto prometido pendiente (promesas no cumplidas)
+        monto_prometido_pendiente = sum(
+            float(p["properties"].get("monto_prometido", 0) or 0)
+            for p in promesas
+            if not p["properties"].get("cumplida")
+        )
+
+        # Métricas derivadas de interacciones
+        inters = inters_by_client.get(cliente_id, [])
+        total_llamadas = len(inters)
+        ultima_interaccion: Optional[str] = None
+        dias_sin_contacto: Optional[int] = None
+        ultimo_agente_id: Optional[str] = None
+        sent_counts: dict[str, int] = {}
+        last_ts_raw: Optional[str] = None
+
+        for i in inters:
+            ip = i["properties"]
+            ts_raw = ip.get("timestamp") or ip.get("fecha")
+            sent = ip.get("sentimiento_cliente") or ip.get("sentimiento")
+            if sent:
+                sent_counts[sent] = sent_counts.get(sent, 0) + 1
+            if ts_raw:
+                if last_ts_raw is None or str(ts_raw) > str(last_ts_raw):
+                    last_ts_raw = str(ts_raw)
+                    if ip.get("agente_id"):
+                        ultimo_agente_id = ip["agente_id"]
+
+        if last_ts_raw:
+            ultima_interaccion = last_ts_raw
+            dt = _parse_ts_safe(last_ts_raw)
+            if dt:
+                dias_sin_contacto = (now - dt).days
+
+        sentimiento_predominante = (
+            max(sent_counts, key=lambda k: sent_counts[k]) if sent_counts else None
+        )
+
         result.append(
             {
                 "id": cliente_id,
@@ -165,6 +211,12 @@ async def get_all_clientes() -> list[dict]:
                 "total_pagado": round(total_pagado, 2),
                 "monto_pendiente": round(max(0, monto_deuda - total_pagado), 2),
                 "tasa_cumplimiento": tasa_cumplimiento,
+                "monto_prometido_pendiente": round(monto_prometido_pendiente, 2),
+                "total_llamadas": total_llamadas,
+                "ultima_interaccion": ultima_interaccion,
+                "dias_sin_contacto": dias_sin_contacto,
+                "ultimo_agente_id": ultimo_agente_id,
+                "sentimiento_predominante": sentimiento_predominante,
             }
         )
     return result
@@ -178,29 +230,73 @@ async def get_cliente_by_id(cliente_id: str) -> Optional[dict]:
 
     props = node["properties"]
 
-    interacciones_nodes = await backend.get_outgoing_nodes(
-        cliente_id, "TIENE_INTERACCION", "Interaccion"
+    interacciones_nodes, promesas_nodes, pagos_nodes, planes_nodes = await asyncio.gather(
+        backend.get_outgoing_nodes(cliente_id, "TIENE_INTERACCION", "Interaccion"),
+        backend.get_two_hop_nodes(
+            cliente_id, "TIENE_INTERACCION", "Interaccion", "GENERO_PROMESA", "PromesaPago"
+        ),
+        backend.get_two_hop_nodes(
+            cliente_id, "TIENE_INTERACCION", "Interaccion", "GENERO_PAGO", "Pago"
+        ),
+        backend.get_two_hop_nodes(
+            cliente_id, "TIENE_INTERACCION", "Interaccion", "GENERO_PLAN", "PlanPago"
+        ),
     )
-    interacciones = [
-        {"id": i["id"], **i["properties"]} for i in interacciones_nodes
-    ]
 
-    promesas_nodes = await backend.get_two_hop_nodes(
-        cliente_id,
-        "TIENE_INTERACCION",
-        "Interaccion",
-        "GENERO_PROMESA",
-        "PromesaPago",
-    )
+    interacciones = [{"id": i["id"], **i["properties"]} for i in interacciones_nodes]
     promesas = [{"id": p["id"], **p["properties"]} for p in promesas_nodes]
-
-    pagos_nodes = await backend.get_two_hop_nodes(
-        cliente_id, "TIENE_INTERACCION", "Interaccion", "GENERO_PAGO", "Pago"
-    )
     pagos = [{"id": p["id"], **p["properties"]} for p in pagos_nodes]
+    planes = [{"id": p["id"], **p["properties"]} for p in planes_nodes]
 
     total_pagado = sum((p.get("monto", 0) or 0) for p in pagos)
     monto_deuda = props.get("monto_deuda_inicial", 0) or 0
+
+    monto_prometido_pendiente = sum(
+        float(p.get("monto_prometido", 0) or 0)
+        for p in promesas
+        if not p.get("cumplida")
+    )
+
+    # Última interacción y días sin contacto
+    now = datetime.now(timezone.utc)
+    ts_list = [
+        str(i.get("timestamp") or i.get("fecha"))
+        for i in interacciones
+        if i.get("timestamp") or i.get("fecha")
+    ]
+    ultima_interaccion = max(ts_list, default=None)
+    dias_sin_contacto: Optional[int] = None
+    if ultima_interaccion:
+        dt = _parse_ts_safe(ultima_interaccion)
+        if dt:
+            dias_sin_contacto = (now - dt).days
+
+    # Último agente y sentimiento predominante
+    ultimo_agente_id: Optional[str] = None
+    sent_counts: dict[str, int] = {}
+    last_ts: Optional[str] = None
+    hora_counts: dict[int, int] = {}
+
+    for i in interacciones:
+        ts = str(i.get("timestamp") or i.get("fecha") or "")
+        if ts and (last_ts is None or ts > last_ts):
+            last_ts = ts
+            if i.get("agente_id"):
+                ultimo_agente_id = i["agente_id"]
+        sent = i.get("sentimiento_cliente") or i.get("sentimiento")
+        if sent:
+            sent_counts[sent] = sent_counts.get(sent, 0) + 1
+        h = _extract_hour(i.get("timestamp") or i.get("fecha"))
+        if h is not None:
+            hora_counts[h] = hora_counts.get(h, 0) + 1
+
+    sentimiento_predominante = (
+        max(sent_counts, key=lambda k: sent_counts[k]) if sent_counts else None
+    )
+    mejor_horario_contacto: Optional[str] = None
+    if hora_counts:
+        bh = max(hora_counts, key=lambda h: hora_counts[h])
+        mejor_horario_contacto = f"{bh:02d}:00 - {(bh + 1) % 24:02d}:00"
 
     return {
         "id": cliente_id,
@@ -209,8 +305,15 @@ async def get_cliente_by_id(cliente_id: str) -> Optional[dict]:
         "interacciones": interacciones,
         "promesas": promesas,
         "pagos": pagos,
+        "planes": planes,
         "total_pagado": round(total_pagado, 2),
         "monto_pendiente": round(max(0, monto_deuda - total_pagado), 2),
+        "monto_prometido_pendiente": round(monto_prometido_pendiente, 2),
+        "ultima_interaccion": ultima_interaccion,
+        "dias_sin_contacto": dias_sin_contacto,
+        "ultimo_agente_id": ultimo_agente_id,
+        "sentimiento_predominante": sentimiento_predominante,
+        "mejor_horario_contacto": mejor_horario_contacto,
     }
 
 
@@ -338,9 +441,15 @@ async def get_agente_efectividad(agente_id: str) -> Optional[dict]:
     distribucion_resultados: dict[str, int] = {}
     distribucion_sentimientos: dict[str, int] = {}
     hour_results: dict[int, dict[str, int]] = {}
+    # week_key → {"total": int, "exitos": int}
+    semana_results: dict[str, dict] = {}
 
     promesas = 0
     pagos_inmediatos = 0
+    negaciones = 0
+    sin_respuesta = 0
+
+    inter_ids: list[str] = []
 
     for i in interacciones:
         ip = i["properties"]
@@ -357,15 +466,37 @@ async def get_agente_efectividad(agente_id: str) -> Optional[dict]:
         )
 
         resultado_lower = resultado.lower()
+        es_exito = False
         if "promesa" in resultado_lower:
             promesas += 1
+            es_exito = True
         if "pago_inmediato" in resultado_lower or "pago inmediato" in resultado_lower:
             pagos_inmediatos += 1
+            es_exito = True
+        if "niega" in resultado_lower or "se_niega" in resultado_lower:
+            negaciones += 1
+        if "sin_respuesta" in resultado_lower or "sin respuesta" in resultado_lower:
+            sin_respuesta += 1
 
-        hour = _extract_hour(ip.get("timestamp") or ip.get("fecha"))
+        ts_raw = ip.get("timestamp") or ip.get("fecha")
+        hour = _extract_hour(ts_raw)
         if hour is not None:
             hour_results.setdefault(hour, {})
             hour_results[hour][resultado] = hour_results[hour].get(resultado, 0) + 1
+
+        # Agrupar por semana ISO (YYYY-Www)
+        if ts_raw:
+            try:
+                dt = datetime.fromisoformat(str(ts_raw).replace("Z", "+00:00"))
+                week_key = dt.strftime("%Y-W%W")
+                semana_results.setdefault(week_key, {"total": 0, "exitos": 0})
+                semana_results[week_key]["total"] += 1
+                if es_exito:
+                    semana_results[week_key]["exitos"] += 1
+            except (ValueError, AttributeError):
+                pass
+
+        inter_ids.append(i["id"])
 
     mejor_horario = None
     if hour_results:
@@ -385,6 +516,62 @@ async def get_agente_efectividad(agente_id: str) -> Optional[dict]:
     tasa_pago_inmediato = (
         round(pagos_inmediatos / total_llamadas, 4) if total_llamadas > 0 else 0.0
     )
+    tasa_exito = (
+        round((promesas + pagos_inmediatos) / total_llamadas, 4)
+        if total_llamadas > 0
+        else 0.0
+    )
+    tasa_fracaso = (
+        round((negaciones + sin_respuesta) / total_llamadas, 4)
+        if total_llamadas > 0
+        else 0.0
+    )
+
+    # Monto prometido total + cumplimiento: Interaccion -GENERO_PROMESA-> PromesaPago
+    # (Los pagos no se pueden atribuir a agentes — pago_recibido no lleva agente_id)
+    monto_prometido_total = 0.0
+    promesas_generadas = 0
+    promesas_cumplidas_agente = 0
+    for inter_id in inter_ids:
+        promesas_inter = await backend.get_outgoing_nodes(
+            inter_id, "GENERO_PROMESA", "PromesaPago"
+        )
+        for p in promesas_inter:
+            promesas_generadas += 1
+            monto_prometido_total += float(p["properties"].get("monto_prometido", 0) or 0)
+            if await _resolve_cumplida(p["properties"]):
+                promesas_cumplidas_agente += 1
+
+    tasa_cumplimiento_promesas = (
+        round(promesas_cumplidas_agente / promesas_generadas, 4)
+        if promesas_generadas > 0
+        else None
+    )
+
+    # Actividad horaria serializable: lista ordenada por hora
+    actividad_por_hora = [
+        {
+            "hora": f"{h:02d}:00",
+            "total": sum(v for v in hr.values()),
+            "exitos": sum(
+                v for k, v in hr.items()
+                if "promesa" in k.lower() or "pago" in k.lower()
+            ),
+            "distribucion": hr,
+        }
+        for h, hr in sorted(hour_results.items())
+    ]
+
+    # Tendencia semanal ordenada
+    tendencia_semanal = [
+        {
+            "semana": wk,
+            "total": d["total"],
+            "exitos": d["exitos"],
+            "tasa_exito": round(d["exitos"] / d["total"], 4) if d["total"] > 0 else 0.0,
+        }
+        for wk, d in sorted(semana_results.items())
+    ]
 
     return {
         "id": agente_id,
@@ -392,9 +579,16 @@ async def get_agente_efectividad(agente_id: str) -> Optional[dict]:
         "total_llamadas": total_llamadas,
         "tasa_promesa": tasa_promesa,
         "tasa_pago_inmediato": tasa_pago_inmediato,
+        "tasa_exito": tasa_exito,
+        "tasa_fracaso": tasa_fracaso,
+        "monto_prometido_total": round(monto_prometido_total, 2),
+        "promesas_generadas": promesas_generadas,
+        "tasa_cumplimiento_promesas": tasa_cumplimiento_promesas,
         "distribucion_resultados": distribucion_resultados,
         "distribucion_sentimientos": distribucion_sentimientos,
         "mejor_horario": mejor_horario,
+        "actividad_por_hora": actividad_por_hora,
+        "tendencia_semanal": tendencia_semanal,
     }
 
 
