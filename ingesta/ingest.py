@@ -12,6 +12,7 @@ Environment variables (optional, loaded from .env):
 """
 from __future__ import annotations
 
+import asyncio
 import json
 import os
 import sys
@@ -35,7 +36,6 @@ try:
         load_dotenv(_env_file)
         print(f"[env] Loaded environment from {_env_file}")
     else:
-        # Try project root .env
         _root_env = os.path.join(os.path.dirname(_HERE), ".env")
         if os.path.exists(_root_env):
             load_dotenv(_root_env)
@@ -69,7 +69,7 @@ PROGRESS_INTERVAL = 50
 
 
 # ---------------------------------------------------------------------------
-# Helpers
+# Helpers async
 # ---------------------------------------------------------------------------
 
 def _load_json(path: str) -> Dict[str, Any]:
@@ -80,30 +80,30 @@ def _load_json(path: str) -> Dict[str, Any]:
         return json.load(fh)
 
 
-def _ingest_nodes(
+async def _ingest_nodes(
     client: GraphitiClient,
     label: str,
     nodes: List[Any],
 ) -> int:
-    """Persist a list of Pydantic node models.  Returns count ingested."""
+    """Persist a list of Pydantic node models. Returns count ingested."""
     count = 0
     for node in nodes:
         props = node.model_dump()
-        client.create_node(label, props)
+        await client.create_node(label, props)
         count += 1
         if count % PROGRESS_INTERVAL == 0:
             print(f"  [{label}] {count}/{len(nodes)} nodes ingested ...")
     return count
 
 
-def _ingest_relationships(
+async def _ingest_relationships(
     client: GraphitiClient,
     relationships: List[RelationRecord],
 ) -> int:
-    """Persist all relationship records.  Returns count ingested."""
+    """Persist all relationship records. Returns count ingested."""
     count = 0
     for rel in relationships:
-        client.create_relationship(rel.from_id, rel.rel_type, rel.to_id, rel.properties)
+        await client.create_relationship(rel.from_id, rel.rel_type, rel.to_id, rel.properties)
         count += 1
         if count % PROGRESS_INTERVAL == 0:
             print(f"  [relationships] {count}/{len(relationships)} ingested ...")
@@ -111,10 +111,10 @@ def _ingest_relationships(
 
 
 # ---------------------------------------------------------------------------
-# Main
+# Main async
 # ---------------------------------------------------------------------------
 
-def main() -> None:
+async def main() -> None:
     start_time = time.time()
     print("=" * 60)
     print("  Call Pattern Analyzer – Data Ingestion")
@@ -144,51 +144,48 @@ def main() -> None:
     )
     print(f"[transform] Relationships: {len(relationships)}")
 
-    # 4. Initialise client (conecta a Neo4j vía graphiti-core o cae a SQLite)
+    # 4. Initialise client
     client = GraphitiClient()
-    graphiti_online = client.health_check()
+    graphiti_online = await client.health_check()
     if graphiti_online:
         print("[client] Neo4j/Graphiti ONLINE – ingesta vía graphiti-core")
-        client.setup_constraints()
+        await client.setup_constraints()
     else:
         print(f"[client] Neo4j OFFLINE – usando SQLite fallback: {client.db_path}")
 
-    # 5. Ingest nodes in required order: Agente → Cliente → Interaccion →
-    #    PromesaPago → Pago → PlanPago
+    # 5. Ingest nodes: Agente → Cliente → Interaccion → PromesaPago → Pago → PlanPago
     print("\n[ingest] Ingesting nodes ...")
 
     print(f"  Agentes ({len(agentes)}) ...")
-    n_agentes = _ingest_nodes(client, "Agente", agentes)
+    n_agentes = await _ingest_nodes(client, "Agente", agentes)
     print(f"  -> {n_agentes} Agentes done")
 
     print(f"  Clientes ({len(clientes)}) ...")
-    n_clientes = _ingest_nodes(client, "Cliente", clientes)
+    n_clientes = await _ingest_nodes(client, "Cliente", clientes)
     print(f"  -> {n_clientes} Clientes done")
 
     print(f"  Interacciones ({len(interacciones)}) ...")
-    n_interacciones = _ingest_nodes(client, "Interaccion", interacciones)
+    n_interacciones = await _ingest_nodes(client, "Interaccion", interacciones)
     print(f"  -> {n_interacciones} Interacciones done")
 
     print(f"  PromesasPago ({len(promesas)}) ...")
-    n_promesas = _ingest_nodes(client, "PromesaPago", promesas)
+    n_promesas = await _ingest_nodes(client, "PromesaPago", promesas)
     print(f"  -> {n_promesas} PromesasPago done")
 
     print(f"  Pagos ({len(pagos)}) ...")
-    n_pagos = _ingest_nodes(client, "Pago", pagos)
+    n_pagos = await _ingest_nodes(client, "Pago", pagos)
     print(f"  -> {n_pagos} Pagos done")
 
     print(f"  PlanesPago ({len(planes)}) ...")
-    n_planes = _ingest_nodes(client, "PlanPago", planes)
+    n_planes = await _ingest_nodes(client, "PlanPago", planes)
     print(f"  -> {n_planes} PlanesPago done")
 
     # 6. Ingest relationships
     print(f"\n[ingest] Ingesting {len(relationships)} relationships ...")
-    n_rels = _ingest_relationships(client, relationships)
+    n_rels = await _ingest_relationships(client, relationships)
     print(f"  -> {n_rels} relationships done")
 
-    # 6b. Episodios semánticos — cada interacción se ingesta en Graphiti para
-    #     que extraiga entidades y relaciones vía LLM (complementario a los nodos
-    #     de dominio ya escritos; silencioso si el LLM no está configurado).
+    # 6b. Episodios semánticos
     if graphiti_online:
         print(f"\n[ingest] Ingesting {len(dataset.interacciones)} semantic episodes ...")
         n_episodes = 0
@@ -216,7 +213,7 @@ def main() -> None:
             except (ValueError, AttributeError):
                 ref_time = datetime.now(tz=timezone.utc)
 
-            ok = client.add_episode(
+            ok = await client.add_episode(
                 name=f"interaccion_{raw_ix.id}",
                 body=episode_body,
                 reference_time=ref_time,
@@ -233,7 +230,6 @@ def main() -> None:
     nodes_by_label = client.count_nodes_by_label()
     rels_by_type = client.count_rels_by_type()
 
-    # Derived stats from transform data
     n_cumplidas = sum(1 for p in promesas if p.cumplida)
 
     summary: Dict[str, Any] = {
@@ -285,8 +281,8 @@ def main() -> None:
     print(f"  Warnings     : {len(warnings)}")
     print("=" * 60)
 
-    client.close()
+    await client.close()
 
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())

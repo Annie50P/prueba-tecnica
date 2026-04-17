@@ -37,24 +37,22 @@ function StatCard({ label, value, color = 'text-slate-800', sub }) {
 }
 
 function getStatus(c) {
-  const pend  = c.monto_pendiente ?? 0;
-  const ini   = c.monto_deuda_inicial ?? 1;
-  const ratio = pend / ini;
+  const rec   = c.tasa_recuperacion ?? 0;
   const dias  = c.dias_sin_contacto ?? 0;
-  const cumpl = c.tasa_cumplimiento ?? 1;
-  const nllamadas = (c.interacciones ?? []).length;
+  const cumpl = c.tasa_cumplimiento;
+  const tieneProm = cumpl !== null && cumpl !== undefined;
 
-  if (pend === 0)
-    return { label: 'Liquidado',       cls: 'bg-emerald-100 text-emerald-700' };
-  if (ratio < 0.3)
-    return { label: 'Casi liquidado',  cls: 'bg-blue-100 text-blue-700' };
-  if (ratio >= 0.5 && cumpl < 0.25 && nllamadas > 2)
-    return { label: 'Alto riesgo',     cls: 'bg-red-200 text-red-800' };
-  if (dias > 60 && ratio >= 0.5)
-    return { label: 'Sin gestión',     cls: 'bg-orange-100 text-orange-700' };
-  if (ratio < 0.7)
-    return { label: 'En proceso',      cls: 'bg-amber-100 text-amber-700' };
-  return   { label: 'Pendiente alto',  cls: 'bg-red-100 text-red-700' };
+  if (rec >= 1)
+    return { label: 'Liquidado',      cls: 'bg-emerald-100 text-emerald-700' };
+  if (rec >= 0.7)
+    return { label: 'Buen pagador',   cls: 'bg-blue-100 text-blue-700' };
+  if (tieneProm && cumpl < 0.3 && rec < 0.5)
+    return { label: 'Alto riesgo',    cls: 'bg-red-200 text-red-800' };
+  if (dias > 30 && rec < 0.7)
+    return { label: 'Sin gestión',    cls: 'bg-orange-100 text-orange-700' };
+  if (rec >= 0.3)
+    return { label: 'En proceso',     cls: 'bg-amber-100 text-amber-700' };
+  return   { label: 'Pendiente alto', cls: 'bg-red-100 text-red-700' };
 }
 
 function money(n) {
@@ -118,7 +116,10 @@ export default function ClienteDetalle() {
   const pctRecuperado  = ini > 0 ? ((cliente.total_pagado ?? 0) / ini * 100).toFixed(1) : 0;
   const promesasTotal  = (cliente.promesas ?? []).length;
   const promesasCumpl  = (cliente.promesas ?? []).filter(p => p.cumplida).length;
-  const tasaCumpl      = promesasTotal > 0 ? ((promesasCumpl / promesasTotal) * 100).toFixed(0) : '--';
+  // null = sin promesas (distinto de 0% = tuvo promesas y no cumplió ninguna)
+  const tasaCumpl      = promesasTotal > 0
+    ? ((promesasCumpl / promesasTotal) * 100).toFixed(0)
+    : null;
 
   const planes = cliente.planes ?? [];
 
@@ -183,10 +184,10 @@ export default function ClienteDetalle() {
           sub="en promesas pendientes"
         />
         <StatCard
-          label="Cumplimiento promesas"
-          value={promesasTotal > 0 ? `${promesasCumpl}/${promesasTotal}` : '--'}
-          color={Number(tasaCumpl) >= 50 ? 'text-emerald-600' : 'text-red-500'}
-          sub={promesasTotal > 0 ? `${tasaCumpl}% cumplidas` : undefined}
+          label="Cumpl. promesas"
+          value={tasaCumpl !== null ? `${promesasCumpl}/${promesasTotal}` : 'Sin promesas'}
+          color={tasaCumpl === null ? 'text-slate-400' : Number(tasaCumpl) >= 50 ? 'text-emerald-600' : 'text-red-500'}
+          sub={tasaCumpl !== null ? `${tasaCumpl}% cumplidas` : undefined}
         />
         <StatCard
           label="Sentimiento predominante"
@@ -227,7 +228,7 @@ export default function ClienteDetalle() {
             <div className="bg-slate-50 rounded-lg p-3 border border-slate-100">
               <p className="text-[10px] text-slate-400 uppercase tracking-wide">Promesas</p>
               <p className="text-lg font-bold text-slate-800 mt-0.5">{promesasCumpl}/{promesasTotal}</p>
-              <p className="text-[11px] text-slate-400">{tasaCumpl !== '--' ? `${tasaCumpl}% cumplidas` : 'Sin promesas'}</p>
+              <p className="text-[11px] text-slate-400">{tasaCumpl !== null ? `${tasaCumpl}% cumplidas` : 'Sin promesas'}</p>
             </div>
             <div className="bg-slate-50 rounded-lg p-3 border border-slate-100">
               <p className="text-[10px] text-slate-400 uppercase tracking-wide">Pagos</p>

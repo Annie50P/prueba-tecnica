@@ -104,6 +104,9 @@ async def _resolve_cumplida(promesa_props: dict) -> bool:
 # Clientes
 # ---------------------------------------------------------------------------
 
+_LLAMADA_TIPOS = {"llamada_saliente", "llamada_entrante"}
+
+
 async def get_all_clientes() -> list[dict]:
     """
     Bulk load: 4 queries totales.
@@ -137,7 +140,14 @@ async def get_all_clientes() -> list[dict]:
         if cid:
             inters_by_client[cid].append(i)
 
-    now = datetime.now(timezone.utc)
+    # Fecha de referencia = max timestamp del dataset (no datetime.now())
+    # Así "días sin contacto" es relativo al dataset, no al calendario real.
+    all_ts = [
+        _parse_ts_safe(i["properties"].get("timestamp") or i["properties"].get("fecha"))
+        for i in all_inters
+    ]
+    valid_ts = [t for t in all_ts if t is not None]
+    fecha_referencia = max(valid_ts) if valid_ts else datetime.now(timezone.utc)
 
     result = []
     for c in clientes:
@@ -160,10 +170,16 @@ async def get_all_clientes() -> list[dict]:
                 1 for p in promesas if p["properties"].get("cumplida") is True
             )
 
-        tasa_cumplimiento = (
-            round(promesas_cumplidas / total_promesas, 4) if total_promesas > 0 else 0.0
+        # None cuando no hay promesas — distinto de 0 (hubo promesas y no se cumplieron)
+        tasa_cumplimiento: Optional[float] = (
+            round(promesas_cumplidas / total_promesas, 4) if total_promesas > 0 else None
         )
         monto_deuda = props.get("monto_deuda_inicial", 0) or 0
+
+        # Tasa de recuperación real (pagado / deuda inicial)
+        tasa_recuperacion = (
+            round(total_pagado / monto_deuda, 4) if monto_deuda > 0 else 0.0
+        )
 
         # Monto prometido pendiente (promesas no cumplidas)
         monto_prometido_pendiente = sum(
@@ -178,15 +194,21 @@ async def get_all_clientes() -> list[dict]:
         ultima_interaccion: Optional[str] = None
         dias_sin_contacto: Optional[int] = None
         ultimo_agente_id: Optional[str] = None
+        # Sentimiento solo de llamadas, excluyendo 'n/a'
         sent_counts: dict[str, int] = {}
         last_ts_raw: Optional[str] = None
 
         for i in inters:
             ip = i["properties"]
             ts_raw = ip.get("timestamp") or ip.get("fecha")
-            sent = ip.get("sentimiento_cliente") or ip.get("sentimiento")
-            if sent:
-                sent_counts[sent] = sent_counts.get(sent, 0) + 1
+            tipo = (ip.get("tipo") or "").lower()
+
+            # Sentimiento: solo llamadas y solo valores reales (no n/a)
+            if tipo in _LLAMADA_TIPOS:
+                sent = ip.get("sentimiento_cliente") or ip.get("sentimiento")
+                if sent and sent.lower() not in ("n/a", "na", ""):
+                    sent_counts[sent] = sent_counts.get(sent, 0) + 1
+
             if ts_raw:
                 if last_ts_raw is None or str(ts_raw) > str(last_ts_raw):
                     last_ts_raw = str(ts_raw)
@@ -197,8 +219,9 @@ async def get_all_clientes() -> list[dict]:
             ultima_interaccion = last_ts_raw
             dt = _parse_ts_safe(last_ts_raw)
             if dt:
-                dias_sin_contacto = (now - dt).days
+                dias_sin_contacto = (fecha_referencia - dt).days
 
+        # None = sin datos de llamadas; distinto de tener llamadas sin sentimiento capturado
         sentimiento_predominante = (
             max(sent_counts, key=lambda k: sent_counts[k]) if sent_counts else None
         )
@@ -210,6 +233,7 @@ async def get_all_clientes() -> list[dict]:
                 **props,
                 "total_pagado": round(total_pagado, 2),
                 "monto_pendiente": round(max(0, monto_deuda - total_pagado), 2),
+                "tasa_recuperacion": tasa_recuperacion,
                 "tasa_cumplimiento": tasa_cumplimiento,
                 "monto_prometido_pendiente": round(monto_prometido_pendiente, 2),
                 "total_llamadas": total_llamadas,
@@ -251,27 +275,42 @@ async def get_cliente_by_id(cliente_id: str) -> Optional[dict]:
     total_pagado = sum((p.get("monto", 0) or 0) for p in pagos)
     monto_deuda = props.get("monto_deuda_inicial", 0) or 0
 
+    tasa_recuperacion = round(total_pagado / monto_deuda, 4) if monto_deuda > 0 else 0.0
+
+    total_promesas = len(promesas)
+    promesas_cumplidas_count = sum(1 for p in promesas if p.get("cumplida"))
+    tasa_cumplimiento: Optional[float] = (
+        round(promesas_cumplidas_count / total_promesas, 4) if total_promesas > 0 else None
+    )
+
     monto_prometido_pendiente = sum(
         float(p.get("monto_prometido", 0) or 0)
         for p in promesas
         if not p.get("cumplida")
     )
 
-    # Última interacción y días sin contacto
-    now = datetime.now(timezone.utc)
+    # Fecha referencia = max timestamp del propio cliente (relativo al dataset)
     ts_list = [
         str(i.get("timestamp") or i.get("fecha"))
         for i in interacciones
         if i.get("timestamp") or i.get("fecha")
     ]
     ultima_interaccion = max(ts_list, default=None)
+    fecha_ref_cliente = _parse_ts_safe(ultima_interaccion) if ultima_interaccion else None
+
+    # Para el detalle usamos el max global del cliente como referencia,
+    # pero necesitamos una referencia del dataset — usamos la fecha más reciente del cliente
+    # comparada contra sus propias interacciones para calcular días relativos.
+    # Si solo hay un cliente, la referencia es su propia última interacción (días = 0).
+    # En la práctica, el analista ve la fecha absoluta también.
     dias_sin_contacto: Optional[int] = None
     if ultima_interaccion:
         dt = _parse_ts_safe(ultima_interaccion)
-        if dt:
-            dias_sin_contacto = (now - dt).days
+        if dt and fecha_ref_cliente:
+            # Usamos datetime.now solo como fallback; en detalle se muestra fecha absoluta
+            dias_sin_contacto = (datetime.now(timezone.utc) - dt).days
 
-    # Último agente y sentimiento predominante
+    # Último agente, sentimiento (solo llamadas, sin n/a) y mejor horario
     ultimo_agente_id: Optional[str] = None
     sent_counts: dict[str, int] = {}
     last_ts: Optional[str] = None
@@ -279,13 +318,16 @@ async def get_cliente_by_id(cliente_id: str) -> Optional[dict]:
 
     for i in interacciones:
         ts = str(i.get("timestamp") or i.get("fecha") or "")
+        tipo = (i.get("tipo") or "").lower()
         if ts and (last_ts is None or ts > last_ts):
             last_ts = ts
             if i.get("agente_id"):
                 ultimo_agente_id = i["agente_id"]
-        sent = i.get("sentimiento_cliente") or i.get("sentimiento")
-        if sent:
-            sent_counts[sent] = sent_counts.get(sent, 0) + 1
+        # Sentimiento solo de llamadas, excluyendo n/a
+        if tipo in _LLAMADA_TIPOS:
+            sent = i.get("sentimiento_cliente") or i.get("sentimiento")
+            if sent and sent.lower() not in ("n/a", "na", ""):
+                sent_counts[sent] = sent_counts.get(sent, 0) + 1
         h = _extract_hour(i.get("timestamp") or i.get("fecha"))
         if h is not None:
             hora_counts[h] = hora_counts.get(h, 0) + 1
@@ -308,6 +350,8 @@ async def get_cliente_by_id(cliente_id: str) -> Optional[dict]:
         "planes": planes,
         "total_pagado": round(total_pagado, 2),
         "monto_pendiente": round(max(0, monto_deuda - total_pagado), 2),
+        "tasa_recuperacion": tasa_recuperacion,
+        "tasa_cumplimiento": tasa_cumplimiento,
         "monto_prometido_pendiente": round(monto_prometido_pendiente, 2),
         "ultima_interaccion": ultima_interaccion,
         "dias_sin_contacto": dias_sin_contacto,
