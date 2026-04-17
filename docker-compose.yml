@@ -136,15 +136,16 @@ services:
       start_period: 40s
 
   frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
+    image: oven/bun:1
     container_name: frontend
-    depends_on:
-      api:
-        condition: service_healthy
+    working_dir: /app
+    volumes:
+      - ./frontend:/app
+    command: sh -c "bun install && bun run dev --host"
     ports:
-      - "${FRONTEND_PORT:-3000}:80"
+      - "${FRONTEND_PORT:-3000}:3000"
+    environment:
+      - VITE_API_URL=http://api:8001
 
 volumes:
   neo4j_data:

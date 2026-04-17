@@ -100,8 +100,7 @@ export default function Clientes() {
       const matchSearch =
         (c.nombre ?? '').toLowerCase().includes(q) ||
         (c.id ?? '').toLowerCase().includes(q) ||
-        (c.telefono ?? '').toLowerCase().includes(q) ||
-        (c.tipo_deuda ?? '').toLowerCase().includes(q);
+        (c.tipo_deuda ?? '').replace(/_/g, ' ').toLowerCase().includes(q);
       const matchEstado = !filterEstado || getStatus(c).label === filterEstado;
       const matchTipo   = !filterTipo   || c.tipo_deuda === filterTipo;
       return matchSearch && matchEstado && matchTipo;
@@ -168,7 +167,7 @@ export default function Clientes() {
           </svg>
           <input
             type="text"
-            placeholder="Buscar nombre, ID, teléfono..."
+            placeholder="Buscar nombre, ID o tipo de deuda..."
             value={search}
             onChange={e => setSearch(e.target.value)}
             className="pl-9 pr-4 py-2 border border-slate-200 rounded-lg text-sm w-72 focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-300 bg-white"
