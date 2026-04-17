@@ -90,11 +90,12 @@ class Settings(BaseSettings):
     gemini_api_key: str = Field(default="", description="Google Gemini API key")
     openai_api_key: str = Field(default="", description="OpenAI API key (GPT)")
     groq_api_key: str = Field(default="", description="Groq API key (gratis — console.groq.com)")
+    openrouter_api_key: str = Field(default="", description="OpenRouter API key (openrouter.ai — modelos :free disponibles)")
     llm_provider: str = Field(
         default="auto",
         description=(
-            "LLM provider: 'auto' (OpenAI > Gemini > Anthropic en orden de preferencia), "
-            "'openai', 'gemini', 'anthropic'."
+            "LLM provider: 'auto' (OpenRouter > Groq > OpenAI > Gemini > Anthropic), "
+            "'openrouter', 'groq', 'openai', 'gemini', 'anthropic'."
         ),
     )
     mcp_enabled: bool = Field(default=False, description="Whether MCP is enabled")

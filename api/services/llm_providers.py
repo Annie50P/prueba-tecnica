@@ -2,17 +2,19 @@
 llm_providers.py — Abstracción intercambiable de proveedores LLM.
 
 Proveedores disponibles:
-  - GroqProvider     : Groq (GRATIS, sin tarjeta — llama-3.3-70b con function calling)
-  - OpenAIProvider   : OpenAI GPT (requiere créditos)
-  - GeminiProvider   : Google Gemini (free tier con límites)
-  - AnthropicProvider: Anthropic Claude (requiere créditos)
+  - OpenRouterProvider: OpenRouter (gratis con modelos :free — openrouter.ai)
+  - GroqProvider      : Groq (GRATIS, sin tarjeta — llama-3.3-70b con function calling)
+  - OpenAIProvider    : OpenAI GPT (requiere créditos)
+  - GeminiProvider    : Google Gemini (free tier con límites)
+  - AnthropicProvider : Anthropic Claude (requiere créditos)
 
 Selección automática via factory `get_provider(settings)`:
-  - llm_provider = "auto"      → Groq > OpenAI > Gemini > Anthropic
-  - llm_provider = "groq"      → Groq (falla si no hay key)
-  - llm_provider = "openai"    → OpenAI
-  - llm_provider = "gemini"    → Gemini
-  - llm_provider = "anthropic" → Anthropic
+  - llm_provider = "auto"        → OpenRouter > Groq > OpenAI > Gemini > Anthropic
+  - llm_provider = "openrouter"  → OpenRouter (falla si no hay key)
+  - llm_provider = "groq"        → Groq (falla si no hay key)
+  - llm_provider = "openai"      → OpenAI
+  - llm_provider = "gemini"      → Gemini
+  - llm_provider = "anthropic"   → Anthropic
 """
 
 import json
@@ -274,6 +276,146 @@ class GeminiProvider(BaseLLMProvider):
             "queries_ejecutadas": queries_ejecutadas,
             "tokens_usados": tokens_usados,
             "proveedor": f"gemini/{self.model}",
+        }
+
+
+# ─────────────────────────────────────────────────────────────────
+# OpenRouter Provider  (OpenAI-compatible API — modelos :free disponibles)
+# ─────────────────────────────────────────────────────────────────
+
+class OpenRouterProvider(BaseLLMProvider):
+    """
+    OpenRouter — gateway multi-modelo con tier gratuito.
+    Modelos :free con function calling confirmado:
+      - meta-llama/llama-3.3-70b-instruct:free  (default)
+      - mistralai/mistral-small-3.1-24b-instruct:free
+    Registro: https://openrouter.ai
+    """
+
+    BASE_URL = "https://openrouter.ai/api/v1"
+    DEFAULT_MODEL = "meta-llama/llama-3.3-70b-instruct:free"
+
+    def __init__(self, api_key: str, model: str | None = None):
+        self.api_key = api_key
+        self.model = model or self.DEFAULT_MODEL
+
+    @staticmethod
+    def _build_tools(tools: list[dict]) -> list[dict]:
+        return [
+            {
+                "type": "function",
+                "function": {
+                    "name": t["name"],
+                    "description": t["description"],
+                    "parameters": t.get("input_schema", {"type": "object", "properties": {}}),
+                },
+            }
+            for t in tools
+        ]
+
+    async def run(
+        self,
+        query: str,
+        system_prompt: str,
+        tools: list[dict],
+        execute_tool: Callable[[str, dict], Awaitable[Any]],
+        max_iterations: int = 5,
+    ) -> dict[str, Any]:
+        from openai import OpenAI, AuthenticationError, RateLimitError, BadRequestError, APIStatusError
+
+        queries_ejecutadas: list[str] = []
+        tokens_usados = 0
+        messages: list[dict] = [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": query},
+        ]
+        or_tools = self._build_tools(tools)
+
+        try:
+            client = OpenAI(
+                api_key=self.api_key,
+                base_url=self.BASE_URL,
+                default_headers={"HTTP-Referer": "https://github.com", "X-Title": "prueba-tecnica"},
+            )
+
+            for _ in range(max_iterations):
+                response = client.chat.completions.create(
+                    model=self.model,
+                    messages=messages,  # type: ignore[arg-type]
+                    tools=or_tools,     # type: ignore[arg-type]
+                    temperature=0.1,
+                )
+
+                if response.usage:
+                    tokens_usados += (response.usage.prompt_tokens or 0) + (
+                        response.usage.completion_tokens or 0
+                    )
+
+                msg = response.choices[0].message
+                tool_calls = msg.tool_calls or []
+
+                if not tool_calls:
+                    return {
+                        "status": "ok",
+                        "respuesta": (msg.content or "").strip(),
+                        "datos": [],
+                        "queries_ejecutadas": queries_ejecutadas,
+                        "tokens_usados": tokens_usados,
+                        "proveedor": f"openrouter/{self.model}",
+                    }
+
+                messages.append({
+                    "role": "assistant",
+                    "content": msg.content or "",
+                    "tool_calls": [
+                        {"id": tc.id, "type": "function",
+                         "function": {"name": tc.function.name, "arguments": tc.function.arguments}}
+                        for tc in tool_calls
+                    ],
+                })
+
+                for tc in tool_calls:
+                    name = tc.function.name
+                    try:
+                        args = json.loads(tc.function.arguments or "{}")
+                    except json.JSONDecodeError:
+                        args = {}
+                    queries_ejecutadas.append(name)
+                    logger.info("[openrouter] tool=%s args=%s", name, args)
+                    result = await execute_tool(name, args)
+                    logger.info("[openrouter] tool=%s → %d chars", name, len(str(result)))
+                    messages.append({
+                        "role": "tool",
+                        "tool_call_id": tc.id,
+                        "content": json.dumps(result, ensure_ascii=False, default=str),
+                    })
+
+        except AuthenticationError:
+            return {"status": "error", "error": "auth_error",
+                    "message": "OPENROUTER_API_KEY inválida.", "respuesta": "", "datos": []}
+        except RateLimitError as e:
+            return {"status": "error", "error": "quota_exceeded",
+                    "message": f"Rate limit de OpenRouter alcanzado: {str(e)[:150]}",
+                    "respuesta": "", "datos": []}
+        except BadRequestError as e:
+            return {"status": "error", "error": "bad_request",
+                    "message": f"Error en solicitud a OpenRouter: {str(e)[:200]}",
+                    "respuesta": "", "datos": []}
+        except APIStatusError as e:
+            return {"status": "error", "error": "api_error",
+                    "message": f"Error API OpenRouter (HTTP {e.status_code})",
+                    "respuesta": "", "datos": []}
+        except Exception as e:
+            logger.exception("[openrouter] unexpected error: %s", e)
+            return {"status": "error", "error": "internal_error",
+                    "message": f"Error interno con OpenRouter: {type(e).__name__}",
+                    "respuesta": "", "datos": []}
+
+        return {
+            "status": "ok",
+            "respuesta": "Se alcanzó el límite de iteraciones.",
+            "datos": [], "queries_ejecutadas": queries_ejecutadas,
+            "tokens_usados": tokens_usados, "proveedor": f"openrouter/{self.model}",
         }
 
 
@@ -747,12 +889,21 @@ def get_provider(settings) -> BaseLLMProvider | None:
     Devuelve el proveedor activo según la configuración.
 
     Lógica de selección con llm_provider = "auto":
-      1. Groq     si GROQ_API_KEY presente (gratis, sin tarjeta)
-      2. OpenAI   si OPENAI_API_KEY presente
-      3. Gemini   si GEMINI_API_KEY presente
-      4. Anthropic si ANTHROPIC_API_KEY presente
+      1. OpenRouter si OPENROUTER_API_KEY presente
+      2. Groq       si GROQ_API_KEY presente (gratis, sin tarjeta)
+      3. OpenAI     si OPENAI_API_KEY presente
+      4. Gemini     si GEMINI_API_KEY presente
+      5. Anthropic  si ANTHROPIC_API_KEY presente
     """
     mode = (settings.llm_provider or "auto").lower()
+
+    if mode in ("openrouter", "auto"):
+        key = getattr(settings, "openrouter_api_key", "")
+        if key:
+            logger.info("[factory] proveedor seleccionado: OpenRouter")
+            return OpenRouterProvider(api_key=key)
+        if mode == "openrouter":
+            return None
 
     if mode in ("groq", "auto"):
         key = getattr(settings, "groq_api_key", "")

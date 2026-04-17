@@ -110,8 +110,8 @@ export default function Clientes() {
       let va = a[sortKey] ?? '', vb = b[sortKey] ?? '';
       if (typeof va === 'number' && typeof vb === 'number') return sortAsc ? va - vb : vb - va;
       return sortAsc
-        ? String(va).localeCompare(String(vb))
-        : String(vb).localeCompare(String(va));
+        ? String(va).localeCompare(String(vb), 'es', { sensitivity: 'base' })
+        : String(vb).localeCompare(String(va), 'es', { sensitivity: 'base' });
     });
     return list;
   }, [clientes, search, sortKey, sortAsc, filterEstado, filterTipo]);
