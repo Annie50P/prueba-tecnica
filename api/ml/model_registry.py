@@ -24,8 +24,8 @@ from .features import FEATURE_NAMES
 
 logger = logging.getLogger(__name__)
 
-MODEL_DIR = Path(os.path.dirname(__file__)).parent / "models"
-MODEL_DIR.mkdir(exist_ok=True)
+MODEL_DIR = Path(__file__).parent / "artifacts"
+MODEL_DIR.mkdir(parents=True, exist_ok=True)
 
 REGISTRY_FILE = MODEL_DIR / "registry.json"
 

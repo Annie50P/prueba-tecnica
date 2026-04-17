@@ -42,13 +42,29 @@ class Settings(BaseSettings):
         default="http://localhost:8000",
         description="Graphiti API URL",
     )
+    graphiti_mcp_url: str = Field(
+        default="http://localhost:8020/mcp",
+        description=(
+            "Endpoint Streamable HTTP del servidor MCP oficial de Graphiti. "
+            "Deja vacío para desactivar la integración MCP real."
+        ),
+    )
     use_neo4j: bool = Field(
         default=False,
         description="Use Neo4j instead of SQLite",
     )
     graph_backend: str = Field(
-        default="sqlite",
-        description="Active read backend: 'sqlite' (default, dev) or 'neo4j'",
+        default="graphiti",
+        description=(
+            "Active read backend: "
+            "'graphiti' (default — acceso a Neo4j vía graphiti-core, fuente única de verdad), "
+            "'neo4j' (driver neo4j directo), "
+            "'sqlite' (fallback local sin Neo4j)."
+        ),
+    )
+    graphiti_group_id: str = Field(
+        default="prueba-tecnica",
+        description="Group ID de Graphiti para aislar el grafo del proyecto.",
     )
     promesa_cumplida_mode: str = Field(
         default="snapshot",
@@ -72,9 +88,14 @@ class Settings(BaseSettings):
     # LLM providers (for /mcp/query natural language endpoint)
     anthropic_api_key: str = Field(default="", description="Anthropic API key (Claude)")
     gemini_api_key: str = Field(default="", description="Google Gemini API key")
+    openai_api_key: str = Field(default="", description="OpenAI API key (GPT)")
+    groq_api_key: str = Field(default="", description="Groq API key (gratis — console.groq.com)")
     llm_provider: str = Field(
         default="auto",
-        description="LLM provider: 'auto' (Gemini if available, else Anthropic), 'gemini', 'anthropic'",
+        description=(
+            "LLM provider: 'auto' (OpenAI > Gemini > Anthropic en orden de preferencia), "
+            "'openai', 'gemini', 'anthropic'."
+        ),
     )
     mcp_enabled: bool = Field(default=False, description="Whether MCP is enabled")
 

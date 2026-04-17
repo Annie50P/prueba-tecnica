@@ -4,6 +4,10 @@ Regresión C4 — `PromesaPago.cumplida` resoluble on-read.
 En modo `dynamic`, el flag cumplida no se lee del snapshot — se recalcula
 a partir de los pagos del cliente dentro del grace window. Así, un pago
 insertado después de la ingesta se refleja inmediatamente.
+
+Tras el refactor B1/C1: los servicios consumen la capa de repositorio,
+por lo que el test monta una mini-DB SQLite y fuerza `settings.db_path`
+hacia ella, sin tocar conexiones directas.
 """
 from __future__ import annotations
 
@@ -11,14 +15,12 @@ import json
 import os
 import sqlite3
 import tempfile
-from datetime import datetime, timezone
 
 
 def _build_mini_db(tmpdir: str, include_pago: bool) -> str:
     """
-    Crea una DB SQLite con 1 cliente, 1 interacción y 1 promesa vencida.
-    Si include_pago=True, añade también un Pago dentro del grace window.
-    El snapshot de `cumplida` se setea en False a propósito.
+    1 cliente + 1 interacción promesa + 1 promesa vencida (snapshot=False).
+    Si include_pago=True, añade un Pago dentro del grace window.
     """
     db_path = os.path.join(tmpdir, "mini.db")
     conn = sqlite3.connect(db_path)
@@ -50,7 +52,6 @@ def _build_mini_db(tmpdir: str, include_pago: bool) -> str:
         ("ix1", "Interaccion", json.dumps(inter_promesa)),
     )
 
-    # Promesa: vence el 2026-01-05. SNAPSHOT=False deliberado.
     promesa = {
         "id": "ix1_promesa",
         "cliente_id": "cli1",
@@ -73,7 +74,6 @@ def _build_mini_db(tmpdir: str, include_pago: bool) -> str:
     )
 
     if include_pago:
-        # Pago el 2026-01-06 (dentro de grace=3 days → deadline 2026-01-08).
         ix_pago = {
             "id": "ix2",
             "cliente_id": "cli1",
@@ -94,79 +94,58 @@ def _build_mini_db(tmpdir: str, include_pago: bool) -> str:
     return db_path
 
 
+def _use_minidb(monkeypatch, db_path: str, mode: str = "dynamic"):
+    """
+    Monkey-patchea settings.db_path → minidb y fuerza re-resolución del
+    backend + modo de cumplida. Garantiza que get_backend() devuelva una
+    instancia fresca apuntando al minidb.
+    """
+    from api.config import settings
+    import api.repositories as repo_mod
+    from api.services import graphiti_service
+
+    monkeypatch.setattr(settings, "db_path", db_path)
+    monkeypatch.setattr(settings, "graph_backend", "sqlite")
+    repo_mod._backend = None  # fuerza nueva SqliteGraphRepository
+    monkeypatch.setattr(graphiti_service, "_CUMPLIDA_MODE", mode)
+    monkeypatch.setattr(graphiti_service, "_GRACE_DAYS", 3)
+
+
 def test_dynamic_mode_detects_post_ingesta_payment(monkeypatch):
-    """
-    Escenario: snapshot dice cumplida=False, pero hay un pago dentro del
-    grace window. En modo `dynamic` debe retornar True.
-    """
+    """Snapshot dice False, pero hay pago en grace window → dynamic retorna True."""
     with tempfile.TemporaryDirectory() as tmp:
         db_path = _build_mini_db(tmp, include_pago=True)
+        _use_minidb(monkeypatch, db_path, mode="dynamic")
 
-        # Forzar modo dynamic + grace=3
-        import importlib
         from api.services import graphiti_service
 
-        monkeypatch.setattr(graphiti_service, "DB_PATH", db_path)
-        monkeypatch.setattr(graphiti_service, "_CUMPLIDA_MODE", "dynamic")
-        monkeypatch.setattr(graphiti_service, "_GRACE_DAYS", 3)
-        monkeypatch.setattr(graphiti_service, "_INDEXES_ENSURED", False)
-
-        conn = graphiti_service._get_connection()
-        try:
-            props = {
-                "cliente_id": "cli1",
-                "fecha_promesa": "2026-01-05",
-                "cumplida": False,  # snapshot miente
-            }
-            cumplida = graphiti_service._is_cumplida_dynamic(
-                conn, props, "ix1_promesa"
-            )
-        finally:
-            conn.close()
-
-        assert cumplida is True, (
-            "Modo dynamic no detectó pago post-ingesta dentro de grace window"
-        )
+        props = {
+            "cliente_id": "cli1",
+            "fecha_promesa": "2026-01-05",
+            "cumplida": False,
+        }
+        assert graphiti_service._is_cumplida_dynamic(props) is True
 
 
 def test_dynamic_mode_no_payment_returns_false(monkeypatch):
     with tempfile.TemporaryDirectory() as tmp:
         db_path = _build_mini_db(tmp, include_pago=False)
+        _use_minidb(monkeypatch, db_path, mode="dynamic")
 
         from api.services import graphiti_service
 
-        monkeypatch.setattr(graphiti_service, "DB_PATH", db_path)
-        monkeypatch.setattr(graphiti_service, "_CUMPLIDA_MODE", "dynamic")
-        monkeypatch.setattr(graphiti_service, "_GRACE_DAYS", 3)
-        monkeypatch.setattr(graphiti_service, "_INDEXES_ENSURED", False)
-
-        conn = graphiti_service._get_connection()
-        try:
-            props = {
-                "cliente_id": "cli1",
-                "fecha_promesa": "2026-01-05",
-                "cumplida": False,
-            }
-            cumplida = graphiti_service._is_cumplida_dynamic(
-                conn, props, "ix1_promesa"
-            )
-        finally:
-            conn.close()
-
-        assert cumplida is False
+        props = {
+            "cliente_id": "cli1",
+            "fecha_promesa": "2026-01-05",
+            "cumplida": False,
+        }
+        assert graphiti_service._is_cumplida_dynamic(props) is False
 
 
 def test_snapshot_mode_respects_persisted_flag(monkeypatch):
-    """Default mode usa snapshot; no consulta pagos."""
+    """Default mode usa snapshot; no consulta pagos ni el repo."""
     from api.services import graphiti_service
 
     monkeypatch.setattr(graphiti_service, "_CUMPLIDA_MODE", "snapshot")
-    # Sin DB real — _resolve_cumplida(snapshot) no lee la conexión.
-    result_true = graphiti_service._resolve_cumplida(
-        None, {"cumplida": True}, "p1"
-    )
-    result_false = graphiti_service._resolve_cumplida(
-        None, {"cumplida": False}, "p2"
-    )
-    assert result_true is True
-    assert result_false is False
+    assert graphiti_service._resolve_cumplida({"cumplida": True}) is True
+    assert graphiti_service._resolve_cumplida({"cumplida": False}) is False

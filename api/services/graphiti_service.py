@@ -1,22 +1,33 @@
 """
-GraphitiService: All database query logic for the Call Pattern Analyzer API.
-Reads from a local SQLite database at ingesta/local_graph.db.
+GraphitiService — toda la lógica de consulta del grafo para la API.
 
-Schema:
-    nodes (id TEXT PRIMARY KEY, label TEXT, properties TEXT)   -- properties is JSON string
-    relationships (id INTEGER PRIMARY KEY AUTOINCREMENT,
-                   from_id TEXT, rel_type TEXT, to_id TEXT, properties TEXT)
+Acceso a datos 100 % via `api.repositories.get_backend()` (B1).
+El servicio es agnóstico al backend: funciona tanto con SQLite local
+como con Neo4j+Graphiti real (GRAPH_BACKEND=graphiti).
+
+Schema semántico (compartido entre ambos backends):
+  - Cliente, Agente, Interaccion, PromesaPago, Pago, PlanPago (labels)
+  - TIENE_INTERACCION, CONDUJO, GENERO_PAGO, GENERO_PROMESA, GENERO_PLAN,
+    SIGUIENTE, CUMPLE_PROMESA (rel_types)
 """
+from __future__ import annotations
 
-import sqlite3
-import json
+import asyncio
+import logging
 import os
-from typing import Any, Optional
+from collections import defaultdict
 from datetime import datetime, date, timedelta, timezone
+from typing import Any, Optional
+
+from api.repositories import get_backend
+
+logger = logging.getLogger(__name__)
 
 try:
     from api.config import settings as _settings  # type: ignore
-    _CUMPLIDA_MODE = (getattr(_settings, "promesa_cumplida_mode", "snapshot") or "snapshot").lower()
+    _CUMPLIDA_MODE = (
+        getattr(_settings, "promesa_cumplida_mode", "snapshot") or "snapshot"
+    ).lower()
     _GRACE_DAYS = int(getattr(_settings, "promesa_grace_days", 3) or 3)
 except Exception:  # pragma: no cover
     _CUMPLIDA_MODE = os.environ.get("PROMESA_CUMPLIDA_MODE", "snapshot").lower()
@@ -25,6 +36,10 @@ except Exception:  # pragma: no cover
     except (TypeError, ValueError):
         _GRACE_DAYS = 3
 
+
+# ---------------------------------------------------------------------------
+# Helpers — tiempo + resolución dinámica de cumplida (C4)
+# ---------------------------------------------------------------------------
 
 def _parse_ts_safe(ts: Optional[str]) -> Optional[datetime]:
     if not ts:
@@ -38,17 +53,15 @@ def _parse_ts_safe(ts: Optional[str]) -> Optional[datetime]:
         return None
 
 
-def _is_cumplida_dynamic(
-    conn: sqlite3.Connection, promesa_props: dict, promesa_id: str
-) -> bool:
+async def _is_cumplida_dynamic(promesa_props: dict) -> bool:
     """
-    C4 — compute-on-read: verifica si existe algún Pago del mismo cliente
-    dentro de [fecha_promesa_ts, fecha_promesa + grace_days]. No depende
-    de `props.cumplida` (snapshot), soluciona el problema de pagos que
-    llegan tras la ingesta.
+    C4 — compute-on-read: existe un pago del mismo cliente en la ventana
+    [fecha_promesa, fecha_promesa + grace_days].
     """
     cliente_id = promesa_props.get("cliente_id")
-    fecha_promesa_raw = promesa_props.get("fecha_promesa") or promesa_props.get("fecha")
+    fecha_promesa_raw = (
+        promesa_props.get("fecha_promesa") or promesa_props.get("fecha")
+    )
     if not cliente_id or not fecha_promesa_raw:
         return bool(promesa_props.get("cumplida"))
 
@@ -57,915 +70,598 @@ def _is_cumplida_dynamic(
     except ValueError:
         return bool(promesa_props.get("cumplida"))
 
+    start = datetime.combine(fecha_promesa_date, datetime.min.time()).replace(
+        tzinfo=timezone.utc
+    )
     deadline = datetime.combine(
         fecha_promesa_date + timedelta(days=_GRACE_DAYS), datetime.min.time()
     ).replace(tzinfo=timezone.utc)
 
-    cur = conn.cursor()
-    cur.execute(
-        """
-        SELECT n.properties FROM relationships r
-        JOIN nodes n ON r.to_id = n.id
-        WHERE r.from_id = ? AND r.rel_type = 'TIENE_INTERACCION'
-          AND n.label = 'Interaccion'
-        """,
-        (cliente_id,),
+    backend = get_backend()
+    interacciones = await backend.get_outgoing_nodes(
+        cliente_id, "TIENE_INTERACCION", "Interaccion"
     )
-    for row in cur.fetchall():
-        props = _parse_props(row["properties"])
-        if props.get("tipo") != "pago_recibido":
+    for inter in interacciones:
+        p = inter["properties"]
+        if p.get("tipo") != "pago_recibido":
             continue
-        pago_ts = _parse_ts_safe(props.get("timestamp") or props.get("fecha"))
-        if pago_ts is None:
+        ts = _parse_ts_safe(p.get("timestamp") or p.get("fecha"))
+        if ts is None:
             continue
-        # Pago debe caer entre fecha_promesa (inicio del día) y deadline
-        start = datetime.combine(fecha_promesa_date, datetime.min.time()).replace(
-            tzinfo=timezone.utc
-        )
-        if start <= pago_ts <= deadline:
+        if start <= ts <= deadline:
             return True
     return False
 
 
-def _resolve_cumplida(
-    conn: sqlite3.Connection, promesa_props: dict, promesa_id: str
-) -> bool:
-    """Usa snapshot o dinámico según settings.promesa_cumplida_mode (C4)."""
+async def _resolve_cumplida(promesa_props: dict) -> bool:
+    """Usa snapshot o dynamic según settings.promesa_cumplida_mode (C4)."""
     if _CUMPLIDA_MODE == "dynamic":
-        return _is_cumplida_dynamic(conn, promesa_props, promesa_id)
+        return await _is_cumplida_dynamic(promesa_props)
     return bool(promesa_props.get("cumplida"))
-
-
-# Resolve DB path relative to this file: ../../../ingesta/local_graph.db
-# File is at api/services/graphiti_service.py → go up 3 levels to project root
-DB_PATH = os.path.join(
-    os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
-    "ingesta",
-    "local_graph.db",
-)
-
-
-_INDEXES_ENSURED = False
-
-
-def _ensure_indexes(conn: sqlite3.Connection) -> None:
-    """C1: índices idempotentes para evitar full-scan por label/from_id."""
-    global _INDEXES_ENSURED
-    if _INDEXES_ENSURED:
-        return
-    try:
-        conn.execute("CREATE INDEX IF NOT EXISTS idx_nodes_label ON nodes(label)")
-        conn.execute("CREATE INDEX IF NOT EXISTS idx_rel_from ON relationships(from_id)")
-        conn.execute("CREATE INDEX IF NOT EXISTS idx_rel_to ON relationships(to_id)")
-        conn.execute("CREATE INDEX IF NOT EXISTS idx_rel_type ON relationships(rel_type)")
-        conn.execute(
-            "CREATE INDEX IF NOT EXISTS idx_rel_from_type ON relationships(from_id, rel_type)"
-        )
-        conn.commit()
-        _INDEXES_ENSURED = True
-    except sqlite3.OperationalError:
-        pass
-
-
-def _get_connection() -> sqlite3.Connection:
-    """Open and return a SQLite connection with row_factory set."""
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    _ensure_indexes(conn)
-    return conn
-
-
-def _parse_props(raw: Optional[str]) -> dict:
-    """Safely parse a JSON properties string into a dict."""
-    if not raw:
-        return {}
-    try:
-        return json.loads(raw)
-    except (json.JSONDecodeError, TypeError):
-        return {}
 
 
 # ---------------------------------------------------------------------------
 # Clientes
 # ---------------------------------------------------------------------------
 
-def get_all_clientes() -> list[dict]:
+async def get_all_clientes() -> list[dict]:
     """
-    Return all Cliente nodes enriched with derived metrics:
-    - total_pagado: sum of amounts in Pago nodes linked to this client
-    - monto_pendiente: monto_deuda_inicial - total_pagado
-    - tasa_cumplimiento: promesas_cumplidas / total_promesas
+    Bulk load: 3 queries totales en vez de 2N.
+    Pago y PromesaPago tienen cliente_id en sus propiedades (escrito por la ingesta),
+    por lo que se pueden agrupar en memoria sin necesidad de traversal por cliente.
+    El modo dynamic se mantiene para _resolve_cumplida pero solo si está activo.
     """
-    conn = _get_connection()
-    try:
-        cursor = conn.cursor()
+    backend = get_backend()
 
-        # Fetch all Cliente nodes
-        cursor.execute("SELECT id, label, properties FROM nodes WHERE label = 'Cliente'")
-        clientes_rows = cursor.fetchall()
+    clientes, all_pagos, all_promesas = await asyncio.gather(
+        backend.get_nodes_by_label("Cliente"),
+        backend.get_nodes_by_label("Pago"),
+        backend.get_nodes_by_label("PromesaPago"),
+    )
 
-        result = []
-        for row in clientes_rows:
-            cliente_id = row["id"]
-            props = _parse_props(row["properties"])
+    pagos_by_client: dict[str, list] = defaultdict(list)
+    for p in all_pagos:
+        cid = p["properties"].get("cliente_id")
+        if cid:
+            pagos_by_client[cid].append(p)
 
-            # --- total_pagado ---
-            # Path: Cliente -TIENE_INTERACCION-> Interaccion -GENERO_PAGO-> Pago
-            cursor.execute(
-                """
-                SELECT n.properties
-                FROM relationships r1
-                JOIN relationships r2 ON r1.to_id = r2.from_id
-                JOIN nodes n ON r2.to_id = n.id
-                WHERE r1.from_id = ?
-                  AND r1.rel_type = 'TIENE_INTERACCION'
-                  AND r2.rel_type = 'GENERO_PAGO'
-                  AND n.label = 'Pago'
-                """,
-                (cliente_id,),
-            )
-            pago_rows = cursor.fetchall()
-            total_pagado = sum(
-                _parse_props(p["properties"]).get("monto", 0) or 0 for p in pago_rows
-            )
+    promesas_by_client: dict[str, list] = defaultdict(list)
+    for p in all_promesas:
+        cid = p["properties"].get("cliente_id")
+        if cid:
+            promesas_by_client[cid].append(p)
 
-            # --- promesas ---
-            cursor.execute(
-                """
-                SELECT n.properties
-                FROM relationships r1
-                JOIN relationships r2 ON r1.to_id = r2.from_id
-                JOIN nodes n ON r2.to_id = n.id
-                WHERE r1.from_id = ?
-                  AND r1.rel_type = 'TIENE_INTERACCION'
-                  AND r2.rel_type = 'GENERO_PROMESA'
-                  AND n.label = 'PromesaPago'
-                """,
-                (cliente_id,),
-            )
-            promesa_rows = cursor.fetchall()
-            total_promesas = len(promesa_rows)
-            # C4: cumplida puede calcularse on-read (PROMESA_CUMPLIDA_MODE=dynamic).
-            promesa_props_list = [
-                {**_parse_props(p["properties"]), "cliente_id": cliente_id}
-                for p in promesa_rows
-            ]
+    result = []
+    for c in clientes:
+        cliente_id = c["id"]
+        props = c["properties"]
+
+        pagos = pagos_by_client.get(cliente_id, [])
+        total_pagado = sum((p["properties"].get("monto", 0) or 0) for p in pagos)
+
+        promesas = promesas_by_client.get(cliente_id, [])
+        total_promesas = len(promesas)
+
+        if _CUMPLIDA_MODE == "dynamic":
+            promesas_cumplidas = 0
+            for p in promesas:
+                if await _resolve_cumplida({**p["properties"], "cliente_id": cliente_id}):
+                    promesas_cumplidas += 1
+        else:
             promesas_cumplidas = sum(
-                1
-                for props_p in promesa_props_list
-                if _resolve_cumplida(conn, props_p, props_p.get("id", ""))
-            )
-            tasa_cumplimiento = (
-                round(promesas_cumplidas / total_promesas, 4) if total_promesas > 0 else 0.0
+                1 for p in promesas if p["properties"].get("cumplida") is True
             )
 
-            monto_deuda = props.get("monto_deuda_inicial", 0) or 0
-            monto_pendiente = max(0, monto_deuda - total_pagado)
-
-            result.append(
-                {
-                    "id": cliente_id,
-                    "label": row["label"],
-                    **props,
-                    "total_pagado": round(total_pagado, 2),
-                    "monto_pendiente": round(monto_pendiente, 2),
-                    "tasa_cumplimiento": tasa_cumplimiento,
-                }
-            )
-
-        return result
-    finally:
-        conn.close()
-
-
-def get_cliente_by_id(cliente_id: str) -> Optional[dict]:
-    """Return full detail for a single client, including linked entities."""
-    conn = _get_connection()
-    try:
-        cursor = conn.cursor()
-
-        cursor.execute(
-            "SELECT id, label, properties FROM nodes WHERE id = ? AND label = 'Cliente'",
-            (cliente_id,),
+        tasa_cumplimiento = (
+            round(promesas_cumplidas / total_promesas, 4) if total_promesas > 0 else 0.0
         )
-        row = cursor.fetchone()
-        if not row:
-            return None
-
-        props = _parse_props(row["properties"])
-
-        # Interactions
-        cursor.execute(
-            """
-            SELECT n.id, n.label, n.properties
-            FROM relationships r JOIN nodes n ON r.to_id = n.id
-            WHERE r.from_id = ? AND r.rel_type = 'TIENE_INTERACCION' AND n.label = 'Interaccion'
-            """,
-            (cliente_id,),
-        )
-        interacciones = [
-            {"id": r["id"], **_parse_props(r["properties"])} for r in cursor.fetchall()
-        ]
-
-        # Promises
-        cursor.execute(
-            """
-            SELECT n.id, n.label, n.properties
-            FROM relationships r1
-            JOIN relationships r2 ON r1.to_id = r2.from_id
-            JOIN nodes n ON r2.to_id = n.id
-            WHERE r1.from_id = ?
-              AND r1.rel_type = 'TIENE_INTERACCION'
-              AND r2.rel_type = 'GENERO_PROMESA'
-              AND n.label = 'PromesaPago'
-            """,
-            (cliente_id,),
-        )
-        promesas = [
-            {"id": r["id"], **_parse_props(r["properties"])} for r in cursor.fetchall()
-        ]
-
-        # Payments
-        cursor.execute(
-            """
-            SELECT n.id, n.label, n.properties
-            FROM relationships r1
-            JOIN relationships r2 ON r1.to_id = r2.from_id
-            JOIN nodes n ON r2.to_id = n.id
-            WHERE r1.from_id = ?
-              AND r1.rel_type = 'TIENE_INTERACCION'
-              AND r2.rel_type = 'GENERO_PAGO'
-              AND n.label = 'Pago'
-            """,
-            (cliente_id,),
-        )
-        pagos = [
-            {"id": r["id"], **_parse_props(r["properties"])} for r in cursor.fetchall()
-        ]
-
-        total_pagado = sum(p.get("monto", 0) or 0 for p in pagos)
         monto_deuda = props.get("monto_deuda_inicial", 0) or 0
 
-        return {
-            "id": cliente_id,
-            "label": row["label"],
-            **props,
-            "interacciones": interacciones,
-            "promesas": promesas,
-            "pagos": pagos,
-            "total_pagado": round(total_pagado, 2),
-            "monto_pendiente": round(max(0, monto_deuda - total_pagado), 2),
-        }
-    finally:
-        conn.close()
-
-
-def get_cliente_timeline(cliente_id: str) -> Optional[list[dict]]:
-    """
-    Return chronological interaction history for a client.
-    Returns None if the client does not exist.
-    """
-    conn = _get_connection()
-    try:
-        cursor = conn.cursor()
-
-        # Verify client exists
-        cursor.execute(
-            "SELECT id FROM nodes WHERE id = ? AND label = 'Cliente'", (cliente_id,)
+        result.append(
+            {
+                "id": cliente_id,
+                "label": "Cliente",
+                **props,
+                "total_pagado": round(total_pagado, 2),
+                "monto_pendiente": round(max(0, monto_deuda - total_pagado), 2),
+                "tasa_cumplimiento": tasa_cumplimiento,
+            }
         )
-        if not cursor.fetchone():
-            return None
+    return result
 
-        # Fetch interactions
-        cursor.execute(
-            """
-            SELECT n.id, n.properties
-            FROM relationships r JOIN nodes n ON r.to_id = n.id
-            WHERE r.from_id = ? AND r.rel_type = 'TIENE_INTERACCION' AND n.label = 'Interaccion'
-            """,
-            (cliente_id,),
+
+async def get_cliente_by_id(cliente_id: str) -> Optional[dict]:
+    backend = get_backend()
+    node = await backend.get_node(cliente_id)
+    if not node or node["label"] != "Cliente":
+        return None
+
+    props = node["properties"]
+
+    interacciones_nodes = await backend.get_outgoing_nodes(
+        cliente_id, "TIENE_INTERACCION", "Interaccion"
+    )
+    interacciones = [
+        {"id": i["id"], **i["properties"]} for i in interacciones_nodes
+    ]
+
+    promesas_nodes = await backend.get_two_hop_nodes(
+        cliente_id,
+        "TIENE_INTERACCION",
+        "Interaccion",
+        "GENERO_PROMESA",
+        "PromesaPago",
+    )
+    promesas = [{"id": p["id"], **p["properties"]} for p in promesas_nodes]
+
+    pagos_nodes = await backend.get_two_hop_nodes(
+        cliente_id, "TIENE_INTERACCION", "Interaccion", "GENERO_PAGO", "Pago"
+    )
+    pagos = [{"id": p["id"], **p["properties"]} for p in pagos_nodes]
+
+    total_pagado = sum((p.get("monto", 0) or 0) for p in pagos)
+    monto_deuda = props.get("monto_deuda_inicial", 0) or 0
+
+    return {
+        "id": cliente_id,
+        "label": "Cliente",
+        **props,
+        "interacciones": interacciones,
+        "promesas": promesas,
+        "pagos": pagos,
+        "total_pagado": round(total_pagado, 2),
+        "monto_pendiente": round(max(0, monto_deuda - total_pagado), 2),
+    }
+
+
+async def get_cliente_timeline(cliente_id: str) -> Optional[list[dict]]:
+    backend = get_backend()
+    node = await backend.get_node(cliente_id)
+    if not node or node["label"] != "Cliente":
+        return None
+
+    interacciones = await backend.get_outgoing_nodes(
+        cliente_id, "TIENE_INTERACCION", "Interaccion"
+    )
+
+    timeline = []
+    for i in interacciones:
+        inter_id = i["id"]
+        props = i["properties"]
+
+        promesas = [
+            {"id": p["id"], **p["properties"]}
+            for p in await backend.get_outgoing_nodes(inter_id, "GENERO_PROMESA", "PromesaPago")
+        ]
+        pagos = [
+            {"id": p["id"], **p["properties"]}
+            for p in await backend.get_outgoing_nodes(inter_id, "GENERO_PAGO", "Pago")
+        ]
+        planes = [
+            {"id": p["id"], **p["properties"]}
+            for p in await backend.get_outgoing_nodes(inter_id, "GENERO_PLAN", "PlanPago")
+        ]
+
+        timeline.append(
+            {
+                "interaccion_id": inter_id,
+                **props,
+                "promesas": promesas,
+                "pagos": pagos,
+                "planes": planes,
+            }
         )
-        interacciones_rows = cursor.fetchall()
 
-        timeline = []
-        for row in interacciones_rows:
-            interaccion_id = row["id"]
-            props = _parse_props(row["properties"])
+    def _sort_key(item: dict):
+        return item.get("timestamp") or item.get("fecha") or ""
 
-            # Promises from this interaction
-            cursor.execute(
-                """
-                SELECT n.id, n.properties
-                FROM relationships r JOIN nodes n ON r.to_id = n.id
-                WHERE r.from_id = ? AND r.rel_type = 'GENERO_PROMESA' AND n.label = 'PromesaPago'
-                """,
-                (interaccion_id,),
-            )
-            promesas = [
-                {"id": r["id"], **_parse_props(r["properties"])} for r in cursor.fetchall()
-            ]
-
-            # Payments from this interaction
-            cursor.execute(
-                """
-                SELECT n.id, n.properties
-                FROM relationships r JOIN nodes n ON r.to_id = n.id
-                WHERE r.from_id = ? AND r.rel_type = 'GENERO_PAGO' AND n.label = 'Pago'
-                """,
-                (interaccion_id,),
-            )
-            pagos = [
-                {"id": r["id"], **_parse_props(r["properties"])} for r in cursor.fetchall()
-            ]
-
-            # Plans from this interaction
-            cursor.execute(
-                """
-                SELECT n.id, n.properties
-                FROM relationships r JOIN nodes n ON r.to_id = n.id
-                WHERE r.from_id = ? AND r.rel_type = 'GENERO_PLAN' AND n.label = 'PlanPago'
-                """,
-                (interaccion_id,),
-            )
-            planes = [
-                {"id": r["id"], **_parse_props(r["properties"])} for r in cursor.fetchall()
-            ]
-
-            timeline.append(
-                {
-                    "interaccion_id": interaccion_id,
-                    **props,
-                    "promesas": promesas,
-                    "pagos": pagos,
-                    "planes": planes,
-                }
-            )
-
-        # Sort by timestamp ascending (None timestamps go last)
-        def _sort_key(item: dict):
-            ts = item.get("timestamp") or item.get("fecha") or ""
-            return ts
-
-        timeline.sort(key=_sort_key)
-        return timeline
-    finally:
-        conn.close()
+    timeline.sort(key=_sort_key)
+    return timeline
 
 
 # ---------------------------------------------------------------------------
 # Agentes
 # ---------------------------------------------------------------------------
 
-def get_all_agentes() -> list[dict]:
-    """Return all Agente nodes with aggregate metrics."""
-    conn = _get_connection()
+def _extract_hour(timestamp: str | None) -> int | None:
+    if not timestamp:
+        return None
     try:
-        cursor = conn.cursor()
-
-        cursor.execute("SELECT id, label, properties FROM nodes WHERE label = 'Agente'")
-        agente_rows = cursor.fetchall()
-
-        result = []
-        for row in agente_rows:
-            agente_id = row["id"]
-            props = _parse_props(row["properties"])
-
-            # Interactions conducted by this agent
-            cursor.execute(
-                """
-                SELECT n.id, n.properties
-                FROM relationships r JOIN nodes n ON r.to_id = n.id
-                WHERE r.from_id = ? AND r.rel_type = 'CONDUJO' AND n.label = 'Interaccion'
-                """,
-                (agente_id,),
-            )
-            interaccion_rows = cursor.fetchall()
-            total_llamadas = len(interaccion_rows)
-
-            # Aggregate promise and payment rates
-            promesas = 0
-            pagos_inmediatos = 0
-            for ir in interaccion_rows:
-                ip = _parse_props(ir["properties"])
-                resultado = (ip.get("resultado") or "").lower()
-                if "promesa" in resultado:
-                    promesas += 1
-                if "pago_inmediato" in resultado or "pago inmediato" in resultado:
-                    pagos_inmediatos += 1
-
-            tasa_promesa = round(promesas / total_llamadas, 4) if total_llamadas > 0 else 0.0
-            tasa_pago_inmediato = (
-                round(pagos_inmediatos / total_llamadas, 4) if total_llamadas > 0 else 0.0
-            )
-
-            result.append(
-                {
-                    "id": agente_id,
-                    "label": row["label"],
-                    **props,
-                    "total_llamadas": total_llamadas,
-                    "tasa_promesa": tasa_promesa,
-                    "tasa_pago_inmediato": tasa_pago_inmediato,
-                }
-            )
-
-        return result
-    finally:
-        conn.close()
-
-
-def get_agente_efectividad(agente_id: str) -> Optional[dict]:
-    """
-    Return detailed performance metrics for a single agent:
-    total_llamadas, tasa_promesa, tasa_pago_inmediato,
-    distribucion_resultados, distribucion_sentimientos, mejor_horario.
-    """
-    conn = _get_connection()
-    try:
-        cursor = conn.cursor()
-
-        cursor.execute(
-            "SELECT id, label, properties FROM nodes WHERE id = ? AND label = 'Agente'",
-            (agente_id,),
-        )
-        row = cursor.fetchone()
-        if not row:
+        dt = datetime.fromisoformat(str(timestamp).replace("Z", "+00:00"))
+        return dt.hour
+    except (ValueError, AttributeError):
+        try:
+            parts = str(timestamp).split("T")
+            if len(parts) == 2:
+                return int(parts[1][:2])
+        except Exception:
             return None
+    return None
 
-        props = _parse_props(row["properties"])
 
-        # Interactions conducted by this agent
-        cursor.execute(
-            """
-            SELECT n.id, n.properties
-            FROM relationships r JOIN nodes n ON r.to_id = n.id
-            WHERE r.from_id = ? AND r.rel_type = 'CONDUJO' AND n.label = 'Interaccion'
-            """,
-            (agente_id,),
-        )
-        interaccion_rows = cursor.fetchall()
-        total_llamadas = len(interaccion_rows)
+async def get_all_agentes() -> list[dict]:
+    backend = get_backend()
+    agentes = await backend.get_nodes_by_label("Agente")
 
-        distribucion_resultados: dict[str, int] = {}
-        distribucion_sentimientos: dict[str, int] = {}
-        hour_results: dict[int, dict[str, int]] = {}  # hour -> {resultado: count}
+    # Bulk: una query para todas las interacciones, agrupadas por agente_id en memoria.
+    all_interacciones = await backend.get_nodes_by_label("Interaccion")
+    inters_by_agente: dict[str, list] = defaultdict(list)
+    for i in all_interacciones:
+        aid = i["properties"].get("agente_id")
+        if aid:
+            inters_by_agente[aid].append(i)
 
+    result = []
+    for a in agentes:
+        agente_id = a["id"]
+        props = a["properties"]
+
+        interacciones = inters_by_agente.get(agente_id, [])
+        total_llamadas = len(interacciones)
         promesas = 0
         pagos_inmediatos = 0
-
-        for ir in interaccion_rows:
-            ip = _parse_props(ir["properties"])
-
-            resultado = ip.get("resultado") or "desconocido"
-            sentimiento = ip.get("sentimiento_cliente") or ip.get("sentimiento") or "desconocido"
-            timestamp = ip.get("timestamp") or ip.get("fecha") or ""
-
-            distribucion_resultados[resultado] = distribucion_resultados.get(resultado, 0) + 1
-            distribucion_sentimientos[sentimiento] = (
-                distribucion_sentimientos.get(sentimiento, 0) + 1
-            )
-
-            resultado_lower = resultado.lower()
-            if "promesa" in resultado_lower:
+        for i in interacciones:
+            res = (i["properties"].get("resultado") or "").lower()
+            if "promesa" in res:
                 promesas += 1
-            if "pago_inmediato" in resultado_lower or "pago inmediato" in resultado_lower:
+            if "pago_inmediato" in res or "pago inmediato" in res:
                 pagos_inmediatos += 1
-
-            # Extract hour from timestamp
-            hour = None
-            if timestamp:
-                try:
-                    # Try ISO format first
-                    dt = datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
-                    hour = dt.hour
-                except (ValueError, AttributeError):
-                    try:
-                        # Try parsing just time portion HH:MM
-                        parts = timestamp.split("T")
-                        if len(parts) == 2:
-                            hour = int(parts[1][:2])
-                    except Exception:
-                        pass
-
-            if hour is not None:
-                if hour not in hour_results:
-                    hour_results[hour] = {}
-                hour_results[hour][resultado] = hour_results[hour].get(resultado, 0) + 1
-
-        # Determine best hour (highest promise/payment rate)
-        mejor_horario = None
-        if hour_results:
-            best_hour = max(
-                hour_results.keys(),
-                key=lambda h: sum(
-                    v
-                    for k, v in hour_results[h].items()
-                    if "promesa" in k.lower() or "pago" in k.lower()
-                ),
-            )
-            mejor_horario = f"{best_hour:02d}:00 - {(best_hour + 1) % 24:02d}:00"
 
         tasa_promesa = round(promesas / total_llamadas, 4) if total_llamadas > 0 else 0.0
         tasa_pago_inmediato = (
             round(pagos_inmediatos / total_llamadas, 4) if total_llamadas > 0 else 0.0
         )
 
-        return {
-            "id": agente_id,
-            **props,
-            "total_llamadas": total_llamadas,
-            "tasa_promesa": tasa_promesa,
-            "tasa_pago_inmediato": tasa_pago_inmediato,
-            "distribucion_resultados": distribucion_resultados,
-            "distribucion_sentimientos": distribucion_sentimientos,
-            "mejor_horario": mejor_horario,
-        }
-    finally:
-        conn.close()
+        result.append(
+            {
+                "id": agente_id,
+                "label": "Agente",
+                **props,
+                "total_llamadas": total_llamadas,
+                "tasa_promesa": tasa_promesa,
+                "tasa_pago_inmediato": tasa_pago_inmediato,
+            }
+        )
+    return result
+
+
+async def get_agente_efectividad(agente_id: str) -> Optional[dict]:
+    backend = get_backend()
+    node = await backend.get_node(agente_id)
+    if not node or node["label"] != "Agente":
+        return None
+
+    props = node["properties"]
+    interacciones = await backend.get_outgoing_nodes(agente_id, "CONDUJO", "Interaccion")
+    total_llamadas = len(interacciones)
+
+    distribucion_resultados: dict[str, int] = {}
+    distribucion_sentimientos: dict[str, int] = {}
+    hour_results: dict[int, dict[str, int]] = {}
+
+    promesas = 0
+    pagos_inmediatos = 0
+
+    for i in interacciones:
+        ip = i["properties"]
+        resultado = ip.get("resultado") or "desconocido"
+        sentimiento = (
+            ip.get("sentimiento_cliente") or ip.get("sentimiento") or "desconocido"
+        )
+
+        distribucion_resultados[resultado] = (
+            distribucion_resultados.get(resultado, 0) + 1
+        )
+        distribucion_sentimientos[sentimiento] = (
+            distribucion_sentimientos.get(sentimiento, 0) + 1
+        )
+
+        resultado_lower = resultado.lower()
+        if "promesa" in resultado_lower:
+            promesas += 1
+        if "pago_inmediato" in resultado_lower or "pago inmediato" in resultado_lower:
+            pagos_inmediatos += 1
+
+        hour = _extract_hour(ip.get("timestamp") or ip.get("fecha"))
+        if hour is not None:
+            hour_results.setdefault(hour, {})
+            hour_results[hour][resultado] = hour_results[hour].get(resultado, 0) + 1
+
+    mejor_horario = None
+    if hour_results:
+        best_hour = max(
+            hour_results.keys(),
+            key=lambda h: sum(
+                v
+                for k, v in hour_results[h].items()
+                if "promesa" in k.lower() or "pago" in k.lower()
+            ),
+        )
+        mejor_horario = f"{best_hour:02d}:00 - {(best_hour + 1) % 24:02d}:00"
+
+    tasa_promesa = (
+        round(promesas / total_llamadas, 4) if total_llamadas > 0 else 0.0
+    )
+    tasa_pago_inmediato = (
+        round(pagos_inmediatos / total_llamadas, 4) if total_llamadas > 0 else 0.0
+    )
+
+    return {
+        "id": agente_id,
+        **props,
+        "total_llamadas": total_llamadas,
+        "tasa_promesa": tasa_promesa,
+        "tasa_pago_inmediato": tasa_pago_inmediato,
+        "distribucion_resultados": distribucion_resultados,
+        "distribucion_sentimientos": distribucion_sentimientos,
+        "mejor_horario": mejor_horario,
+    }
 
 
 # ---------------------------------------------------------------------------
 # Analytics
 # ---------------------------------------------------------------------------
 
-def get_promesas_incumplidas(fecha: Optional[str] = None) -> list[dict]:
+async def _cliente_de_promesa(promesa_id: str) -> str | None:
     """
-    Return PromesaPago nodes where cumplida is False.
-    Optionally filter by fecha_promesa <= fecha parameter.
-
-    `dias_hasta_vencimiento` se computa ON-READ desde la fecha actual
-    (o la `fecha` provista), nunca se persiste stale (fix C3).
+    Resuelve el cliente_id asociado a una promesa haciendo dos saltos inversos:
+    PromesaPago <-GENERO_PROMESA- Interaccion <-TIENE_INTERACCION- Cliente.
     """
-    from datetime import date as _date
+    backend = get_backend()
+    incoming_promesa = await backend.get_incoming(promesa_id, "GENERO_PROMESA")
+    if not incoming_promesa:
+        return None
+    interaccion_id = incoming_promesa[0]["from_id"]
+    incoming_inter = await backend.get_incoming(interaccion_id, "TIENE_INTERACCION")
+    if not incoming_inter:
+        return None
+    return incoming_inter[0]["from_id"]
 
-    ref_date = _date.fromisoformat(fecha) if fecha else _date.today()
 
-    conn = _get_connection()
-    try:
-        cursor = conn.cursor()
+async def get_promesas_incumplidas(fecha: Optional[str] = None) -> list[dict]:
+    ref_date = date.fromisoformat(fecha) if fecha else date.today()
 
-        cursor.execute(
-            "SELECT id, label, properties FROM nodes WHERE label = 'PromesaPago'"
-        )
-        rows = cursor.fetchall()
+    backend = get_backend()
+    promesas = await backend.get_nodes_by_label("PromesaPago")
 
-        result = []
-        for row in rows:
-            props = _parse_props(row["properties"])
-            # C4: resolve dinámico si PROMESA_CUMPLIDA_MODE=dynamic.
-            # Necesitamos el cliente_id para el lookup dinámico.
-            if "cliente_id" not in props:
-                cur2 = conn.cursor()
-                cur2.execute(
-                    """
-                    SELECT r1.from_id AS cid
-                    FROM relationships r2
-                    JOIN relationships r1 ON r2.from_id = r1.to_id
-                    WHERE r2.to_id = ? AND r2.rel_type = 'GENERO_PROMESA'
-                      AND r1.rel_type = 'TIENE_INTERACCION'
-                    LIMIT 1
-                    """,
-                    (row["id"],),
-                )
-                cid_row = cur2.fetchone()
-                if cid_row:
-                    props["cliente_id"] = cid_row["cid"]
+    result = []
+    for p in promesas:
+        props = dict(p["properties"])
+        promesa_id = p["id"]
 
-            cumplida = _resolve_cumplida(conn, props, row["id"])
+        if "cliente_id" not in props:
+            cid = await _cliente_de_promesa(promesa_id)
+            if cid:
+                props["cliente_id"] = cid
 
-            # Only unfulfilled promises
-            if cumplida is True:
-                continue
+        if await _resolve_cumplida(props):
+            continue
 
-            fecha_promesa_str = props.get("fecha_promesa") or props.get("fecha") or ""
+        fecha_promesa_str = props.get("fecha_promesa") or props.get("fecha") or ""
 
-            if fecha and fecha_promesa_str and fecha_promesa_str > fecha:
-                continue
+        if fecha and fecha_promesa_str and fecha_promesa_str > fecha:
+            continue
 
-            # ON-READ: días hasta vencimiento respecto a la fecha de referencia
-            dias_hasta = None
-            if fecha_promesa_str:
-                try:
-                    dias_hasta = (_date.fromisoformat(fecha_promesa_str) - ref_date).days
-                except ValueError:
-                    dias_hasta = None
+        dias_hasta: int | None = None
+        if fecha_promesa_str:
+            try:
+                dias_hasta = (date.fromisoformat(fecha_promesa_str) - ref_date).days
+            except ValueError:
+                dias_hasta = None
 
-            # Find client associated with this promise
-            # Path: Cliente -TIENE_INTERACCION-> Interaccion -GENERO_PROMESA-> PromesaPago
-            cursor.execute(
-                """
-                SELECT r1.from_id AS cliente_id
-                FROM relationships r2
-                JOIN relationships r1 ON r2.from_id = r1.to_id
-                WHERE r2.to_id = ?
-                  AND r2.rel_type = 'GENERO_PROMESA'
-                  AND r1.rel_type = 'TIENE_INTERACCION'
-                LIMIT 1
-                """,
-                (row["id"],),
-            )
-            rel = cursor.fetchone()
-            cliente_id = rel["cliente_id"] if rel else None
-
-            enriched = {
-                "id": row["id"],
-                "cliente_id": cliente_id,
-                **props,
+        result.append(
+            {
+                "id": promesa_id,
+                **{k: v for k, v in props.items() if k != "cliente_id"},
+                "cliente_id": props.get("cliente_id"),
                 "dias_hasta_vencimiento": dias_hasta,
                 "dias_vencida": (
-                    -dias_hasta if dias_hasta is not None and dias_hasta < 0 else 0
+                    -dias_hasta
+                    if dias_hasta is not None and dias_hasta < 0
+                    else 0
                 ),
             }
-            result.append(enriched)
-
-        return result
-    finally:
-        conn.close()
-
-
-def get_mejores_horarios(resultado: Optional[str] = None) -> dict:
-    """
-    Analyze best call times by grouping interactions by hour.
-    Optionally filter interactions by resultado value.
-    """
-    conn = _get_connection()
-    try:
-        cursor = conn.cursor()
-
-        cursor.execute(
-            "SELECT id, properties FROM nodes WHERE label = 'Interaccion'"
         )
-        rows = cursor.fetchall()
+    return result
 
-        hour_stats: dict[int, dict] = {}
 
-        for row in rows:
-            props = _parse_props(row["properties"])
-            res = props.get("resultado") or ""
-            timestamp = props.get("timestamp") or props.get("fecha") or ""
+async def get_mejores_horarios(resultado: Optional[str] = None) -> dict:
+    backend = get_backend()
+    interacciones = await backend.get_nodes_by_label("Interaccion")
 
-            # Apply result filter
-            if resultado and resultado.lower() not in res.lower():
-                continue
+    hour_stats: dict[int, dict] = {}
 
-            hour = None
-            if timestamp:
-                try:
-                    dt = datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
-                    hour = dt.hour
-                except (ValueError, AttributeError):
-                    try:
-                        parts = str(timestamp).split("T")
-                        if len(parts) == 2:
-                            hour = int(parts[1][:2])
-                    except Exception:
-                        pass
+    for i in interacciones:
+        props = i["properties"]
+        res = props.get("resultado") or ""
+        if resultado and resultado.lower() not in res.lower():
+            continue
 
-            if hour is None:
-                continue
+        hour = _extract_hour(props.get("timestamp") or props.get("fecha"))
+        if hour is None:
+            continue
 
-            if hour not in hour_stats:
-                hour_stats[hour] = {"total": 0, "resultados": {}}
+        hour_stats.setdefault(hour, {"total": 0, "resultados": {}})
+        hour_stats[hour]["total"] += 1
+        hour_stats[hour]["resultados"][res] = (
+            hour_stats[hour]["resultados"].get(res, 0) + 1
+        )
 
-            hour_stats[hour]["total"] += 1
-            hour_stats[hour]["resultados"][res] = (
-                hour_stats[hour]["resultados"].get(res, 0) + 1
-            )
-
-        # Build sorted list
-        horarios = []
-        for hour, stats in sorted(hour_stats.items()):
-            horarios.append(
-                {
-                    "hora": f"{hour:02d}:00",
-                    "total_llamadas": stats["total"],
-                    "distribucion_resultados": stats["resultados"],
-                }
-            )
-
-        # Find best hour
-        mejor_hora = None
-        if horarios:
-            mejor_hora = max(horarios, key=lambda h: h["total_llamadas"])["hora"]
-
-        return {
-            "filtro_resultado": resultado,
-            "mejor_hora": mejor_hora,
-            "detalle_por_hora": horarios,
+    horarios = [
+        {
+            "hora": f"{h:02d}:00",
+            "total_llamadas": s["total"],
+            "distribucion_resultados": s["resultados"],
         }
-    finally:
-        conn.close()
+        for h, s in sorted(hour_stats.items())
+    ]
+
+    mejor_hora = (
+        max(horarios, key=lambda h: h["total_llamadas"])["hora"] if horarios else None
+    )
+
+    return {
+        "filtro_resultado": resultado,
+        "mejor_hora": mejor_hora,
+        "detalle_por_hora": horarios,
+    }
 
 
-def get_dashboard() -> dict:
-    """
-    Return high-level KPIs for the dashboard:
-    total_deuda_inicial, total_recuperado, tasa_recuperacion,
-    promesas_cumplidas, promesas_incumplidas,
-    distribucion_tipos_deuda, actividad_por_dia.
-    """
-    conn = _get_connection()
-    try:
-        cursor = conn.cursor()
+async def get_dashboard() -> dict:
+    backend = get_backend()
 
-        # total_deuda_inicial
-        cursor.execute(
-            "SELECT properties FROM nodes WHERE label = 'Cliente'"
+    clientes, pagos, promesas, interacciones = await asyncio.gather(
+        backend.get_nodes_by_label("Cliente"),
+        backend.get_nodes_by_label("Pago"),
+        backend.get_nodes_by_label("PromesaPago"),
+        backend.get_nodes_by_label("Interaccion"),
+    )
+
+    total_deuda_inicial = sum(
+        (c["properties"].get("monto_deuda_inicial", 0) or 0) for c in clientes
+    )
+    distribucion_tipos_deuda: dict[str, int] = {}
+    for c in clientes:
+        tipo = c["properties"].get("tipo_deuda") or "desconocido"
+        distribucion_tipos_deuda[tipo] = distribucion_tipos_deuda.get(tipo, 0) + 1
+
+    total_recuperado = sum((p["properties"].get("monto", 0) or 0) for p in pagos)
+    tasa_recuperacion = (
+        round(total_recuperado / total_deuda_inicial, 4)
+        if total_deuda_inicial > 0
+        else 0.0
+    )
+
+    if _CUMPLIDA_MODE == "dynamic":
+        promesas_cumplidas = 0
+        for p in promesas:
+            props = dict(p["properties"])
+            if "cliente_id" not in props:
+                cid = await _cliente_de_promesa(p["id"])
+                if cid:
+                    props["cliente_id"] = cid
+            if await _resolve_cumplida(props):
+                promesas_cumplidas += 1
+    else:
+        promesas_cumplidas = sum(
+            1 for p in promesas if p["properties"].get("cumplida") is True
         )
-        cliente_rows = cursor.fetchall()
-        total_deuda_inicial = sum(
-            _parse_props(r["properties"]).get("monto_deuda_inicial", 0) or 0
-            for r in cliente_rows
-        )
+    promesas_incumplidas = len(promesas) - promesas_cumplidas
 
-        # distribucion_tipos_deuda
-        distribucion_tipos_deuda: dict[str, int] = {}
-        for r in cliente_rows:
-            props = _parse_props(r["properties"])
-            tipo = props.get("tipo_deuda") or "desconocido"
-            distribucion_tipos_deuda[tipo] = distribucion_tipos_deuda.get(tipo, 0) + 1
+    actividad_por_dia: dict[str, dict] = defaultdict(
+        lambda: {"llamadas": 0, "pagos": 0}
+    )
+    for i in interacciones:
+        ts = i["properties"].get("timestamp") or i["properties"].get("fecha") or ""
+        day = ts[:10] if ts else "sin_fecha"
+        actividad_por_dia[day]["llamadas"] += 1
+    for p in pagos:
+        ts = p["properties"].get("fecha") or p["properties"].get("timestamp") or ""
+        day = ts[:10] if ts else "sin_fecha"
+        actividad_por_dia[day]["pagos"] += 1
 
-        # total_recuperado (sum of all Pago nodes)
-        cursor.execute("SELECT properties FROM nodes WHERE label = 'Pago'")
-        pago_rows = cursor.fetchall()
-        total_recuperado = sum(
-            _parse_props(r["properties"]).get("monto", 0) or 0 for r in pago_rows
-        )
+    actividad_lista = [
+        {"fecha": d, **v} for d, v in sorted(actividad_por_dia.items())
+    ]
 
-        tasa_recuperacion = (
-            round(total_recuperado / total_deuda_inicial, 4)
-            if total_deuda_inicial > 0
-            else 0.0
-        )
-
-        # promesas_cumplidas / promesas_incumplidas
-        # C4: resolver snapshot vs dynamic según settings.
-        cursor.execute("SELECT id, properties FROM nodes WHERE label = 'PromesaPago'")
-        promesa_rows = cursor.fetchall()
-        if _CUMPLIDA_MODE == "dynamic":
-            promesas_cumplidas = 0
-            for r in promesa_rows:
-                props_p = _parse_props(r["properties"])
-                if _resolve_cumplida(conn, props_p, r["id"]):
-                    promesas_cumplidas += 1
-        else:
-            promesas_cumplidas = sum(
-                1
-                for r in promesa_rows
-                if _parse_props(r["properties"]).get("cumplida") is True
-            )
-        promesas_incumplidas = len(promesa_rows) - promesas_cumplidas
-
-        # actividad_por_dia: group interactions and payments by date
-        cursor.execute(
-            "SELECT id, properties FROM nodes WHERE label = 'Interaccion'"
-        )
-        interaccion_rows = cursor.fetchall()
-
-        actividad_por_dia: dict[str, dict] = {}
-        for r in interaccion_rows:
-            props = _parse_props(r["properties"])
-            ts = props.get("timestamp") or props.get("fecha") or ""
-            day = ts[:10] if ts else "sin_fecha"
-            if day not in actividad_por_dia:
-                actividad_por_dia[day] = {"llamadas": 0, "pagos": 0}
-            actividad_por_dia[day]["llamadas"] += 1
-
-        for r in pago_rows:
-            props = _parse_props(r["properties"])
-            ts = props.get("fecha") or props.get("timestamp") or ""
-            day = ts[:10] if ts else "sin_fecha"
-            if day not in actividad_por_dia:
-                actividad_por_dia[day] = {"llamadas": 0, "pagos": 0}
-            actividad_por_dia[day]["pagos"] += 1
-
-        actividad_lista = [
-            {"fecha": d, **v} for d, v in sorted(actividad_por_dia.items())
-        ]
-
-        return {
-            "total_deuda_inicial": round(total_deuda_inicial, 2),
-            "total_recuperado": round(total_recuperado, 2),
-            "tasa_recuperacion": tasa_recuperacion,
-            "promesas_cumplidas": promesas_cumplidas,
-            "promesas_incumplidas": promesas_incumplidas,
-            "distribucion_tipos_deuda": distribucion_tipos_deuda,
-            "actividad_por_dia": actividad_lista,
-        }
-    finally:
-        conn.close()
+    return {
+        "total_deuda_inicial": round(total_deuda_inicial, 2),
+        "total_recuperado": round(total_recuperado, 2),
+        "tasa_recuperacion": tasa_recuperacion,
+        "promesas_cumplidas": promesas_cumplidas,
+        "promesas_incumplidas": promesas_incumplidas,
+        "distribucion_tipos_deuda": distribucion_tipos_deuda,
+        "actividad_por_dia": actividad_lista,
+    }
 
 
 # ---------------------------------------------------------------------------
-# Grafo
+# Grafo (visualización D3.js)
 # ---------------------------------------------------------------------------
 
-def get_grafo_nodos(tipos: Optional[list[str]] = None, limite: int = 200) -> dict:
-    """
-    Return nodes for D3.js visualization.
-    Optionally filter by a list of label types.
-    """
-    conn = _get_connection()
-    try:
-        cursor = conn.cursor()
+async def get_grafo_nodos(
+    tipos: Optional[list[str]] = None, limite: int = 200
+) -> dict:
+    backend = get_backend()
 
-        if tipos:
-            placeholders = ",".join("?" * len(tipos))
-            cursor.execute(
-                f"SELECT id, label, properties FROM nodes WHERE label IN ({placeholders}) LIMIT ?",
-                (*tipos, limite),
-            )
-        else:
-            cursor.execute(
-                "SELECT id, label, properties FROM nodes LIMIT ?", (limite,)
-            )
+    if tipos:
+        per_label = max(1, limite // max(1, len(tipos)))
+        nodos_raw = []
+        total = 0
+        for label in tipos:
+            if total >= limite:
+                break
+            remaining = limite - total
+            chunk = await backend.get_nodes_by_label(label, limit=min(per_label, remaining))
+            for n in chunk:
+                nodos_raw.append((n, label))
+                total += 1
+                if total >= limite:
+                    break
+    else:
+        nodos_raw = []
+        for label in ("Cliente", "Agente", "Interaccion", "PromesaPago", "Pago", "PlanPago"):
+            if len(nodos_raw) >= limite:
+                break
+            remaining = limite - len(nodos_raw)
+            chunk = await backend.get_nodes_by_label(label, limit=remaining)
+            for n in chunk:
+                nodos_raw.append((n, label))
+                if len(nodos_raw) >= limite:
+                    break
 
-        rows = cursor.fetchall()
-        nodos = [
-            {
-                "id": row["id"],
-                "tipo": row["label"],
-                "label": _parse_props(row["properties"]).get("nombre")
-                or _parse_props(row["properties"]).get("id_cliente")
-                or row["id"],
-                "propiedades": _parse_props(row["properties"]),
-            }
-            for row in rows
-        ]
-
-        return {"nodos": nodos}
-    finally:
-        conn.close()
+    nodos = [
+        {
+            "id": n["id"],
+            "tipo": label,
+            "label": (
+                n["properties"].get("nombre")
+                or n["properties"].get("id_cliente")
+                or n["id"]
+            ),
+            "propiedades": n["properties"],
+        }
+        for n, label in nodos_raw
+    ]
+    return {"nodos": nodos}
 
 
-def get_grafo_relaciones(
+async def get_grafo_relaciones(
     cliente_id: Optional[str] = None,
     tipos_relacion: Optional[list[str]] = None,
     profundidad: int = 2,
 ) -> dict:
-    """
-    Return relationships for D3.js visualization.
-    Optionally filter by cliente_id (subgraph up to `profundidad` hops),
-    or by a list of relationship types.
-    """
-    conn = _get_connection()
-    try:
-        cursor = conn.cursor()
+    backend = get_backend()
 
-        conditions = []
-        params: list[Any] = []
+    if cliente_id:
+        connected_ids: set[str] = {cliente_id}
+        frontier: set[str] = {cliente_id}
 
-        if tipos_relacion:
-            placeholders_rel = ",".join("?" * len(tipos_relacion))
-            conditions.append(f"rel_type IN ({placeholders_rel})")
-            params.extend(tipos_relacion)
+        for _ in range(profundidad):
+            if not frontier:
+                break
+            next_frontier: set[str] = set()
+            for nid in frontier:
+                for e in await backend.get_outgoing(nid):
+                    if e["to_id"] not in connected_ids:
+                        next_frontier.add(e["to_id"])
+                for e in await backend.get_incoming(nid):
+                    if e["from_id"] not in connected_ids:
+                        next_frontier.add(e["from_id"])
+            connected_ids.update(next_frontier)
+            frontier = next_frontier
 
-        if cliente_id:
-            # Build subgraph up to N hops from the client node
-            connected_ids: set[str] = {cliente_id}
-            frontier: set[str] = {cliente_id}
-
-            for _ in range(profundidad):
-                if not frontier:
-                    break
-                next_frontier: set[str] = set()
-                for nid in frontier:
-                    cursor.execute(
-                        """
-                        SELECT to_id AS node_id FROM relationships WHERE from_id = ?
-                        UNION
-                        SELECT from_id AS node_id FROM relationships WHERE to_id = ?
-                        """,
-                        (nid, nid),
-                    )
-                    for r in cursor.fetchall():
-                        if r["node_id"] not in connected_ids:
-                            next_frontier.add(r["node_id"])
-                connected_ids.update(next_frontier)
-                frontier = next_frontier
-
-            all_ids = list(connected_ids)
-            placeholders = ",".join("?" * len(all_ids))
-            conditions.append(f"(from_id IN ({placeholders}) OR to_id IN ({placeholders}))")
-            params.extend(all_ids)
-            params.extend(all_ids)
-
-        where_clause = f"WHERE {' AND '.join(conditions)}" if conditions else ""
-        cursor.execute(
-            f"SELECT from_id, rel_type, to_id, properties FROM relationships {where_clause}",
-            params,
-        )
-
-        rows = cursor.fetchall()
+        all_rels = await backend.get_all_relationships(tipos_relacion)
         enlaces = [
-            {
-                "source": row["from_id"],
-                "target": row["to_id"],
-                "tipo": row["rel_type"],
-            }
-            for row in rows
+            {"source": r["from_id"], "target": r["to_id"], "tipo": r["rel_type"]}
+            for r in all_rels
+            if r["from_id"] in connected_ids or r["to_id"] in connected_ids
+        ]
+    else:
+        all_rels = await backend.get_all_relationships(tipos_relacion)
+        enlaces = [
+            {"source": r["from_id"], "target": r["to_id"], "tipo": r["rel_type"]}
+            for r in all_rels
         ]
 
-        return {"enlaces": enlaces}
-    finally:
-        conn.close()
+    return {"enlaces": enlaces}

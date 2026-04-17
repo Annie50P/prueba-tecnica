@@ -61,15 +61,24 @@ app.add_middleware(
 
 
 @app.on_event("startup")
-def _load_ml_model() -> None:
+async def _startup() -> None:
+    # Precargar modelo ML
     try:
         loaded = model_registry.load_latest()
         if loaded:
             logger.info("ml: loaded pre-trained model from %s", loaded)
         else:
             logger.info("ml: no pre-trained artifact; will train on first request")
-    except Exception as exc:  # pragma: no cover — model is optional
+    except Exception as exc:
         logger.warning("ml: failed to load persisted model: %s", exc)
+
+    # Precalentar catálogo de tools MCP para que la primera consulta no espere
+    try:
+        from api.services.mcp_service import _build_tool_catalog
+        catalog = await _build_tool_catalog()
+        logger.info("mcp: tool catalog ready (%d tools)", len(catalog))
+    except Exception as exc:
+        logger.warning("mcp: tool catalog warmup failed: %s", exc)
 
 # ---------------------------------------------------------------------------
 # Routers

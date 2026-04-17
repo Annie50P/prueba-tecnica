@@ -47,7 +47,6 @@ export default function Grafo() {
   const [nodeTypes, setNodeTypes] = useState(new Set(ALL_NODE_TYPES));
   const [relTypes, setRelTypes] = useState(new Set(REL_TYPE_OPTIONS.map(r => r.value)));
   const [clienteId, setClienteId] = useState('');
-  const [profundidad, setProfundidad] = useState(2);
   const [resultado, setResultado] = useState('');
   const [fechaDesde, setFechaDesde] = useState('');
   const [fechaHasta, setFechaHasta] = useState('');
@@ -56,11 +55,14 @@ export default function Grafo() {
   const [counts, setCounts] = useState({ nodes: 0, edges: 0 });
   const [summary, setSummary] = useState(null);
 
+  // profundidad se fija en 2 internamente — cubre todo el schema de dominio
+  // (Cliente → Interaccion → Pago/Promesa/Plan) sin exponer un concepto técnico al usuario.
+  const PROFUNDIDAD = 2;
+
   const [appliedFilters, setAppliedFilters] = useState({
     nodeTypes: ALL_NODE_TYPES,
     relTypes: REL_TYPE_OPTIONS.map(r => r.value),
     clienteId: null,
-    profundidad: 2,
     resultado: '',
     fechaDesde: '',
     fechaHasta: '',
@@ -85,11 +87,11 @@ export default function Grafo() {
   });
 
   const { data: edgesData, isLoading: l2 } = useQuery({
-    queryKey: ['grafo-relaciones', relFiltered, appliedFilters.clienteId, appliedFilters.profundidad],
+    queryKey: ['grafo-relaciones', relFiltered, appliedFilters.clienteId],
     queryFn: () => getGrafoRelaciones({
       tipos_relacion: relFiltered,
       cliente_id: appliedFilters.clienteId || null,
-      profundidad: appliedFilters.profundidad,
+      profundidad: PROFUNDIDAD,
     }),
   });
 
@@ -98,29 +100,78 @@ export default function Grafo() {
   const rawEdges = edgesData?.enlaces ?? [];
   const loading = l1 || l2;
 
-  const nodes = useMemo(() => {
-    const { fechaDesde: fd, fechaHasta: fh, resultado: res } = appliedFilters;
-    if (!fd && !fh && !res) return rawNodes;
+  // Tipos raíz: siempre visibles aunque queden sin aristas tras filtrar.
+  const ROOT_TYPES = new Set(['Cliente', 'Agente']);
 
-    return rawNodes.filter(n => {
-      const p = n.propiedades ?? {};
-      const ts = p.timestamp ?? p.fecha ?? p.fecha_promesa ?? p.fecha_inicio ?? '';
+  const { nodes, edges } = useMemo(() => {
+    const { clienteId: cid, fechaDesde: fd, fechaHasta: fh, resultado: res } = appliedFilters;
 
-      // Period filter: only apply to nodes that have a date
-      if (fd && ts && ts.slice(0, 10) < fd) return false;
-      if (fh && ts && ts.slice(0, 10) > fh) return false;
+    // ── Paso 1: restricción de subgrafo cuando hay cliente seleccionado ──
+    let base = rawNodes;
+    if (cid) {
+      const subgraphIds = new Set([cid]);
+      rawEdges.forEach(e => {
+        if (e.source) subgraphIds.add(e.source);
+        if (e.target) subgraphIds.add(e.target);
+      });
+      base = rawNodes.filter(n => subgraphIds.has(n.id));
+    }
 
-      // Resultado filter: only apply to Interaccion nodes
-      if (res && n.tipo === 'Interaccion') {
-        const val = (p.resultado ?? p.tipo ?? '').toLowerCase();
-        if (!val.includes(res.toLowerCase())) return false;
-      }
+    // ── Paso 2: filtros explícitos sobre nodos ──
+    if (fd || fh || res) {
+      base = base.filter(n => {
+        const p = n.propiedades ?? {};
+        const ts = p.timestamp ?? p.fecha ?? p.fecha_promesa ?? p.fecha_inicio ?? '';
 
-      return true;
-    });
-  }, [rawNodes, appliedFilters.fechaDesde, appliedFilters.fechaHasta, appliedFilters.resultado]);
+        // Periodo: solo aplica a nodos que tienen fecha; los que no la tienen pasan.
+        if (fd && ts && ts.slice(0, 10) < fd) return false;
+        if (fh && ts && ts.slice(0, 10) > fh) return false;
 
-  const edges = useMemo(() => rawEdges, [rawEdges]);
+        // Resultado: solo aplica a nodos Interaccion.
+        // Revisa tanto `resultado` (promesa_pago) como `tipo` (llamada_saliente).
+        if (res && n.tipo === 'Interaccion') {
+          const resLower = res.toLowerCase();
+          const matchResultado = (p.resultado ?? '').toLowerCase().includes(resLower);
+          const matchTipo      = (p.tipo      ?? '').toLowerCase().includes(resLower);
+          if (!matchResultado && !matchTipo) return false;
+        }
+
+        return true;
+      });
+    }
+
+    // ── Paso 3: filtrar aristas — ambos extremos deben estar en el conjunto visible ──
+    const visibleIds = new Set(base.map(n => n.id));
+    let filteredEdges = rawEdges.filter(
+      e => visibleIds.has(e.source) && visibleIds.has(e.target)
+    );
+
+    // ── Paso 4: eliminar nodos huérfanos en cascada ──
+    // Si un filtro (fecha/resultado) eliminó Interacciones, sus hijos
+    // (Pago/Promesa/Plan) quedan sin aristas y también se eliminan.
+    // Los root nodes (Cliente/Agente) solo se conservan si tienen al menos
+    // una arista visible, salvo el cliente explícitamente seleccionado.
+    if (fd || fh || res) {
+      const connectedIds = new Set();
+      filteredEdges.forEach(e => {
+        connectedIds.add(e.source);
+        connectedIds.add(e.target);
+      });
+
+      base = base.filter(n => {
+        if (cid && n.id === cid) return true;          // cliente seleccionado: siempre visible
+        if (ROOT_TYPES.has(n.tipo)) return connectedIds.has(n.id); // roots solo si tienen aristas
+        return connectedIds.has(n.id);                 // hojas solo si tienen aristas
+      });
+
+      const finalIds = new Set(base.map(n => n.id));
+      filteredEdges = filteredEdges.filter(
+        e => finalIds.has(e.source) && finalIds.has(e.target)
+      );
+    }
+
+    return { nodes: base, edges: filteredEdges };
+  }, [rawNodes, rawEdges, appliedFilters]);
 
   const onNodeClick = useCallback((node, connections) => {
     setSelectedNode({ ...node, connections });
@@ -161,7 +212,6 @@ export default function Grafo() {
       nodeTypes: [...nodeTypes],
       relTypes: [...relTypes],
       clienteId: clienteId || null,
-      profundidad,
       resultado,
       fechaDesde,
       fechaHasta,
@@ -210,18 +260,6 @@ export default function Grafo() {
           </select>
         </div>
 
-        {/* Depth */}
-        {clienteId && (
-          <div>
-            <p className="text-xs font-semibold text-gray-500 mb-1.5 uppercase">Profundidad: {profundidad}</p>
-            <input
-              type="range" min={1} max={3} value={profundidad}
-              onChange={e => setProfundidad(Number(e.target.value))}
-              className="w-full"
-            />
-          </div>
-        )}
-
         {/* Tipo de relacion */}
         <div>
           <p className="text-xs font-semibold text-gray-500 mb-1.5 uppercase">Tipo de Relacion</p>
@@ -240,18 +278,24 @@ export default function Grafo() {
             <label className="block">
               <span className="text-[10px] text-gray-400">Desde</span>
               <input
-                type="date"
-                value={fechaDesde}
-                onChange={e => setFechaDesde(e.target.value)}
+                type="month"
+                value={fechaDesde ? fechaDesde.slice(0, 7) : ''}
+                onChange={e => setFechaDesde(e.target.value ? e.target.value + '-01' : '')}
                 className="w-full text-xs border border-gray-200 rounded-md px-2 py-1.5"
               />
             </label>
             <label className="block">
               <span className="text-[10px] text-gray-400">Hasta</span>
               <input
-                type="date"
-                value={fechaHasta}
-                onChange={e => setFechaHasta(e.target.value)}
+                type="month"
+                value={fechaHasta ? fechaHasta.slice(0, 7) : ''}
+                onChange={e => {
+                  if (!e.target.value) { setFechaHasta(''); return; }
+                  // Último día del mes seleccionado
+                  const [y, m] = e.target.value.split('-').map(Number);
+                  const lastDay = new Date(y, m, 0).getDate();
+                  setFechaHasta(`${e.target.value}-${String(lastDay).padStart(2, '0')}`);
+                }}
                 className="w-full text-xs border border-gray-200 rounded-md px-2 py-1.5"
               />
             </label>
@@ -300,7 +344,6 @@ export default function Grafo() {
             setNodeTypes(new Set(ALL_NODE_TYPES));
             setRelTypes(new Set(REL_TYPE_OPTIONS.map(r => r.value)));
             setClienteId('');
-            setProfundidad(2);
             setResultado('');
             setFechaDesde('');
             setFechaHasta('');
@@ -308,7 +351,6 @@ export default function Grafo() {
               nodeTypes: ALL_NODE_TYPES,
               relTypes: REL_TYPE_OPTIONS.map(r => r.value),
               clienteId: null,
-              profundidad: 2,
               resultado: '',
               fechaDesde: '',
               fechaHasta: '',

@@ -144,13 +144,14 @@ def main() -> None:
     )
     print(f"[transform] Relationships: {len(relationships)}")
 
-    # 4. Initialise client (health-check triggers auto-detection)
+    # 4. Initialise client (conecta a Neo4j vía graphiti-core o cae a SQLite)
     client = GraphitiClient()
     graphiti_online = client.health_check()
     if graphiti_online:
-        print("[client] Graphiti service is ONLINE – using remote API")
+        print("[client] Neo4j/Graphiti ONLINE – ingesta vía graphiti-core")
+        client.setup_constraints()
     else:
-        print(f"[client] Graphiti service OFFLINE – using SQLite fallback: {client.db_path}")
+        print(f"[client] Neo4j OFFLINE – usando SQLite fallback: {client.db_path}")
 
     # 5. Ingest nodes in required order: Agente → Cliente → Interaccion →
     #    PromesaPago → Pago → PlanPago
@@ -184,6 +185,48 @@ def main() -> None:
     print(f"\n[ingest] Ingesting {len(relationships)} relationships ...")
     n_rels = _ingest_relationships(client, relationships)
     print(f"  -> {n_rels} relationships done")
+
+    # 6b. Episodios semánticos — cada interacción se ingesta en Graphiti para
+    #     que extraiga entidades y relaciones vía LLM (complementario a los nodos
+    #     de dominio ya escritos; silencioso si el LLM no está configurado).
+    if graphiti_online:
+        print(f"\n[ingest] Ingesting {len(dataset.interacciones)} semantic episodes ...")
+        n_episodes = 0
+        for raw_ix in dataset.interacciones:
+            episode_body = json.dumps(
+                {
+                    "id": raw_ix.id,
+                    "cliente_id": raw_ix.cliente_id,
+                    "agente_id": raw_ix.agente_id,
+                    "tipo": raw_ix.tipo,
+                    "resultado": raw_ix.resultado,
+                    "timestamp": raw_ix.timestamp,
+                    "duracion_segundos": raw_ix.duracion_segundos,
+                    "sentimiento": raw_ix.sentimiento,
+                    "monto_prometido": raw_ix.monto_prometido,
+                    "monto": raw_ix.monto,
+                },
+                ensure_ascii=False,
+                default=str,
+            )
+            try:
+                ref_time = datetime.fromisoformat(
+                    raw_ix.timestamp.rstrip("Z")
+                ).replace(tzinfo=timezone.utc)
+            except (ValueError, AttributeError):
+                ref_time = datetime.now(tz=timezone.utc)
+
+            ok = client.add_episode(
+                name=f"interaccion_{raw_ix.id}",
+                body=episode_body,
+                reference_time=ref_time,
+                source_description="cobranza — interaccion cliente",
+            )
+            if ok:
+                n_episodes += 1
+            if n_episodes and n_episodes % PROGRESS_INTERVAL == 0:
+                print(f"  [episodes] {n_episodes}/{len(dataset.interacciones)} ...")
+        print(f"  -> {n_episodes} episodes done (0 = LLM no configurado, no crítico)")
 
     # 7. Build summary
     elapsed = round(time.time() - start_time, 2)

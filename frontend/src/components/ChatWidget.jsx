@@ -66,9 +66,11 @@ export default function ChatWidget() {
         },
       ]);
     } catch (err) {
+      const detail = err.response?.data?.detail;
+      const serverMsg = detail?.message || detail?.error || err.message;
       setMessages(prev => [
         ...prev,
-        { role: 'assistant', text: `Error: ${err.message ?? 'No se pudo conectar'}`, error: true },
+        { role: 'assistant', text: `Error: ${serverMsg ?? 'No se pudo conectar'}`, error: true },
       ]);
     } finally {
       setLoading(false);
