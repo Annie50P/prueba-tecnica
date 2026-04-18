@@ -67,7 +67,7 @@ class Settings(BaseSettings):
         description="Group ID de Graphiti para aislar el grafo del proyecto.",
     )
     promesa_cumplida_mode: str = Field(
-        default="snapshot",
+        default="dynamic",
         description=(
             "'snapshot' (leer props.cumplida, rápido) o 'dynamic' (compute-on-read "
             "a partir de Pago dentro de grace_days — C4 event-free)."

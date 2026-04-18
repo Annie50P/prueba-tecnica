@@ -47,6 +47,7 @@ from graphiti_client import GraphitiClient
 from models import (
     AgenteNode,
     ClienteNode,
+    EstadoDeudaNode,
     InteraccionNode,
     PagoNode,
     PlanPagoNode,
@@ -136,11 +137,11 @@ async def main() -> None:
 
     # 3. Transform
     print("[transform] Computing graph nodes and relationships ...")
-    agentes, clientes, interacciones, promesas, pagos, planes, relationships = transform(dataset)
+    agentes, clientes, interacciones, promesas, pagos, planes, estados_deuda, relationships = transform(dataset)
     print(
         f"[transform] Nodes: {len(agentes)} Agentes, {len(clientes)} Clientes, "
         f"{len(interacciones)} Interacciones, {len(promesas)} PromesasPago, "
-        f"{len(pagos)} Pagos, {len(planes)} PlanesPago"
+        f"{len(pagos)} Pagos, {len(planes)} PlanesPago, {len(estados_deuda)} EstadosDeuda"
     )
     print(f"[transform] Relationships: {len(relationships)}")
 
@@ -153,7 +154,7 @@ async def main() -> None:
     else:
         print(f"[client] Neo4j OFFLINE – usando SQLite fallback: {client.db_path}")
 
-    # 5. Ingest nodes: Agente → Cliente → Interaccion → PromesaPago → Pago → PlanPago
+    # 5. Ingest nodes
     print("\n[ingest] Ingesting nodes ...")
 
     print(f"  Agentes ({len(agentes)}) ...")
@@ -179,6 +180,10 @@ async def main() -> None:
     print(f"  PlanesPago ({len(planes)}) ...")
     n_planes = await _ingest_nodes(client, "PlanPago", planes)
     print(f"  -> {n_planes} PlanesPago done")
+
+    print(f"  EstadosDeuda ({len(estados_deuda)}) ...")
+    n_estados = await _ingest_nodes(client, "EstadoDeuda", estados_deuda)
+    print(f"  -> {n_estados} EstadosDeuda done")
 
     # 6. Ingest relationships
     print(f"\n[ingest] Ingesting {len(relationships)} relationships ...")

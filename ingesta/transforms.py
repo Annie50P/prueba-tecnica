@@ -12,7 +12,7 @@ from __future__ import annotations
 
 import os
 from collections import defaultdict
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 from typing import Dict, List, Tuple
 
 try:
@@ -20,6 +20,7 @@ try:
     from models import (
         AgenteNode,
         ClienteNode,
+        EstadoDeudaNode,
         InteraccionNode,
         PagoNode,
         PlanPagoNode,
@@ -32,6 +33,7 @@ except ImportError:
     from ingesta.models import (  # type: ignore[no-redef]
         AgenteNode,
         ClienteNode,
+        EstadoDeudaNode,
         InteraccionNode,
         PagoNode,
         PlanPagoNode,
@@ -70,7 +72,6 @@ def _parse_ts(ts_str: str) -> datetime:
 
 def _parse_date(date_str: str):
     """Parse a YYYY-MM-DD date string."""
-    from datetime import date
     return date.fromisoformat(date_str)
 
 
@@ -87,6 +88,7 @@ def transform(
     List[PromesaPagoNode],
     List[PagoNode],
     List[PlanPagoNode],
+    List[EstadoDeudaNode],
     List[RelationRecord],
 ]:
     """Return all nodes and relationships derived from *dataset*."""
@@ -177,6 +179,27 @@ def transform(
                 )
                 planes.append(plan)
 
+                # Generar una PromesaPago por cuota del plan (rastreabilidad individual)
+                try:
+                    fecha_inicio_date = date.fromisoformat(raw_ix.timestamp[:10])
+                except ValueError:
+                    fecha_inicio_date = _today_utc()
+
+                for n in range(1, plan_pago.cuotas + 1):
+                    fecha_cuota = fecha_inicio_date + timedelta(days=30 * n)
+                    cuota = PromesaPagoNode(
+                        id=f"{plan.id}_cuota_{n}",
+                        interaccion_id=raw_ix.id,
+                        cliente_id=raw_ix.cliente_id,
+                        monto_prometido=plan_pago.monto_mensual,
+                        fecha_promesa=fecha_cuota.isoformat(),
+                        cumplida=False,
+                        numero_cuota=n,
+                        plan_pago_id=plan.id,
+                    )
+                    promesas.append(cuota)
+                    cliente_promesas[raw_ix.cliente_id].append(cuota)
+
         # ---- Agente call accumulation ----
         if raw_ix.tipo in LLAMADA_TIPOS and raw_ix.agente_id:
             agente_calls[raw_ix.agente_id].append(raw_ix.resultado or "")
@@ -256,6 +279,62 @@ def transform(
         )
 
     # ------------------------------------------------------------------
+    # Pass 4.5 – build EstadoDeuda nodes (evolución temporal de la deuda)
+    # ------------------------------------------------------------------
+    # Eventos que cambian la deuda: pagos y renegociaciones, ordenados por ts.
+    estados_deuda: List[EstadoDeudaNode] = []
+
+    for raw_cl in dataset.clientes:
+        cid = raw_cl.id
+        saldo = raw_cl.monto_deuda_inicial
+
+        # Estado inicial
+        estados: List[EstadoDeudaNode] = [
+            EstadoDeudaNode(
+                id=f"{cid}_deuda_0",
+                cliente_id=cid,
+                fecha=raw_cl.fecha_prestamo + "T00:00:00+00:00",
+                monto_pendiente=round(saldo, 2),
+                tipo="inicial",
+                evento_id="inicial",
+            )
+        ]
+
+        # Eventos que mutan la deuda, ordenados cronológicamente
+        eventos = sorted(
+            (
+                ix for ix in dataset.interacciones
+                if ix.cliente_id == cid
+                and ix.tipo in ("pago_recibido", *LLAMADA_TIPOS)
+                and (
+                    ix.tipo == "pago_recibido"
+                    or ix.resultado == "renegociacion"
+                )
+            ),
+            key=lambda x: x.timestamp,
+        )
+
+        for n, ev in enumerate(eventos, start=1):
+            if ev.tipo == "pago_recibido":
+                saldo = max(saldo - (ev.monto or 0.0), 0.0)
+                tipo_estado = "pago"
+            else:
+                tipo_estado = "renegociacion"
+
+            estados.append(
+                EstadoDeudaNode(
+                    id=f"{cid}_deuda_{n}",
+                    cliente_id=cid,
+                    fecha=ev.timestamp,
+                    monto_pendiente=round(saldo, 2),
+                    tipo=tipo_estado,
+                    evento_id=ev.id,
+                )
+            )
+
+        estados_deuda.extend(estados)
+
+    # ------------------------------------------------------------------
     # Pass 5 – build relationships
     # ------------------------------------------------------------------
     relationships: List[RelationRecord] = []
@@ -288,12 +367,6 @@ def transform(
             rel_type="GENERO_PROMESA",
             to_id=promesa.id,
         ))
-        # PROMESA_DE: PromesaPago -> Cliente
-        relationships.append(RelationRecord(
-            from_id=promesa.id,
-            rel_type="PROMESA_DE",
-            to_id=promesa.cliente_id,
-        ))
 
     # GENERO_PAGO: Interaccion -> Pago
     for pago in pagos:
@@ -302,26 +375,27 @@ def transform(
             rel_type="GENERO_PAGO",
             to_id=pago.id,
         ))
-        # PAGO_DE: Pago -> Cliente
-        relationships.append(RelationRecord(
-            from_id=pago.id,
-            rel_type="PAGO_DE",
-            to_id=pago.cliente_id,
-        ))
 
     # GENERO_PLAN: Interaccion -> PlanPago
+    # Build cuota lookup once for O(plans) instead of O(plans * promesas)
+    cuotas_by_plan: Dict[str, List[PromesaPagoNode]] = defaultdict(list)
+    for promesa in promesas:
+        if promesa.plan_pago_id is not None:
+            cuotas_by_plan[promesa.plan_pago_id].append(promesa)
+
     for plan in planes:
         relationships.append(RelationRecord(
             from_id=plan.interaccion_id,
             rel_type="GENERO_PLAN",
             to_id=plan.id,
         ))
-        # PLAN_DE: PlanPago -> Cliente
-        relationships.append(RelationRecord(
-            from_id=plan.id,
-            rel_type="PLAN_DE",
-            to_id=plan.cliente_id,
-        ))
+        # GENERA_CUOTA: PlanPago -> PromesaPago (una por cuota)
+        for cuota in cuotas_by_plan.get(plan.id, []):
+            relationships.append(RelationRecord(
+                from_id=plan.id,
+                rel_type="GENERA_CUOTA",
+                to_id=cuota.id,
+            ))
 
     # CUMPLE_PROMESA: Pago -> PromesaPago  (for fulfilled promises)
     pago_by_ix: Dict[str, PagoNode] = {p.interaccion_id: p for p in pagos}
@@ -362,4 +436,25 @@ def transform(
                     properties={"orden": i + 1},
                 ))
 
-    return agentes, clientes, interacciones, promesas, pagos, planes, relationships
+    # ESTADO_DEUDA_EN: Cliente -> EstadoDeuda
+    # SIGUIENTE_ESTADO: EstadoDeuda -> EstadoDeuda (cadena temporal por cliente)
+    estados_by_cliente: Dict[str, List[EstadoDeudaNode]] = defaultdict(list)
+    for ed in estados_deuda:
+        estados_by_cliente[ed.cliente_id].append(ed)
+
+    for cid, estados in estados_by_cliente.items():
+        for ed in estados:
+            relationships.append(RelationRecord(
+                from_id=cid,
+                rel_type="ESTADO_DEUDA_EN",
+                to_id=ed.id,
+            ))
+        sorted_ed = sorted(estados, key=lambda e: e.fecha)
+        for i in range(len(sorted_ed) - 1):
+            relationships.append(RelationRecord(
+                from_id=sorted_ed[i].id,
+                rel_type="SIGUIENTE_ESTADO",
+                to_id=sorted_ed[i + 1].id,
+            ))
+
+    return agentes, clientes, interacciones, promesas, pagos, planes, estados_deuda, relationships

@@ -140,14 +140,7 @@ async def get_all_clientes() -> list[dict]:
         if cid:
             inters_by_client[cid].append(i)
 
-    # Fecha de referencia = max timestamp del dataset (no datetime.now())
-    # Así "días sin contacto" es relativo al dataset, no al calendario real.
-    all_ts = [
-        _parse_ts_safe(i["properties"].get("timestamp") or i["properties"].get("fecha"))
-        for i in all_inters
-    ]
-    valid_ts = [t for t in all_ts if t is not None]
-    fecha_referencia = max(valid_ts) if valid_ts else datetime.now(timezone.utc)
+    fecha_referencia = datetime.now(timezone.utc)
 
     result = []
     for c in clientes:
@@ -160,15 +153,16 @@ async def get_all_clientes() -> list[dict]:
         promesas = promesas_by_client.get(cliente_id, [])
         total_promesas = len(promesas)
 
+        # Pre-calcular cumplida por promesa respetando el modo configurado
         if _CUMPLIDA_MODE == "dynamic":
-            promesas_cumplidas = 0
+            cumplida_status = []
             for p in promesas:
-                if await _resolve_cumplida({**p["properties"], "cliente_id": cliente_id}):
-                    promesas_cumplidas += 1
+                is_c = await _resolve_cumplida({**p["properties"], "cliente_id": cliente_id})
+                cumplida_status.append(is_c)
         else:
-            promesas_cumplidas = sum(
-                1 for p in promesas if p["properties"].get("cumplida") is True
-            )
+            cumplida_status = [bool(p["properties"].get("cumplida")) for p in promesas]
+
+        promesas_cumplidas = sum(cumplida_status)
 
         # None cuando no hay promesas — distinto de 0 (hubo promesas y no se cumplieron)
         tasa_cumplimiento: Optional[float] = (
@@ -181,11 +175,11 @@ async def get_all_clientes() -> list[dict]:
             round(total_pagado / monto_deuda, 4) if monto_deuda > 0 else 0.0
         )
 
-        # Monto prometido pendiente (promesas no cumplidas)
+        # Monto prometido pendiente (promesas no cumplidas) — usa mismo cumplida_status
         monto_prometido_pendiente = sum(
             float(p["properties"].get("monto_prometido", 0) or 0)
-            for p in promesas
-            if not p["properties"].get("cumplida")
+            for p, is_c in zip(promesas, cumplida_status)
+            if not is_c
         )
 
         # Métricas derivadas de interacciones
@@ -814,6 +808,26 @@ async def get_dashboard() -> dict:
 
 
 # ---------------------------------------------------------------------------
+# Evolución de deuda
+# ---------------------------------------------------------------------------
+
+async def get_evolucion_deuda(cliente_id: str) -> Optional[list[dict]]:
+    backend = get_backend()
+    node = await backend.get_node(cliente_id)
+    if not node or node["label"] != "Cliente":
+        return None
+
+    estados = await backend.get_outgoing_nodes(cliente_id, "ESTADO_DEUDA_EN", "EstadoDeuda")
+    if not estados:
+        return []
+
+    return sorted(
+        [{"id": e["id"], **e["properties"]} for e in estados],
+        key=lambda e: e.get("fecha") or "",
+    )
+
+
+# ---------------------------------------------------------------------------
 # Grafo (visualización D3.js)
 # ---------------------------------------------------------------------------
 
@@ -838,7 +852,7 @@ async def get_grafo_nodos(
                     break
     else:
         nodos_raw = []
-        for label in ("Cliente", "Agente", "Interaccion", "PromesaPago", "Pago", "PlanPago"):
+        for label in ("Cliente", "Agente", "Interaccion", "PromesaPago", "Pago", "PlanPago", "EstadoDeuda"):
             if len(nodos_raw) >= limite:
                 break
             remaining = limite - len(nodos_raw)
