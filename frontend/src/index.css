@@ -2,9 +2,10 @@
 @import "tailwindcss";
 
 /* ═══════════════════════════════════════════════════════════
-   DESIGN TOKENS — Dark Mode
+   DESIGN TOKENS — Dark Mode (default)
    ═══════════════════════════════════════════════════════════ */
-:root {
+:root,
+[data-theme="dark"] {
   /* Backgrounds */
   --bg-base:       #0a0f1e;
   --bg-surface:    #111827;
@@ -64,6 +65,61 @@
   --radius-sm: 4px;
   --radius-md: 8px;
   --radius-lg: 12px;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   DESIGN TOKENS — Light Mode
+   ═══════════════════════════════════════════════════════════ */
+[data-theme="light"] {
+  /* Backgrounds */
+  --bg-base:       #f0f4f8;
+  --bg-surface:    #ffffff;
+  --bg-elevated:   #f8fafc;
+  --bg-subtle:     #e8eef5;
+  --bg-hover:      #e2eaf3;
+
+  /* Borders */
+  --border-soft:   rgba(0,0,0,0.06);
+  --border-medium: rgba(0,0,0,0.10);
+  --border-strong: rgba(0,0,0,0.18);
+  --border-focus:  rgba(59,130,246,0.50);
+
+  /* Text */
+  --text-primary:   #0f172a;
+  --text-secondary: #475569;
+  --text-muted:     #94a3b8;
+
+  /* Accent */
+  --accent-primary:  #2563eb;
+  --accent-glow:     rgba(37,99,235,0.10);
+  --accent-glow-md:  rgba(37,99,235,0.18);
+
+  /* Semantic states */
+  --state-success:  #059669;
+  --state-success-bg: rgba(5,150,105,0.10);
+  --state-warning:  #d97706;
+  --state-warning-bg: rgba(217,119,6,0.10);
+  --state-danger:   #dc2626;
+  --state-danger-bg: rgba(220,38,38,0.10);
+  --state-info:     #0891b2;
+  --state-info-bg:  rgba(8,145,178,0.10);
+  --state-purple:   #7c3aed;
+  --state-purple-bg: rgba(124,58,237,0.10);
+  --state-orange:   #ea580c;
+  --state-orange-bg: rgba(234,88,12,0.10);
+
+  /* Chart palette */
+  --chart-1: #2563eb;
+  --chart-2: #059669;
+  --chart-3: #d97706;
+  --chart-4: #7c3aed;
+  --chart-5: #dc2626;
+  --chart-6: #0891b2;
+
+  /* Shadows */
+  --shadow-card:     0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.06);
+  --shadow-elevated: 0 4px 16px rgba(0,0,0,0.10), 0 2px 6px rgba(0,0,0,0.06);
+  --shadow-glow:     0 0 20px rgba(37,99,235,0.08);
 }
 
 /* ═══════════════════════════════════════════════════════════

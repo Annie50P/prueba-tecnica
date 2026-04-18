@@ -129,7 +129,7 @@ export function renderGrafoD3(svgEl, rawNodes, rawEdges, onNodeClick) {
     .data(links).join('text')
     .attr('text-anchor', 'middle')
     .attr('font-size', '8px')
-    .attr('fill', '#999')
+    .attr('fill', () => getComputedStyle(document.documentElement).getPropertyValue('--text-muted').trim() || '#999')
     .attr('pointer-events', 'none')
     .text(d => EDGE_LABELS[d.type] ?? d.type);
 
@@ -144,7 +144,7 @@ export function renderGrafoD3(svgEl, rawNodes, rawEdges, onNodeClick) {
   node.append('circle')
     .attr('r', d => nodeRadius(d, degreeMap))
     .attr('fill', d => nodeColor(d))
-    .attr('stroke', 'rgba(255,255,255,0.12)')
+    .attr('stroke', () => getComputedStyle(document.documentElement).getPropertyValue('--border-medium').trim() || 'rgba(255,255,255,0.10)')
     .attr('stroke-width', 1.5);
 
   // ── Node labels (human-readable) ──
@@ -152,7 +152,7 @@ export function renderGrafoD3(svgEl, rawNodes, rawEdges, onNodeClick) {
     .attr('dy', d => nodeRadius(d, degreeMap) + 12)
     .attr('text-anchor', 'middle')
     .attr('font-size', '10px')
-    .attr('fill', '#94a3b8')
+    .attr('fill', () => getComputedStyle(document.documentElement).getPropertyValue('--text-secondary').trim() || '#94a3b8')
     .attr('font-weight', d => (d.tipo === 'Cliente' || d.tipo === 'Agente') ? '600' : '400')
     .attr('pointer-events', 'none')
     .text(d => humanLabel(d));
