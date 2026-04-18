@@ -7,65 +7,54 @@ import {
   XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, Legend,
 } from 'recharts';
+import StatCard from '../components/ui/StatCard';
+import DataCard from '../components/ui/DataCard';
 
 const RESULT_COLORS = {
-  promesa_pago:    '#ff9100',
-  pago_inmediato:  '#00e676',
-  renegociacion:   '#00d4ff',
-  sin_respuesta:   '#b0bec5',
-  se_niega_pagar:  '#ff1744',
-  disputa:         '#d500f9',
-};
-const SENT_COLORS = {
-  cooperativo: '#00e676',
-  neutral:     '#90a4ae',
-  frustrado:   '#ff9100',
-  hostil:      '#ff1744',
-  'n/a':       '#cfd8dc',
+  promesa_pago:    'var(--state-warning)',
+  pago_inmediato:  'var(--state-success)',
+  renegociacion:   'var(--state-info)',
+  sin_respuesta:   'var(--text-muted)',
+  se_niega_pagar:  'var(--state-danger)',
+  disputa:         'var(--state-purple)',
 };
 
-function fmt(n, decimals = 1) {
-  return n == null ? '--' : Number(n).toFixed(decimals);
-}
-function pct(n) {
-  return n == null ? '--' : `${(n * 100).toFixed(1)}%`;
-}
+const SENT_COLORS_PIE = {
+  cooperativo: '#10b981',
+  neutral:     '#4a5568',
+  frustrado:   '#f59e0b',
+  hostil:      '#ef4444',
+  'n/a':       '#2d3748',
+};
+
+const TICK = { fontSize: 10, fill: 'var(--text-muted)' };
+
+function pct(n) { return n == null ? '--' : `${(n * 100).toFixed(1)}%`; }
+
 function money(n) {
   if (n == null) return '--';
   return new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(n);
 }
 
-function KpiCard({ label, value, color = 'text-slate-800', sub }) {
-  return (
-    <div className="bg-slate-50/80 rounded-xl p-4 border border-slate-100">
-      <p className="text-[11px] text-slate-500 uppercase tracking-wide font-medium mb-1">{label}</p>
-      <p className={`text-xl font-bold ${color}`}>{value}</p>
-      {sub && <p className="text-[10px] text-slate-400 mt-0.5">{sub}</p>}
-    </div>
-  );
+function AgentInitials(agent) {
+  return (agent.nombre ?? agent.id ?? '?')
+    .replace('agente_0', '').replace('agente_', '')
+    .slice(0, 2).toUpperCase();
 }
 
-function ChartPanel({ title, sub, children }) {
-  return (
-    <div className="bg-white rounded-xl border border-slate-200/60 shadow-sm">
-      <div className="px-5 pt-5 pb-2">
-        <h2 className="text-sm font-semibold text-slate-700">{title}</h2>
-        {sub && <p className="text-[11px] text-slate-400">{sub}</p>}
-      </div>
-      <div className="px-3 pb-4">{children}</div>
-    </div>
-  );
-}
-
-// Tooltip personalizado que muestra % sobre el total
-function ResultTooltip({ active, payload, total }) {
+function CustomTooltip({ active, payload, total }) {
   if (!active || !payload?.length) return null;
   const { name, value } = payload[0].payload;
-  const pct = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
+  const p = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
   return (
-    <div className="bg-white border border-slate-200 rounded-lg px-3 py-2 shadow text-xs">
-      <p className="font-semibold text-slate-700">{name}</p>
-      <p className="text-slate-500">{value} llamadas <span className="text-slate-400">({pct}%)</span></p>
+    <div style={{
+      background: 'var(--bg-elevated)', border: '1px solid var(--border-medium)',
+      borderRadius: 8, padding: '8px 12px', fontSize: 12,
+    }}>
+      <p style={{ fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}>{name}</p>
+      <p style={{ color: 'var(--text-muted)', margin: '2px 0 0' }}>
+        {value} llamadas ({p}%)
+      </p>
     </div>
   );
 }
@@ -79,7 +68,6 @@ export default function AgenteDetalle() {
     queryFn: () => getAgenteEfectividad(id),
   });
 
-  // Para calcular ranking comparativo
   const { data: todosAgentes } = useQuery({
     queryKey: ['agentes'],
     queryFn: getAgentes,
@@ -87,29 +75,34 @@ export default function AgenteDetalle() {
 
   if (isLoading) {
     return (
-      <div className="p-6 max-w-5xl mx-auto space-y-4">
-        <div className="skeleton h-16" />
-        <div className="grid grid-cols-4 gap-4">{[...Array(4)].map((_, i) => <div key={i} className="skeleton h-20" />)}</div>
-        <div className="grid grid-cols-2 gap-6"><div className="skeleton h-72" /><div className="skeleton h-72" /></div>
+      <div className="space-y-4 max-w-5xl mx-auto">
+        <div className="ds-skeleton h-20" />
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
+          {[...Array(4)].map((_, i) => <div key={i} className="ds-skeleton h-20" />)}
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+          <div className="ds-skeleton h-72" /><div className="ds-skeleton h-72" />
+        </div>
       </div>
     );
   }
 
   if (!agente) {
     return (
-      <div className="flex flex-col items-center justify-center h-96 text-slate-400">
-        <p className="font-medium">Agente no encontrado</p>
-        <button onClick={() => navigate('/agentes')} className="mt-3 text-blue-600 hover:underline text-sm">Volver</button>
+      <div className="ds-empty" style={{ height: 400 }}>
+        <div className="ds-empty-title">Agente no encontrado</div>
+        <button className="ds-btn ds-btn-ghost" style={{ marginTop: 12 }} onClick={() => navigate('/agentes')}>
+          Volver
+        </button>
       </div>
     );
   }
 
-  // ── Datos derivados ──────────────────────────────────────
   const resultados = agente.distribucion_resultados
     ? Object.entries(agente.distribucion_resultados).map(([name, value]) => ({
         name: name.replace(/_/g, ' '),
         value,
-        fill: RESULT_COLORS[name] ?? '#94a3b8',
+        fill: RESULT_COLORS[name] ?? 'var(--text-muted)',
       }))
     : [];
 
@@ -117,91 +110,86 @@ export default function AgenteDetalle() {
     ? Object.entries(agente.distribucion_sentimientos).map(([name, value]) => ({
         name,
         value,
-        fill: SENT_COLORS[name] ?? '#94a3b8',
+        fill: SENT_COLORS_PIE[name] ?? '#4a5568',
       }))
     : [];
 
   const totalResultados = resultados.reduce((s, r) => s + r.value, 0) || 1;
 
-  // Ranking: posición en tasa_exito respecto al equipo
   let rankingLabel = null;
   if (todosAgentes?.length > 1) {
-    const sorted = [...todosAgentes].sort(
-      (a, b) =>
-        (b.tasa_promesa + b.tasa_pago_inmediato) -
-        (a.tasa_promesa + a.tasa_pago_inmediato)
+    const sortedAll = [...todosAgentes].sort(
+      (a, b) => ((b.tasa_promesa ?? 0) + (b.tasa_pago_inmediato ?? 0)) -
+                ((a.tasa_promesa ?? 0) + (a.tasa_pago_inmediato ?? 0))
     );
-    const pos = sorted.findIndex((a) => a.id === id) + 1;
-    rankingLabel = `#${pos} de ${sorted.length}`;
+    const pos = sortedAll.findIndex(a => a.id === id) + 1;
+    rankingLabel = `#${pos} de ${sortedAll.length}`;
   }
 
   const actividadHoraria = agente.actividad_por_hora ?? [];
   const tendenciaSemanal = agente.tendencia_semanal ?? [];
 
   return (
-    <div className="poll-container poll-space">
+    <div className="space-y-5 max-w-5xl mx-auto">
       {/* Header */}
-      <div className="flex items-start gap-4">
-        <button
-          onClick={() => navigate('/agentes')}
-          className="mt-1 text-slate-400 hover:text-slate-700 transition-colors p-1 -ml-1"
-        >
-          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <div className="ds-detail-header">
+        <button className="ds-back-btn" onClick={() => navigate('/agentes')} style={{ marginBottom: 12 }}>
+          <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
           </svg>
+          Agentes
         </button>
-        <div className="flex items-center gap-3">
-          <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-slate-600 to-slate-800 flex items-center justify-center text-white font-bold text-sm shadow-sm">
-            {(agente.nombre ?? agente.id ?? '?')
-              .replace('agente_0', '')
-              .replace('agente_', '')
-              .slice(0, 2)
-              .toUpperCase()}
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+          <div className="ds-avatar">
+            {AgentInitials(agente)}
           </div>
           <div>
-            <h1 className="text-xl font-bold text-slate-800">{agente.nombre ?? agente.id}</h1>
-            <p className="text-xs text-slate-400">{agente.id} · Rendimiento y análisis de llamadas</p>
+            <h1 style={{ fontSize: 20, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 4 }}>
+              {agente.nombre ?? agente.id}
+            </h1>
+            <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+              {agente.id} · Rendimiento y análisis de llamadas
+              {agente.mejor_horario && (
+                <span style={{ marginLeft: 12, color: 'var(--state-info)' }}>
+                  Mejor franja: {agente.mejor_horario}
+                </span>
+              )}
+            </div>
           </div>
         </div>
       </div>
 
       {/* KPIs primarios */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <KpiCard label="Total Llamadas"   value={agente.total_llamadas ?? 0} />
-        <KpiCard label="Tasa Éxito"       value={pct(agente.tasa_exito)}    color="text-emerald-600"
-                 sub="promesa + pago inmediato" />
-        <KpiCard label="Monto Prometido" value={money(agente.monto_prometido_total)} color="text-blue-700"
-                 sub="suma de compromisos generados" />
-        <KpiCard label="Ranking Equipo"   value={rankingLabel ?? '--'}      color="text-violet-600"
-                 sub="por tasa de éxito" />
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12 }}>
+        <StatCard label="Total Llamadas"  value={agente.total_llamadas ?? 0} />
+        <StatCard label="Tasa Éxito"      value={pct(agente.tasa_exito)}    variant="success" note="promesa + pago inmediato" />
+        <StatCard label="Monto Prometido" value={money(agente.monto_prometido_total)} variant="info" />
+        <StatCard label="Ranking Equipo"  value={rankingLabel ?? '--'}       variant="purple" note="por tasa de éxito" />
       </div>
 
       {/* KPIs secundarios */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <KpiCard label="Tasa Promesa"    value={pct(agente.tasa_promesa)}         color="text-amber-600" />
-        <KpiCard label="Tasa Pago Inm."  value={pct(agente.tasa_pago_inmediato)}  color="text-teal-600" />
-        <KpiCard label="Tasa Fracaso"    value={pct(agente.tasa_fracaso)}         color="text-red-500"
-                 sub="negación + sin respuesta" />
-        <KpiCard
-          label="Cumplimiento Promesas"
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12 }}>
+        <StatCard label="Tasa Promesa"      value={pct(agente.tasa_promesa)}          variant="warning" />
+        <StatCard label="Tasa Pago Inm."    value={pct(agente.tasa_pago_inmediato)}   variant="info" />
+        <StatCard label="Tasa Fracaso"      value={pct(agente.tasa_fracaso)}           variant="danger" note="negación + sin respuesta" />
+        <StatCard
+          label="Cumpl. Promesas"
           value={agente.tasa_cumplimiento_promesas != null ? pct(agente.tasa_cumplimiento_promesas) : '--'}
-          color="text-indigo-600"
-          sub={agente.promesas_generadas ? `${agente.promesas_generadas} generadas` : undefined}
+          variant="success"
+          note={agente.promesas_generadas ? `${agente.promesas_generadas} generadas` : undefined}
         />
       </div>
 
-      {/* Fila 1: Resultados + Actividad horaria */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <ChartPanel
-          title="Distribución de Resultados"
-          sub={`${totalResultados} interacciones totales`}
-        >
+      {/* Charts row 1 */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+        <DataCard title="Distribución de Resultados" subtitle={`${totalResultados} interacciones`}>
           <ResponsiveContainer width="100%" height={280}>
             <BarChart data={resultados} layout="vertical">
-              <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-              <XAxis type="number" tick={{ fontSize: 10, fill: '#94a3b8' }} />
-              <YAxis dataKey="name" type="category" tick={{ fontSize: 11, fill: '#64748b' }} width={130} />
-              <Tooltip content={<ResultTooltip total={totalResultados} />} />
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis type="number" tick={TICK} />
+              <YAxis dataKey="name" type="category" tick={{ fontSize: 11, fill: 'var(--text-secondary)' }} width={120} />
+              <Tooltip content={<CustomTooltip total={totalResultados} />} />
               <Bar dataKey="value" radius={[0, 4, 4, 0]}>
                 {resultados.map((entry, i) => (
                   <Cell key={i} fill={entry.fill} />
@@ -209,93 +197,88 @@ export default function AgenteDetalle() {
               </Bar>
             </BarChart>
           </ResponsiveContainer>
-        </ChartPanel>
+        </DataCard>
 
-        <ChartPanel
-          title="Actividad por Hora del Día"
-          sub={agente.mejor_horario ? `Mejor franja: ${agente.mejor_horario}` : 'Distribución de llamadas y éxitos'}
-        >
+        <DataCard title="Actividad por Hora">
           {actividadHoraria.length > 0 ? (
             <ResponsiveContainer width="100%" height={280}>
               <BarChart data={actividadHoraria}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                <XAxis dataKey="hora" tick={{ fontSize: 10, fill: '#94a3b8' }} />
-                <YAxis tick={{ fontSize: 10, fill: '#94a3b8' }} />
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="hora" tick={TICK} />
+                <YAxis tick={TICK} />
                 <Tooltip
                   formatter={(v, name) => [v, name === 'total' ? 'Llamadas' : 'Éxitos']}
-                  labelFormatter={(l) => `Hora: ${l}`}
+                  labelFormatter={l => `Hora: ${l}`}
+                  contentStyle={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-medium)', borderRadius: 8 }}
                 />
-                <Legend formatter={(v) => v === 'total' ? 'Llamadas' : 'Éxitos'} />
-                <Bar dataKey="total"  fill="#94a3b8" radius={[3, 3, 0, 0]} />
-                <Bar dataKey="exitos" fill="#00e676" radius={[3, 3, 0, 0]} />
+                <Legend formatter={v => v === 'total' ? 'Llamadas' : 'Éxitos'} />
+                <Bar dataKey="total"  fill="rgba(148,163,184,0.4)" radius={[3,3,0,0]} />
+                <Bar dataKey="exitos" fill="var(--state-success)"  radius={[3,3,0,0]} />
               </BarChart>
             </ResponsiveContainer>
           ) : (
-            <div className="flex items-center justify-center h-64 text-slate-400 text-sm">Sin datos horarios</div>
+            <div className="ds-empty"><div className="ds-empty-desc">Sin datos horarios</div></div>
           )}
-        </ChartPanel>
+        </DataCard>
       </div>
 
-      {/* Fila 2: Sentimientos + Tendencia semanal */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <ChartPanel
-          title="Distribución de Sentimientos"
-          sub="Percepción del cliente durante las llamadas"
-        >
-          <ResponsiveContainer width="100%" height={280}>
+      {/* Charts row 2 */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+        <DataCard title="Sentimientos" subtitle="Percepción del cliente">
+          <ResponsiveContainer width="100%" height={260}>
             <PieChart>
               <Pie
                 data={sentimientos}
                 cx="50%" cy="50%"
-                innerRadius={55} outerRadius={95}
+                innerRadius={55} outerRadius={90}
                 dataKey="value"
                 paddingAngle={2}
-                label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
+                label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
               >
                 {sentimientos.map((entry, i) => (
                   <Cell key={i} fill={entry.fill} />
                 ))}
               </Pie>
-              <Tooltip formatter={(v, name) => [v, name]} />
+              <Tooltip
+                formatter={(v, name) => [v, name]}
+                contentStyle={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-medium)', borderRadius: 8 }}
+              />
             </PieChart>
           </ResponsiveContainer>
-        </ChartPanel>
+        </DataCard>
 
-        <ChartPanel
-          title="Tendencia Semanal"
-          sub="Evolución de llamadas y éxitos por semana"
-        >
+        <DataCard title="Tendencia Semanal" subtitle="Evolución de llamadas y éxitos">
           {tendenciaSemanal.length > 1 ? (
-            <ResponsiveContainer width="100%" height={280}>
+            <ResponsiveContainer width="100%" height={260}>
               <LineChart data={tendenciaSemanal}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                <XAxis dataKey="semana" tick={{ fontSize: 9, fill: '#94a3b8' }} />
-                <YAxis yAxisId="left"  tick={{ fontSize: 10, fill: '#94a3b8' }} />
-                <YAxis yAxisId="right" orientation="right" tickFormatter={(v) => `${(v * 100).toFixed(0)}%`}
-                       tick={{ fontSize: 10, fill: '#94a3b8' }} domain={[0, 1]} />
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="semana" tick={{ fontSize: 9, fill: 'var(--text-muted)' }} />
+                <YAxis yAxisId="left"  tick={TICK} />
+                <YAxis yAxisId="right" orientation="right" tickFormatter={v => `${(v * 100).toFixed(0)}%`} tick={TICK} domain={[0,1]} />
                 <Tooltip
                   formatter={(v, name) =>
                     name === 'tasa_exito'
                       ? [`${(v * 100).toFixed(1)}%`, 'Tasa éxito']
                       : [v, name === 'total' ? 'Llamadas' : 'Éxitos']
                   }
+                  contentStyle={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-medium)', borderRadius: 8 }}
                 />
-                <Legend formatter={(v) =>
-                  v === 'total' ? 'Llamadas' : v === 'exitos' ? 'Éxitos' : 'Tasa éxito'
-                } />
-                <Line yAxisId="left"  type="monotone" dataKey="total"     stroke="#94a3b8" strokeWidth={2} dot={false} />
-                <Line yAxisId="left"  type="monotone" dataKey="exitos"    stroke="#00e676" strokeWidth={2} dot={false} />
-                <Line yAxisId="right" type="monotone" dataKey="tasa_exito" stroke="#ff9100" strokeWidth={2} strokeDasharray="4 2" dot={false} />
+                <Legend formatter={v => v === 'total' ? 'Llamadas' : v === 'exitos' ? 'Éxitos' : 'Tasa éxito'} />
+                <Line yAxisId="left"  type="monotone" dataKey="total"      stroke="var(--text-muted)"    strokeWidth={2} dot={false} />
+                <Line yAxisId="left"  type="monotone" dataKey="exitos"     stroke="var(--state-success)" strokeWidth={2} dot={false} />
+                <Line yAxisId="right" type="monotone" dataKey="tasa_exito" stroke="var(--state-warning)" strokeWidth={2} strokeDasharray="4 2" dot={false} />
               </LineChart>
             </ResponsiveContainer>
           ) : (
-            <div className="flex items-center justify-center h-64 text-slate-400 text-sm">
-              {tendenciaSemanal.length === 1
-                ? 'Solo hay datos de una semana — el gráfico aparecerá cuando haya más histórico'
-                : 'Sin datos de tendencia'}
+            <div className="ds-empty">
+              <div className="ds-empty-desc">
+                {tendenciaSemanal.length === 1
+                  ? 'Solo hay datos de una semana'
+                  : 'Sin datos de tendencia'}
+              </div>
             </div>
           )}
-        </ChartPanel>
+        </DataCard>
       </div>
     </div>
   );

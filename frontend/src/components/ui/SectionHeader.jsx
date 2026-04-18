@@ -1,9 +1,9 @@
 export default function SectionHeader({ title, description, right }) {
   return (
-    <div className="poll-section-head">
+    <div className="ds-page-header" style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 12 }}>
       <div>
-        <h1 className="poll-section-title">{title}</h1>
-        {description && <p className="poll-section-subtitle">{description}</p>}
+        <h1 className="ds-page-title">{title}</h1>
+        {description && <p className="ds-page-subtitle">{description}</p>}
       </div>
       {right && <div>{right}</div>}
     </div>

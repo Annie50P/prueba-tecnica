@@ -5,21 +5,25 @@ import {
   PieChart, Pie, Cell, AreaChart, Area, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer, Legend, BarChart, Bar,
 } from 'recharts';
-import SectionHeader from '../components/ui/SectionHeader';
-import Panel from '../components/ui/Panel';
-import MetricTile from '../components/ui/MetricTile';
+import StatCard from '../components/ui/StatCard';
+import DataCard from '../components/ui/DataCard';
 
-const PIE_COLORS = ['#ff2d55', '#00d4ff', '#7c4dff', '#00e676', '#ff9100', '#ff1744'];
 const CHART_COLORS = {
-  llamadas: '#00d4ff',
-  pagos: '#ff2d55',
-  bars: '#7c4dff',
-  progress: '#00e676',
+  llamadas: 'var(--chart-1)',
+  pagos:    'var(--chart-2)',
+  bars:     'var(--chart-4)',
 };
 
-function Skeleton({ className = '' }) {
-  return <div className={`skeleton ${className}`} />;
+const PIE_COLORS = [
+  'var(--chart-1)', 'var(--chart-2)', 'var(--chart-3)',
+  'var(--chart-4)', 'var(--chart-5)', 'var(--chart-6)',
+];
+
+function Skeleton({ h = 'h-28' }) {
+  return <div className={`ds-skeleton ${h}`} />;
 }
+
+const TICK = { fontSize: 10, fill: 'var(--text-muted)' };
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -29,20 +33,25 @@ export default function Dashboard() {
 
   if (l1 || l2 || l3) {
     return (
-      <div className="p-6 max-w-7xl mx-auto space-y-6">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-28" />)}
+      <div className="space-y-5 max-w-7xl mx-auto">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {[...Array(4)].map((_, i) => <Skeleton key={i} h="h-24" />)}
         </div>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Skeleton className="h-80" />
-          <Skeleton className="h-80" />
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <Skeleton h="h-72" /><Skeleton h="h-72" />
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <Skeleton h="h-64" /><Skeleton h="h-64" />
         </div>
       </div>
     );
   }
 
   const deudaTipos = dash?.distribucion_tipos_deuda
-    ? Object.entries(dash.distribucion_tipos_deuda).map(([name, value]) => ({ name: name.replace(/_/g, ' '), value }))
+    ? Object.entries(dash.distribucion_tipos_deuda).map(([name, value]) => ({
+        name: name.replace(/_/g, ' '),
+        value,
+      }))
     : [];
 
   const actividad = dash?.actividad_por_dia ?? [];
@@ -61,148 +70,183 @@ export default function Dashboard() {
     .map(([id, { count, total }]) => ({ id, count, total }))
     .sort((a, b) => b.total - a.total);
 
-  return (
-    <div className="poll-container poll-space space-y-6">
-      <SectionHeader
-        title="Control de cartera"
-        description="Brutal minimal UI, datos directos y visualizaciones con acentos vibrantes."
-      />
+  const promesasCumplidas = dash?.promesas_cumplidas ?? 0;
+  const promesasTotal = promesasCumplidas + (dash?.promesas_incumplidas ?? 0);
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <MetricTile
+  return (
+    <div className="space-y-5 max-w-7xl mx-auto">
+      {/* KPIs */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <StatCard
           label="Deuda total"
           value={`$${(dash?.total_deuda_inicial ?? 0).toLocaleString('es')}`}
-          note="Suma de deudas iniciales"
+          note="Cartera total inicial"
         />
-        <MetricTile
-          label="Total recuperado"
+        <StatCard
+          label="Recuperado"
           value={`$${(dash?.total_recuperado ?? 0).toLocaleString('es')}`}
-          note={`Recuperacion ${tasaRec}%`}
+          note={`${tasaRec}% de la cartera`}
+          variant="success"
         />
-        <MetricTile
+        <StatCard
           label="Promesas"
-          value={`${dash?.promesas_cumplidas ?? 0} / ${(dash?.promesas_cumplidas ?? 0) + (dash?.promesas_incumplidas ?? 0)}`}
+          value={`${promesasCumplidas} / ${promesasTotal}`}
           note={`${dash?.promesas_incumplidas ?? 0} incumplidas`}
+          variant={dash?.promesas_incumplidas > 5 ? 'danger' : 'default'}
         />
-        <MetricTile
+        <StatCard
           label="Mejor hora"
-          value={horarios?.mejor_hora ? `${horarios.mejor_hora}:00` : '--'}
-          note="Mayor volumen de exito"
+          value={horarios?.mejor_hora != null ? `${horarios.mejor_hora}:00` : '--'}
+          note="Mayor volumen de éxito"
         />
       </div>
 
-      <Panel
-        title="Progreso de recuperacion"
-        subtitle="Total recuperado vs deuda total"
-        aside={<span style={{ color: CHART_COLORS.progress, fontSize: '1.35rem' }}>{tasaRec}%</span>}
+      {/* Progreso global */}
+      <DataCard
+        title="Progreso de recuperación"
+        aside={
+          <span style={{ fontSize: 20, fontWeight: 700, color: 'var(--state-success)' }}>
+            {tasaRec}%
+          </span>
+        }
       >
-        <div className="w-full bg-slate-100 h-2">
+        <div style={{ background: 'var(--bg-elevated)', borderRadius: 4, height: 6, overflow: 'hidden' }}>
           <div
-            className="h-2 transition-all duration-700"
-            style={{ width: `${Math.min(100, Number(tasaRec))}%`, background: CHART_COLORS.progress }}
+            style={{
+              width: `${Math.min(100, Number(tasaRec))}%`,
+              height: '100%',
+              background: 'var(--state-success)',
+              borderRadius: 4,
+              transition: 'width 700ms ease',
+            }}
           />
         </div>
-        <div className="flex justify-between mt-2 text-[11px] text-slate-400">
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8, fontSize: 11, color: 'var(--text-muted)' }}>
           <span>$0</span>
           <span>${(dash?.total_deuda_inicial ?? 0).toLocaleString('es')}</span>
         </div>
-      </Panel>
+      </DataCard>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Panel title="Distribucion por tipo de deuda" subtitle="Composicion de cartera">
+      {/* Charts row 1 */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <DataCard title="Actividad por día" subtitle="Llamadas y pagos en el tiempo">
+          <ResponsiveContainer width="100%" height={280}>
+            <AreaChart data={actividad}>
+              <defs>
+                <linearGradient id="gLlamadas" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%"  stopColor={CHART_COLORS.llamadas} stopOpacity={0.25} />
+                  <stop offset="95%" stopColor={CHART_COLORS.llamadas} stopOpacity={0} />
+                </linearGradient>
+                <linearGradient id="gPagos" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%"  stopColor={CHART_COLORS.pagos} stopOpacity={0.25} />
+                  <stop offset="95%" stopColor={CHART_COLORS.pagos} stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="fecha" tick={TICK} angle={-40} textAnchor="end" height={54} />
+              <YAxis tick={TICK} />
+              <Tooltip
+                contentStyle={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-medium)', borderRadius: 8 }}
+                labelStyle={{ color: 'var(--text-secondary)' }}
+              />
+              <Legend wrapperStyle={{ fontSize: 12 }} />
+              <Area type="monotone" dataKey="llamadas" stroke={CHART_COLORS.llamadas} fill="url(#gLlamadas)" strokeWidth={2} name="Llamadas" />
+              <Area type="monotone" dataKey="pagos"    stroke={CHART_COLORS.pagos}    fill="url(#gPagos)"    strokeWidth={2} name="Pagos" />
+            </AreaChart>
+          </ResponsiveContainer>
+        </DataCard>
+
+        <DataCard title="Distribución por tipo de deuda" subtitle="Composición de cartera">
           <ResponsiveContainer width="100%" height={280}>
             <PieChart>
               <Pie
                 data={deudaTipos}
-                cx="50%"
-                cy="50%"
-                innerRadius={58}
-                outerRadius={100}
+                cx="50%" cy="50%"
+                innerRadius={62} outerRadius={105}
                 dataKey="value"
                 paddingAngle={2}
-                label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
+                label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                labelLine={{ stroke: 'var(--text-muted)' }}
               >
                 {deudaTipos.map((_, i) => (
                   <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
                 ))}
               </Pie>
-              <Tooltip formatter={(v) => [`$${v.toLocaleString('es')}`, 'Monto']} />
+              <Tooltip
+                formatter={(v) => [`$${v.toLocaleString('es')}`, 'Monto']}
+                contentStyle={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-medium)', borderRadius: 8 }}
+              />
             </PieChart>
           </ResponsiveContainer>
-        </Panel>
-
-        <Panel title="Actividad por dia" subtitle="Llamadas y pagos en el tiempo">
-          <ResponsiveContainer width="100%" height={280}>
-            <AreaChart data={actividad}>
-              <defs>
-                <linearGradient id="gradLlamadas" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor={CHART_COLORS.llamadas} stopOpacity={0.4} />
-                  <stop offset="95%" stopColor={CHART_COLORS.llamadas} stopOpacity={0} />
-                </linearGradient>
-                <linearGradient id="gradPagos" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor={CHART_COLORS.pagos} stopOpacity={0.35} />
-                  <stop offset="95%" stopColor={CHART_COLORS.pagos} stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#ededed" />
-              <XAxis dataKey="fecha" tick={{ fontSize: 10, fill: '#8c8c8c' }} angle={-45} textAnchor="end" height={60} />
-              <YAxis tick={{ fontSize: 10, fill: '#8c8c8c' }} />
-              <Tooltip />
-              <Legend wrapperStyle={{ fontSize: '12px' }} />
-              <Area type="monotone" dataKey="llamadas" stroke={CHART_COLORS.llamadas} fill="url(#gradLlamadas)" strokeWidth={2} name="Llamadas" />
-              <Area type="monotone" dataKey="pagos" stroke={CHART_COLORS.pagos} fill="url(#gradPagos)" strokeWidth={2} name="Pagos" />
-            </AreaChart>
-          </ResponsiveContainer>
-        </Panel>
+        </DataCard>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Panel title="Efectividad por hora" subtitle="Volumen por franja">
-          <ResponsiveContainer width="100%" height={260}>
+      {/* Charts row 2 */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <DataCard title="Efectividad por hora" subtitle="Volumen de llamadas por franja horaria">
+          <ResponsiveContainer width="100%" height={240}>
             <BarChart data={horariosDetalle}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#ededed" />
-              <XAxis dataKey="hora" tick={{ fontSize: 10, fill: '#8c8c8c' }} tickFormatter={h => `${h}h`} />
-              <YAxis tick={{ fontSize: 10, fill: '#8c8c8c' }} />
-              <Tooltip formatter={(v) => [v, 'Llamadas']} labelFormatter={(l) => `${l}:00`} />
-              <Bar dataKey="total_llamadas" fill={CHART_COLORS.bars} name="Llamadas" />
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="hora" tick={TICK} tickFormatter={h => `${h}h`} />
+              <YAxis tick={TICK} />
+              <Tooltip
+                formatter={(v) => [v, 'Llamadas']}
+                labelFormatter={(l) => `${l}:00`}
+                contentStyle={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-medium)', borderRadius: 8 }}
+              />
+              <Bar dataKey="total_llamadas" fill={CHART_COLORS.bars} radius={[3, 3, 0, 0]} name="Llamadas" />
             </BarChart>
           </ResponsiveContainer>
-        </Panel>
+        </DataCard>
 
-        <Panel
+        <DataCard
           title="Promesas vencidas"
           subtitle={`${promesasList.length} promesas sin cumplir`}
-          aside={<span className="text-xs text-slate-500">{clientRows.length} clientes</span>}
+          aside={
+            <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+              {clientRows.length} clientes
+            </span>
+          }
+          flush
         >
-          <div className="overflow-auto max-h-[280px]">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-left text-[11px] text-slate-400 uppercase tracking-wide">
-                  <th className="pb-2.5 font-medium">Cliente</th>
-                  <th className="pb-2.5 font-medium text-center">Qty</th>
-                  <th className="pb-2.5 font-medium text-right">Monto</th>
-                </tr>
-              </thead>
-              <tbody>
-                {clientRows.slice(0, 15).map((c) => (
-                  <tr
-                    key={c.id}
-                    onClick={() => navigate(`/clientes/${c.id}`)}
-                    className="border-t border-slate-100 hover:bg-slate-50 cursor-pointer transition-colors"
-                  >
-                    <td className="py-2.5 text-slate-700 font-mono text-xs">{c.id}</td>
-                    <td className="py-2.5 text-center">
-                      <span className="inline-flex items-center justify-center w-6 h-5 text-[11px]">
-                        {c.count}
-                      </span>
-                    </td>
-                    <td className="py-2.5 text-right font-medium text-slate-700">${c.total.toLocaleString('es')}</td>
+          <div style={{ overflowY: 'auto', maxHeight: 264 }}>
+            {clientRows.length === 0 ? (
+              <div className="ds-empty">
+                <div className="ds-empty-title">Sin promesas vencidas</div>
+              </div>
+            ) : (
+              <table className="ds-table">
+                <thead>
+                  <tr>
+                    <th>Cliente</th>
+                    <th className="center">Qty</th>
+                    <th className="right">Monto</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {clientRows.slice(0, 15).map(c => (
+                    <tr key={c.id} onClick={() => navigate(`/clientes/${c.id}`)}>
+                      <td style={{ fontFamily: 'monospace', fontSize: 12 }}>{c.id}</td>
+                      <td className="center">
+                        <span style={{
+                          display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                          width: 22, height: 22, borderRadius: 4,
+                          background: 'var(--state-danger-bg)', color: 'var(--state-danger)',
+                          fontSize: 11, fontWeight: 700,
+                        }}>
+                          {c.count}
+                        </span>
+                      </td>
+                      <td className="right" style={{ fontWeight: 600, color: 'var(--state-danger)' }}>
+                        ${c.total.toLocaleString('es')}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
           </div>
-        </Panel>
+        </DataCard>
       </div>
     </div>
   );

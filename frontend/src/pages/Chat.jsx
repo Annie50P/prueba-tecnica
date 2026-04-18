@@ -1,6 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
 import { queryMcp } from '../api/client';
-import LinkButton from '../components/ui/LinkButton';
 
 const SUGGESTIONS = [
   'Cual es el cliente con mayor deuda?',
@@ -13,8 +12,8 @@ const SUGGESTIONS = [
 
 export default function Chat() {
   const [messages, setMessages] = useState([]);
-  const [input, setInput] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [input, setInput]       = useState('');
+  const [loading, setLoading]   = useState(false);
   const endRef = useRef(null);
 
   useEffect(() => {
@@ -56,60 +55,108 @@ export default function Chat() {
   }
 
   return (
-    <div className="poll-chat-shell">
-      <header className="poll-chat-head">
-        <h1>Chat IA</h1>
-        <p>Conversacion compacta para consultas de cobranza.</p>
-      </header>
+    <div style={{
+      maxWidth: 680,
+      margin: '0 auto',
+      height: 'calc(100vh - 56px - 48px)',
+      display: 'flex',
+      flexDirection: 'column',
+      background: 'var(--bg-surface)',
+      border: '1px solid var(--border-medium)',
+      borderRadius: 'var(--radius-lg)',
+      overflow: 'hidden',
+    }}>
+      {/* Header */}
+      <div style={{
+        padding: '16px 20px',
+        borderBottom: '1px solid var(--border-soft)',
+        background: 'var(--bg-elevated)',
+        flexShrink: 0,
+      }}>
+        <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-primary)' }}>Chat IA</div>
+        <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>
+          Consultas de cobranza en lenguaje natural
+        </div>
+      </div>
 
-      <div className="poll-chat-body space-y-3">
+      {/* Messages */}
+      <div style={{
+        flex: 1,
+        overflowY: 'auto',
+        padding: '16px 20px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 10,
+      }}>
         {messages.length === 0 && (
-          <div className="text-center py-10">
-            <p className="text-sm text-slate-600">Pregunta en lenguaje natural sobre clientes, pagos y agentes.</p>
-            <div className="poll-chat-suggestions justify-center">
+          <div style={{ paddingTop: 24 }}>
+            <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 12, textAlign: 'center' }}>
+              Pregunta en lenguaje natural sobre clientes, pagos y agentes.
+            </div>
+            <div className="chat-suggestions">
               {SUGGESTIONS.map((q, i) => (
-                <LinkButton key={i} onClick={() => setInput(q)}>{q}</LinkButton>
+                <button key={i} className="chat-suggestion-btn" onClick={() => setInput(q)}>
+                  {q}
+                </button>
               ))}
             </div>
           </div>
         )}
 
         {messages.map((m, i) => (
-          <div key={i}>
-            <article className={`poll-chat-message ${m.role === 'user' ? 'poll-chat-message-user' : 'poll-chat-message-ai'}`}>
-              <p className="whitespace-pre-wrap leading-relaxed m-0">{m.text}</p>
-              {m.role === 'assistant' && !m.error && (
-                <div className="mt-2 pt-2 border-t border-slate-100 flex flex-wrap gap-3 text-[11px] text-slate-400">
-                  {m.provider && <span>Proveedor: {m.provider}</span>}
-                  {m.tokens != null && <span>Tokens: {m.tokens}</span>}
-                  {m.queries?.length > 0 && <span>Tools: {m.queries.join(', ')}</span>}
-                </div>
-              )}
-            </article>
+          <div
+            key={i}
+            className={`chat-msg ${m.role === 'user' ? 'chat-msg-user' : 'chat-msg-ai'}`}
+          >
+            <p style={{ margin: 0, whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>{m.text}</p>
+            {m.role === 'assistant' && !m.error && (m.provider || m.tokens || m.queries?.length > 0) && (
+              <div className="chat-meta">
+                {m.provider && <span>Proveedor: {m.provider}</span>}
+                {m.tokens != null && <span>Tokens: {m.tokens}</span>}
+                {m.queries?.length > 0 && <span>Tools: {m.queries.join(', ')}</span>}
+              </div>
+            )}
           </div>
         ))}
 
         {loading && (
-          <div className="poll-chat-message poll-chat-message-ai">
-            <p className="m-0 text-slate-500">Procesando...</p>
+          <div className="chat-msg chat-msg-ai">
+            <span style={{ color: 'var(--text-muted)', fontSize: 12 }}>Procesando…</span>
           </div>
         )}
 
         <div ref={endRef} />
       </div>
 
-      <form onSubmit={handleSend} className="poll-chat-foot">
+      {/* Input */}
+      <form
+        onSubmit={handleSend}
+        style={{
+          padding: '12px 16px',
+          borderTop: '1px solid var(--border-soft)',
+          background: 'var(--bg-elevated)',
+          display: 'flex',
+          gap: 8,
+          flexShrink: 0,
+        }}
+      >
         <input
           type="text"
           value={input}
           onChange={e => setInput(e.target.value)}
-          placeholder="Escribe tu consulta..."
+          placeholder="Escribe tu consulta…"
           disabled={loading}
-          className="text-sm"
+          className="chat-widget-input"
+          style={{ flex: 1 }}
+          autoFocus
         />
-        <LinkButton type="submit" disabled={loading || !input.trim()}>
+        <button
+          type="submit"
+          disabled={loading || !input.trim()}
+          className="chat-widget-send"
+        >
           Enviar
-        </LinkButton>
+        </button>
       </form>
     </div>
   );
