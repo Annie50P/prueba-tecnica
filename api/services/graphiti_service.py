@@ -910,7 +910,7 @@ async def get_grafo_relaciones(
         enlaces = [
             {"source": r["from_id"], "target": r["to_id"], "tipo": r["rel_type"]}
             for r in all_rels
-            if r["from_id"] in connected_ids or r["to_id"] in connected_ids
+            if r["from_id"] in connected_ids and r["to_id"] in connected_ids
         ]
     else:
         all_rels = await backend.get_all_relationships(tipos_relacion)

@@ -85,10 +85,10 @@ export default function Grafo() {
   const relFiltered = expandedRelTypes && expandedRelTypes.length < allExpanded.length ? expandedRelTypes : null;
 
   const { data: nodesData, isLoading: l1 } = useQuery({
-    queryKey: ['grafo-nodos', appliedFilters.nodeTypes],
+    queryKey: ['grafo-nodos', appliedFilters.nodeTypes, !!appliedFilters.clienteId],
     queryFn: () => getGrafoNodos(
       appliedFilters.nodeTypes?.length < ALL_NODE_TYPES.length ? appliedFilters.nodeTypes : null,
-      800
+      appliedFilters.clienteId ? 2000 : 800
     ),
   });
 
@@ -102,7 +102,7 @@ export default function Grafo() {
   });
 
   const rawNodes = nodesData?.nodos ?? [];
-  const rawEdges = edgesData?.enlaces ?? [];
+  const rawEdges = appliedFilters.relTypes.length === 0 ? [] : (edgesData?.enlaces ?? []);
   const loading  = l1 || l2;
 
   const ROOT_TYPES = new Set(['Cliente', 'Agente']);
@@ -127,9 +127,8 @@ export default function Grafo() {
         if (fd && ts && ts.slice(0, 10) < fd) return false;
         if (fh && ts && ts.slice(0, 10) > fh) return false;
         if (res && n.tipo === 'Interaccion') {
-          const resLower = res.toLowerCase();
-          if (!(p.resultado ?? '').toLowerCase().includes(resLower) &&
-              !(p.tipo ?? '').toLowerCase().includes(resLower)) return false;
+          const match = (p.resultado ?? '') === res || (p.tipo ?? '') === res;
+          if (!match) return false;
         }
         return true;
       });
