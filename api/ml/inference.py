@@ -94,24 +94,32 @@ def run_inference(
     except Exception:
         idx_pos = 1
 
+    scores_raw = [round((1 - float(proba[i][idx_pos])) * 100, 1) for i in range(len(client_ids))]
+    probs_raw  = [round(float(proba[i][idx_pos]) * 100, 1)        for i in range(len(client_ids))]
+
+    # Clasificación por ranking relativo (terciles): garantiza distribución
+    # aunque los scores estén comprimidos por clase desbalanceada.
+    # Con umbrales absolutos (≥70 alto, ≥40 medio) todos caen en "alto"
+    # cuando la tasa de pago base es ≤10% (dataset pequeño).
+    n = len(scores_raw)
+    order = sorted(range(n), key=lambda i: scores_raw[i], reverse=True)
+    rank_categoria = {}
+    for rank, idx in enumerate(order):
+        if rank < n // 3:
+            rank_categoria[idx] = "alto"
+        elif rank < 2 * n // 3:
+            rank_categoria[idx] = "medio"
+        else:
+            rank_categoria[idx] = "bajo"
+
     results = []
     for i, cid in enumerate(client_ids):
-        prob_pago = round(float(proba[i][idx_pos]) * 100, 1)
-        score_riesgo = round(100 - prob_pago, 1)
-
-        if score_riesgo >= 70:
-            categoria = "alto"
-        elif score_riesgo >= 40:
-            categoria = "medio"
-        else:
-            categoria = "bajo"
-
         results.append(
             {
                 "cliente_id": cid,
-                "score_riesgo": score_riesgo,
-                "categoria_riesgo": categoria,
-                "probabilidad_pago": prob_pago,
+                "score_riesgo": scores_raw[i],
+                "categoria_riesgo": rank_categoria[i],
+                "probabilidad_pago": probs_raw[i],
                 "label_mode": label_mode,
                 "factores": explain(X[i]),
             }

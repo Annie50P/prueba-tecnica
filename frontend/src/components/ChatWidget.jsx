@@ -1,6 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
 import { queryMcp } from '../api/client';
-import LinkButton from './ui/LinkButton';
 
 const SUGGESTIONS = [
   'Cual es el cliente con mayor deuda?',
@@ -38,9 +37,7 @@ export default function ChatWidget() {
   const endRef = useRef(null);
 
   useEffect(() => {
-    if (isOpen) {
-      endRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }
+    if (isOpen) endRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isOpen]);
 
   async function handleSend(e) {
@@ -89,40 +86,46 @@ export default function ChatWidget() {
             >
               <CloseIcon />
             </button>
-            <h2 className="chat-widget-title">Chat IA</h2>
-            <p className="chat-widget-subtitle">Consultas de cobranza en lenguaje natural.</p>
+            <div className="chat-widget-title">Chat IA</div>
+            <div className="chat-widget-subtitle">Consultas de cobranza en lenguaje natural</div>
           </header>
 
           <div className="chat-widget-body">
             {messages.length === 0 && (
-              <div className="chat-widget-empty">
-                <p>Prueba con alguna de estas preguntas:</p>
-                <div className="poll-chat-suggestions">
+              <div>
+                <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 8 }}>
+                  Prueba con alguna de estas preguntas:
+                </div>
+                <div className="chat-suggestions">
                   {SUGGESTIONS.map((q, i) => (
-                    <LinkButton key={i} onClick={() => setInput(q)}>{q}</LinkButton>
+                    <button
+                      key={i}
+                      className="chat-suggestion-btn"
+                      onClick={() => setInput(q)}
+                    >
+                      {q}
+                    </button>
                   ))}
                 </div>
               </div>
             )}
 
             {messages.map((m, i) => (
-              <div key={i}>
-                <article className={`poll-chat-message ${m.role === 'user' ? 'poll-chat-message-user' : 'poll-chat-message-ai'}`}>
-                  <p className="whitespace-pre-wrap leading-relaxed m-0">{m.text}</p>
-                  {m.role === 'assistant' && !m.error && (
-                    <div className="chat-widget-meta">
-                      {m.provider && <span>Proveedor: {m.provider}</span>}
-                      {m.tokens != null && <span>Tokens: {m.tokens}</span>}
-                      {m.queries?.length > 0 && <span>Tools: {m.queries.join(', ')}</span>}
-                    </div>
-                  )}
-                </article>
+              <div key={i} className={`chat-msg ${m.role === 'user' ? 'chat-msg-user' : 'chat-msg-ai'}`}>
+                <p style={{ margin: 0, whiteSpace: 'pre-wrap', lineHeight: 1.5 }}>{m.text}</p>
+                {m.role === 'assistant' && !m.error && (m.provider || m.tokens || m.queries?.length > 0) && (
+                  <div className="chat-meta">
+                    {m.provider && <span>Proveedor: {m.provider}</span>}
+                    {m.tokens != null && <span>Tokens: {m.tokens}</span>}
+                    {m.queries?.length > 0 && <span>Tools: {m.queries.join(', ')}</span>}
+                  </div>
+                )}
               </div>
             ))}
 
             {loading && (
-              <div className="poll-chat-message poll-chat-message-ai">
-                <p className="m-0" style={{ color: 'var(--poll-muted)' }}>Procesando…</p>
+              <div className="chat-msg chat-msg-ai">
+                <span style={{ color: 'var(--text-muted)', fontSize: 12 }}>Procesando…</span>
               </div>
             )}
 
@@ -137,10 +140,15 @@ export default function ChatWidget() {
               placeholder="Escribe tu consulta…"
               disabled={loading}
               autoFocus
+              className="chat-widget-input"
             />
-            <LinkButton type="submit" disabled={loading || !input.trim()}>
+            <button
+              type="submit"
+              disabled={loading || !input.trim()}
+              className="chat-widget-send"
+            >
               Enviar
-            </LinkButton>
+            </button>
           </form>
         </div>
       )}

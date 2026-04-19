@@ -1,50 +1,65 @@
+import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { getClienteDetalle, getClienteTimeline } from '../api/client';
 import {
-  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
-  ResponsiveContainer,
+  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from 'recharts';
+import StatCard from '../components/ui/StatCard';
+import DataCard from '../components/ui/DataCard';
+import Badge from '../components/ui/Badge';
 
-const SENT_STYLES = {
-  positivo:     { cls: 'bg-emerald-50 text-emerald-700 border-emerald-200', icon: '+' },
-  cooperativo:  { cls: 'bg-emerald-50 text-emerald-700 border-emerald-200', icon: '+' },
-  neutral:      { cls: 'bg-slate-50 text-slate-600 border-slate-200', icon: '~' },
-  'n/a':        { cls: 'bg-slate-50 text-slate-500 border-slate-200', icon: '-' },
-  negativo:     { cls: 'bg-red-50 text-red-700 border-red-200', icon: '!' },
-  frustrado:    { cls: 'bg-orange-50 text-orange-700 border-orange-200', icon: '!' },
-  hostil:       { cls: 'bg-red-100 text-red-800 border-red-300', icon: '!!' },
-  muy_negativo: { cls: 'bg-red-100 text-red-800 border-red-300', icon: '!!' },
+const RESULT_COLORS = {
+  pago_inmediato: 'var(--state-success)',
+  promesa_pago:   'var(--state-warning)',
+  renegociacion:  'var(--state-info)',
+  se_niega_pagar: 'var(--state-danger)',
+  sin_respuesta:  'var(--text-muted)',
+  disputa:        'var(--state-purple)',
 };
 
-const RESULT_DOTS = {
-  pago_inmediato: 'bg-emerald-400',
-  promesa_pago:   'bg-amber-400',
-  renegociacion:  'bg-cyan-400',
-  se_niega_pagar: 'bg-rose-500',
-  sin_respuesta:  'bg-slate-300',
-  disputa:        'bg-fuchsia-500',
+const SENT_BADGE = {
+  cooperativo:  'success',
+  positivo:     'success',
+  neutral:      'neutral',
+  'n/a':        'neutral',
+  frustrado:    'warning',
+  negativo:     'danger',
+  hostil:       'danger',
+  muy_negativo: 'danger',
 };
 
-function StatCard({ label, value, color = 'text-slate-800', sub }) {
-  return (
-    <div className="bg-slate-50/80 rounded-xl p-4 border border-slate-100">
-      <p className="text-[11px] text-slate-500 uppercase tracking-wide font-medium mb-1">{label}</p>
-      <p className={`text-xl font-bold ${color}`}>{value}</p>
-      {sub && <p className="text-[11px] text-slate-400 mt-0.5">{sub}</p>}
-    </div>
-  );
+function money(n) {
+  if (n == null) return '--';
+  return `$${Number(n).toLocaleString('es')}`;
 }
+
+function getStatus(c) {
+  const rec   = c.tasa_recuperacion ?? 0;
+  const dias  = c.dias_sin_contacto ?? 0;
+  const cumpl = c.tasa_cumplimiento;
+  const tieneProm = cumpl !== null && cumpl !== undefined;
+
+  if (rec >= 1)                              return 'Liquidado';
+  if (rec >= 0.7)                            return 'Buen pagador';
+  if (tieneProm && cumpl < 0.3 && rec < 0.5) return 'Alto riesgo';
+  if (dias > 30 && rec < 0.7)               return 'Sin gestión';
+  if (rec >= 0.3)                            return 'En proceso';
+  return 'Pendiente alto';
+}
+
+const TICK = { fontSize: 10, fill: 'var(--text-muted)' };
+const TABS = ['Timeline', 'Promesas', 'Pagos', 'Planes'];
 
 export default function ClienteDetalle() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState(0);
 
   const { data: cliente, isLoading: l1 } = useQuery({
     queryKey: ['cliente', id],
     queryFn: () => getClienteDetalle(id),
   });
-
   const { data: timeline, isLoading: l2 } = useQuery({
     queryKey: ['cliente-timeline', id],
     queryFn: () => getClienteTimeline(id),
@@ -52,38 +67,31 @@ export default function ClienteDetalle() {
 
   if (l1 || l2) {
     return (
-      <div className="p-6 max-w-5xl mx-auto space-y-4">
-        <div className="skeleton h-16" />
-        <div className="grid grid-cols-4 gap-4">
-          {[...Array(4)].map((_, i) => <div key={i} className="skeleton h-20" />)}
+      <div className="space-y-4 max-w-5xl mx-auto">
+        <div className="ds-skeleton h-20" />
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 12 }}>
+          {[...Array(5)].map((_, i) => <div key={i} className="ds-skeleton h-20" />)}
         </div>
-        <div className="skeleton h-64" />
+        <div className="ds-skeleton h-64" />
       </div>
     );
   }
 
   if (!cliente) {
     return (
-      <div className="flex flex-col items-center justify-center h-96 text-slate-400">
-        <svg className="w-16 h-16 mb-4 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
-        <p className="font-medium">Cliente no encontrado</p>
-        <button onClick={() => navigate('/clientes')} className="mt-3 text-blue-600 hover:underline text-sm">Volver a clientes</button>
+      <div className="ds-empty" style={{ height: 400 }}>
+        <div className="ds-empty-title">Cliente no encontrado</div>
+        <button className="ds-btn ds-btn-ghost" style={{ marginTop: 12 }} onClick={() => navigate('/clientes')}>
+          Volver a clientes
+        </button>
       </div>
     );
   }
 
   const events = Array.isArray(timeline) ? timeline : (timeline?.timeline ?? []);
-  const pend = cliente.monto_pendiente ?? 0;
-  const ini = cliente.monto_deuda_inicial ?? 1;
-  const ratio = pend / ini;
-  const status = pend === 0 ? { label: 'Liquidado', cls: 'bg-emerald-100 text-emerald-700' }
-    : ratio < 0.3 ? { label: 'Casi liquidado', cls: 'bg-blue-100 text-blue-700' }
-    : ratio < 0.7 ? { label: 'En proceso', cls: 'bg-amber-100 text-amber-700' }
-    : { label: 'Pendiente alto', cls: 'bg-red-100 text-red-700' };
+  const ini    = cliente.monto_deuda_inicial ?? 1;
+  const status = getStatus(cliente);
 
-  // Debt evolution chart
   const pagos = (cliente.pagos ?? [])
     .map(p => ({ monto: p.monto ?? 0, fecha: p.fecha ?? p.timestamp ?? '' }))
     .filter(p => p.fecha)
@@ -96,219 +104,298 @@ export default function ClienteDetalle() {
     evolution.push({ fecha: p.fecha.slice(0, 10), deuda: Math.max(0, ini - acum), pagado: acum });
   });
 
-  const pctRecuperado = ini > 0 ? ((cliente.total_pagado ?? 0) / ini * 100).toFixed(1) : 0;
-  const promesasCumplidas = (cliente.promesas ?? []).filter(p => p.cumplida).length;
-  const promesasTotal = (cliente.promesas ?? []).length;
+  const pctRecuperado  = ini > 0 ? ((cliente.total_pagado ?? 0) / ini * 100).toFixed(1) : '0.0';
+  const promesasAll    = cliente.promesas ?? [];
+  const promesasCumpl  = promesasAll.filter(p => p.cumplida).length;
+  const tasaCumpl      = promesasAll.length > 0
+    ? ((promesasCumpl / promesasAll.length) * 100).toFixed(0)
+    : null;
+
+  const planes = cliente.planes ?? [];
 
   return (
-    <div className="poll-container poll-space">
+    <div className="space-y-5 max-w-5xl mx-auto">
       {/* Header */}
-      <div className="flex items-start gap-4">
-        <button onClick={() => navigate('/clientes')} className="mt-1 text-slate-400 hover:text-slate-700 transition-colors p-1 -ml-1">
-          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <div className="ds-detail-header">
+        <button className="ds-back-btn" onClick={() => navigate('/clientes')} style={{ marginBottom: 12 }}>
+          <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
           </svg>
+          Clientes
         </button>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-3 flex-wrap">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold text-sm shadow-sm">
-              {(cliente.nombre ?? 'C')[0]}
+
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14 }}>
+          <div className="ds-avatar">
+            {(cliente.nombre ?? 'C')[0].toUpperCase()}
+          </div>
+          <div style={{ flex: 1 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 4 }}>
+              <h1 style={{ fontSize: 20, fontWeight: 700, color: 'var(--text-primary)' }}>
+                {cliente.nombre ?? cliente.id}
+              </h1>
+              <Badge label={status} />
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-xl font-bold text-slate-800">{cliente.nombre ?? cliente.id}</h1>
-                <span className={`text-[11px] font-semibold px-2.5 py-0.5 rounded-full ${status.cls}`}>{status.label}</span>
-              </div>
-              <p className="text-xs text-slate-400 mt-0.5">{cliente.id} &middot; {cliente.telefono ?? ''} &middot; {(cliente.tipo_deuda ?? '').replace(/_/g, ' ')}</p>
+            <div style={{ fontSize: 12, color: 'var(--text-muted)', display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+              <span style={{ fontFamily: 'monospace' }}>{cliente.id}</span>
+              {cliente.telefono && <span>{cliente.telefono}</span>}
+              {cliente.tipo_deuda && <span>{cliente.tipo_deuda.replace(/_/g, ' ')}</span>}
+              {cliente.mejor_horario_contacto && (
+                <span>Mejor horario: <strong style={{ color: 'var(--state-purple)' }}>{cliente.mejor_horario_contacto}</strong></span>
+              )}
+              {cliente.ultimo_agente_id && (
+                <span>Último agente: <strong style={{ color: 'var(--text-secondary)' }}>{cliente.ultimo_agente_id}</strong></span>
+              )}
             </div>
           </div>
         </div>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
-        <StatCard label="Deuda Inicial" value={`$${ini.toLocaleString('es')}`} />
-        <StatCard label="Total Pagado" value={`$${(cliente.total_pagado ?? 0).toLocaleString('es')}`} color="text-emerald-600" />
-        <StatCard label="Pendiente" value={`$${pend.toLocaleString('es')}`} color="text-red-500" />
-        <StatCard label="Recuperado" value={`${pctRecuperado}%`} color="text-blue-600" />
-        <StatCard label="Interacciones" value={cliente.interacciones?.length ?? events.length ?? 0} />
+      {/* KPIs fila 1 */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12 }}>
+        <StatCard label="Deuda Inicial"  value={money(ini)} />
+        <StatCard label="Total Pagado"   value={money(cliente.total_pagado)}   variant="success" note={`${pctRecuperado}% recuperado`} />
+        <StatCard label="Pendiente"      value={money(cliente.monto_pendiente)} variant="danger" />
+        <StatCard label="Interacciones"  value={(cliente.interacciones ?? events).length ?? 0} />
+        <StatCard
+          label="Días sin contacto"
+          value={cliente.dias_sin_contacto != null ? `${cliente.dias_sin_contacto}d` : '--'}
+          variant={
+            cliente.dias_sin_contacto == null ? 'default' :
+            cliente.dias_sin_contacto <= 7    ? 'success' :
+            cliente.dias_sin_contacto <= 30   ? 'warning' : 'danger'
+          }
+        />
       </div>
 
-      {/* Debt evolution */}
-      <div className="bg-white rounded-xl border border-slate-200/60 shadow-sm p-5">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h2 className="text-sm font-semibold text-slate-700">Evolucion de la Deuda</h2>
-            <p className="text-[11px] text-slate-400">Progresion del pago a lo largo del tiempo</p>
-          </div>
-          <div className="flex items-center gap-4 text-xs">
-            <span className="flex items-center gap-1.5"><span className="w-3 h-0.5 bg-red-400 rounded" /> Deuda</span>
-            <span className="flex items-center gap-1.5"><span className="w-3 h-0.5 bg-emerald-400 rounded" /> Pagado</span>
-          </div>
-        </div>
-
-        {/* Progress bar */}
-        <div className="mb-5">
-          <div className="flex items-center justify-between text-xs text-slate-500 mb-1.5">
-            <span>Progreso de recuperacion</span>
-            <span className="font-semibold text-emerald-600">{pctRecuperado}%</span>
-          </div>
-          <div className="w-full bg-slate-100 rounded-full h-2.5">
-            <div className="h-2.5 rounded-full bg-gradient-to-r from-emerald-400 to-emerald-500 transition-all" style={{ width: `${Math.min(100, pctRecuperado)}%` }} />
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
-          <div className="space-y-3">
-            <div className="bg-slate-50 rounded-lg p-3 border border-slate-100">
-              <p className="text-[10px] text-slate-400 uppercase tracking-wide">Promesas</p>
-              <p className="text-lg font-bold text-slate-800 mt-0.5">{promesasCumplidas}/{promesasTotal}</p>
-              <p className="text-[11px] text-slate-400">{promesasTotal > 0 ? ((promesasCumplidas / promesasTotal) * 100).toFixed(0) : 0}% cumplidas</p>
-            </div>
-            <div className="bg-slate-50 rounded-lg p-3 border border-slate-100">
-              <p className="text-[10px] text-slate-400 uppercase tracking-wide">Pagos</p>
-              <p className="text-lg font-bold text-slate-800 mt-0.5">{pagos.length}</p>
-              <p className="text-[11px] text-slate-400">realizados</p>
-            </div>
-          </div>
-
-          <div className="lg:col-span-3">
-            {evolution.length > 1 ? (
-              <ResponsiveContainer width="100%" height={200}>
-                <AreaChart data={evolution}>
-                  <defs>
-                    <linearGradient id="gradDeuda" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#f87171" stopOpacity={0.15} />
-                      <stop offset="95%" stopColor="#f87171" stopOpacity={0} />
-                    </linearGradient>
-                    <linearGradient id="gradPagado" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#34d399" stopOpacity={0.15} />
-                      <stop offset="95%" stopColor="#34d399" stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                  <XAxis dataKey="fecha" tick={{ fontSize: 9, fill: '#94a3b8' }} angle={-30} textAnchor="end" height={45} />
-                  <YAxis tick={{ fontSize: 10, fill: '#94a3b8' }} />
-                  <Tooltip formatter={(val) => `$${Number(val).toLocaleString('es')}`} />
-                  <Area type="monotone" dataKey="deuda" stroke="#f87171" fill="url(#gradDeuda)" strokeWidth={2} name="Deuda" />
-                  <Area type="monotone" dataKey="pagado" stroke="#34d399" fill="url(#gradPagado)" strokeWidth={2} name="Pagado" />
-                </AreaChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="flex items-center justify-center h-48 text-slate-400 text-sm">Sin pagos registrados</div>
-            )}
-          </div>
-        </div>
+      {/* KPIs fila 2 */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12 }}>
+        <StatCard
+          label="Monto comprometido"
+          value={money(cliente.monto_prometido_pendiente)}
+          variant="warning"
+          note="en promesas pendientes"
+        />
+        <StatCard
+          label="Cumpl. promesas"
+          value={tasaCumpl !== null ? `${promesasCumpl}/${promesasAll.length}` : 'Sin promesas'}
+          note={tasaCumpl !== null ? `${tasaCumpl}% cumplidas` : undefined}
+          variant={tasaCumpl === null ? 'default' : Number(tasaCumpl) >= 50 ? 'success' : 'danger'}
+        />
+        <StatCard
+          label="Sentimiento"
+          value={cliente.sentimiento_predominante ?? '--'}
+          variant={SENT_BADGE[cliente.sentimiento_predominante] ?? 'default'}
+        />
       </div>
 
-      {/* Promesas & Pagos */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-white rounded-xl border border-slate-200/60 shadow-sm p-5">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-sm font-semibold text-slate-700">Promesas</h2>
-            <span className="text-xs text-slate-400">{promesasTotal} total</span>
+      {/* Evolución + progreso */}
+      <DataCard title="Evolución de la Deuda" subtitle="Progresión del pago a lo largo del tiempo">
+        <div style={{ marginBottom: 16 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'var(--text-muted)', marginBottom: 6 }}>
+            <span>Progreso de recuperación</span>
+            <span style={{ fontWeight: 700, color: 'var(--state-success)' }}>{pctRecuperado}%</span>
           </div>
-          <div className="space-y-2 max-h-48 overflow-auto">
-            {(cliente.promesas ?? []).map((p, i) => (
-              <div key={i} className="flex items-center justify-between py-2 px-3 bg-slate-50 rounded-lg text-sm border border-slate-100">
-                <span className="font-medium text-slate-700">${(p.monto ?? 0).toLocaleString('es')}</span>
-                <span className="text-slate-400 text-xs">{(p.fecha_promesa ?? p.fecha ?? p.timestamp ?? '--').slice(0, 10)}</span>
-                <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${p.cumplida ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-600'}`}>
-                  {p.cumplida ? 'Cumplida' : 'Pendiente'}
-                </span>
-              </div>
+          <div style={{ background: 'var(--bg-elevated)', borderRadius: 4, height: 6, overflow: 'hidden' }}>
+            <div style={{
+              width: `${Math.min(100, Number(pctRecuperado))}%`,
+              height: '100%',
+              background: 'linear-gradient(90deg, var(--state-success), #34d399)',
+              borderRadius: 4,
+              transition: 'width 700ms ease',
+            }} />
+          </div>
+        </div>
+
+        {evolution.length > 1 ? (
+          <ResponsiveContainer width="100%" height={220}>
+            <AreaChart data={evolution}>
+              <defs>
+                <linearGradient id="gDeuda" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%"  stopColor="var(--state-danger)" stopOpacity={0.2} />
+                  <stop offset="95%" stopColor="var(--state-danger)" stopOpacity={0} />
+                </linearGradient>
+                <linearGradient id="gPagado" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%"  stopColor="var(--state-success)" stopOpacity={0.2} />
+                  <stop offset="95%" stopColor="var(--state-success)" stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="fecha" tick={TICK} angle={-30} textAnchor="end" height={44} />
+              <YAxis tick={TICK} />
+              <Tooltip
+                formatter={(val) => money(val)}
+                contentStyle={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-medium)', borderRadius: 8 }}
+              />
+              <Area type="monotone" dataKey="deuda"  stroke="var(--state-danger)"  fill="url(#gDeuda)"  strokeWidth={2} name="Deuda" />
+              <Area type="monotone" dataKey="pagado" stroke="var(--state-success)" fill="url(#gPagado)" strokeWidth={2} name="Pagado" />
+            </AreaChart>
+          </ResponsiveContainer>
+        ) : (
+          <div className="ds-empty"><div className="ds-empty-desc">Sin pagos registrados</div></div>
+        )}
+      </DataCard>
+
+      {/* Tabs: Timeline / Promesas / Pagos / Planes */}
+      <DataCard flush>
+        <div style={{ padding: '0 20px' }}>
+          <div className="ds-tabs">
+            {TABS.map((tab, i) => (
+              <button
+                key={tab}
+                className={`ds-tab${activeTab === i ? ' ds-tab-active' : ''}`}
+                onClick={() => setActiveTab(i)}
+              >
+                {tab}
+                {i === 0 && events.length > 0 && (
+                  <span style={{ marginLeft: 6, fontSize: 10, background: 'var(--bg-elevated)', padding: '1px 6px', borderRadius: 10, color: 'var(--text-muted)' }}>
+                    {events.length}
+                  </span>
+                )}
+                {i === 1 && (
+                  <span style={{ marginLeft: 6, fontSize: 10, background: 'var(--bg-elevated)', padding: '1px 6px', borderRadius: 10, color: 'var(--text-muted)' }}>
+                    {promesasAll.length}
+                  </span>
+                )}
+              </button>
             ))}
-            {promesasTotal === 0 && <p className="text-slate-400 text-sm text-center py-4">Sin promesas registradas</p>}
           </div>
         </div>
 
-        <div className="bg-white rounded-xl border border-slate-200/60 shadow-sm p-5">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-sm font-semibold text-slate-700">Pagos</h2>
-            <span className="text-xs text-slate-400">{(cliente.pagos ?? []).length} total</span>
-          </div>
-          <div className="space-y-2 max-h-48 overflow-auto">
-            {(cliente.pagos ?? []).map((p, i) => (
-              <div key={i} className="flex items-center justify-between py-2 px-3 bg-slate-50 rounded-lg text-sm border border-slate-100">
-                <span className="font-semibold text-emerald-600">${(p.monto ?? 0).toLocaleString('es')}</span>
-                <span className="text-slate-400 text-xs">{(p.fecha ?? p.timestamp ?? '--').slice(0, 10)}</span>
-                <span className="text-[11px] text-slate-500 bg-white px-2 py-0.5 rounded border border-slate-200">{p.metodo_pago ?? ''}</span>
-              </div>
-            ))}
-            {(cliente.pagos ?? []).length === 0 && <p className="text-slate-400 text-sm text-center py-4">Sin pagos registrados</p>}
-          </div>
-        </div>
-      </div>
+        <div style={{ padding: '0 20px 20px' }}>
+          {/* Tab: Timeline */}
+          {activeTab === 0 && (
+            <div style={{ maxHeight: 520, overflowY: 'auto', paddingRight: 4 }}>
+              {events.length === 0 ? (
+                <div className="ds-empty"><div className="ds-empty-desc">Sin interacciones registradas</div></div>
+              ) : (
+                events.map((ev, i) => {
+                  const sent      = ev.sentimiento_cliente ?? ev.sentimiento ?? 'neutral';
+                  const resultado = ev.resultado ?? ev.tipo ?? 'contacto';
+                  const dotColor  = RESULT_COLORS[resultado] ?? 'var(--text-muted)';
+                  const duracion  = ev.duracion_segundos
+                    ? `${ev.duracion_segundos}s`
+                    : ev.duracion_minutos ? `${ev.duracion_minutos} min` : '';
 
-      {/* Timeline */}
-      <div className="bg-white rounded-xl border border-slate-200/60 shadow-sm p-5">
-        <div className="flex items-center justify-between mb-5">
-          <div>
-            <h2 className="text-sm font-semibold text-slate-700">Timeline de Interacciones</h2>
-            <p className="text-[11px] text-slate-400">{events.length} eventos en orden cronologico</p>
-          </div>
-        </div>
-        <div className="space-y-0 max-h-[500px] overflow-auto pr-2">
-          {events.map((ev, i) => {
-            const sent = ev.sentimiento_cliente ?? ev.sentimiento ?? 'neutral';
-            const sentStyle = SENT_STYLES[sent] ?? SENT_STYLES.neutral;
-            const resultado = ev.resultado ?? ev.tipo ?? 'contacto';
-            const dotColor = RESULT_DOTS[resultado] ?? 'bg-slate-300';
+                  return (
+                    <div key={i} className="ds-timeline-item">
+                      {i < events.length - 1 && <div className="ds-timeline-line" />}
+                      <div className="ds-timeline-dot" style={{ background: dotColor }} />
+                      <div className="ds-timeline-card">
+                        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' }}>
+                          <div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                              <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>
+                                {resultado.replace(/_/g, ' ')}
+                              </span>
+                              <Badge label={sent} variant={SENT_BADGE[sent] ?? 'neutral'} />
+                              {ev.agente_id && (
+                                <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>por {ev.agente_id}</span>
+                              )}
+                            </div>
+                            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 3 }}>
+                              {ev.timestamp ?? ev.fecha ?? '--'}
+                              {duracion && ` · ${duracion}`}
+                            </div>
+                          </div>
+                        </div>
 
-            return (
-              <div key={i} className="relative pl-8 pb-5 last:pb-0">
-                {/* Line */}
-                {i < events.length - 1 && <div className="absolute left-[11px] top-3 bottom-0 w-[2px] bg-slate-100" />}
-                {/* Dot */}
-                <div className={`absolute left-1.5 top-1 w-3 h-3 rounded-full ${dotColor} ring-2 ring-white`} />
-
-                <div className="bg-slate-50/80 rounded-lg p-3 border border-slate-100 hover:border-slate-200 transition-colors">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-sm font-medium text-slate-700">{resultado.replace(/_/g, ' ')}</span>
-                        <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded border ${sentStyle.cls}`}>{sent}</span>
-                        {ev.agente_id && <span className="text-[10px] text-slate-400">por {ev.agente_id}</span>}
+                        {(ev.promesas?.length > 0 || ev.pagos?.length > 0 || ev.planes?.length > 0) && (
+                          <div style={{ marginTop: 8, paddingTop: 8, borderTop: '1px solid var(--border-soft)', display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                            {(ev.promesas ?? []).map((p, j) => (
+                              <Badge key={`pr-${j}`} label={`Promesa: ${money(p.monto_prometido ?? p.monto)}`} variant="warning" />
+                            ))}
+                            {(ev.pagos ?? []).map((p, j) => (
+                              <Badge key={`pa-${j}`} label={`Pago: ${money(p.monto)}`} variant="success" />
+                            ))}
+                            {(ev.planes ?? []).map((p, j) => (
+                              <Badge key={`pl-${j}`} label={`Plan: ${p.cuotas ?? '?'} cuotas · ${money(p.monto_mensual)}/mes`} variant="purple" />
+                            ))}
+                          </div>
+                        )}
                       </div>
-                      <p className="text-[11px] text-slate-400 mt-0.5">
-                        {ev.timestamp ?? ev.fecha ?? '--'}
-                        {ev.duracion_minutos && ` &middot; ${ev.duracion_minutos} min`}
-                        {ev.duracion_segundos && !ev.duracion_minutos && ` · ${ev.duracion_segundos}s`}
-                      </p>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          )}
+
+          {/* Tab: Promesas */}
+          {activeTab === 1 && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 400, overflowY: 'auto' }}>
+              {promesasAll.length === 0 ? (
+                <div className="ds-empty"><div className="ds-empty-desc">Sin promesas registradas</div></div>
+              ) : (
+                promesasAll.map((p, i) => (
+                  <div key={i} style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    padding: '10px 14px', background: 'var(--bg-elevated)',
+                    borderRadius: 8, border: '1px solid var(--border-soft)',
+                  }}>
+                    <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
+                      {money(p.monto_prometido ?? p.monto)}
+                    </span>
+                    <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+                      {(p.fecha_promesa ?? p.fecha ?? '--').slice(0, 10)}
+                    </span>
+                    <Badge label={p.cumplida ? 'Cumplida' : 'Pendiente'} variant={p.cumplida ? 'success' : 'warning'} />
+                  </div>
+                ))
+              )}
+            </div>
+          )}
+
+          {/* Tab: Pagos */}
+          {activeTab === 2 && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 400, overflowY: 'auto' }}>
+              {pagos.length === 0 ? (
+                <div className="ds-empty"><div className="ds-empty-desc">Sin pagos registrados</div></div>
+              ) : (
+                pagos.map((p, i) => (
+                  <div key={i} style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    padding: '10px 14px', background: 'var(--bg-elevated)',
+                    borderRadius: 8, border: '1px solid var(--border-soft)',
+                  }}>
+                    <span style={{ fontWeight: 700, color: 'var(--state-success)' }}>{money(p.monto)}</span>
+                    <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{(p.fecha ?? '--').slice(0, 10)}</span>
+                    <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{p.metodo_pago ?? ''}</span>
+                  </div>
+                ))
+              )}
+            </div>
+          )}
+
+          {/* Tab: Planes */}
+          {activeTab === 3 && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 400, overflowY: 'auto' }}>
+              {planes.length === 0 ? (
+                <div className="ds-empty"><div className="ds-empty-desc">Sin planes activos</div></div>
+              ) : (
+                planes.map((p, i) => (
+                  <div key={i} style={{
+                    padding: '12px 14px', background: 'var(--bg-elevated)',
+                    borderRadius: 8, border: '1px solid var(--state-purple-bg)',
+                  }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                      <span style={{ fontWeight: 700, color: 'var(--state-purple)' }}>
+                        {money(p.monto_mensual)}/mes
+                      </span>
+                      <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+                        {p.cuotas ?? p.num_cuotas ?? '?'} cuotas
+                      </span>
+                    </div>
+                    <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+                      Total plan: {money(p.monto_total_plan)}
+                      {p.fecha_inicio ? ` · desde ${String(p.fecha_inicio).slice(0, 10)}` : ''}
                     </div>
                   </div>
-
-                  {/* Sub-entities */}
-                  {(ev.promesas?.length > 0 || ev.pagos?.length > 0 || ev.planes?.length > 0) && (
-                    <div className="mt-2 pt-2 border-t border-slate-200/60 flex flex-wrap gap-2">
-                      {(ev.promesas ?? []).map((p, j) => (
-                        <span key={`pr-${j}`} className="text-[11px] bg-amber-50 text-amber-700 px-2 py-0.5 rounded border border-amber-200">
-                          Promesa: ${(p.monto ?? 0).toLocaleString('es')}
-                        </span>
-                      ))}
-                      {(ev.pagos ?? []).map((p, j) => (
-                        <span key={`pa-${j}`} className="text-[11px] bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded border border-emerald-200">
-                          Pago: ${(p.monto ?? 0).toLocaleString('es')}
-                        </span>
-                      ))}
-                      {(ev.planes ?? []).map((p, j) => (
-                        <span key={`pl-${j}`} className="text-[11px] bg-violet-50 text-violet-700 px-2 py-0.5 rounded border border-violet-200">
-                          Plan: {p.num_cuotas ?? '?'} cuotas
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-          {events.length === 0 && (
-            <div className="text-center py-12 text-slate-400">
-              <p className="text-sm">Sin interacciones registradas</p>
+                ))
+              )}
             </div>
           )}
         </div>
-      </div>
+      </DataCard>
     </div>
   );
 }

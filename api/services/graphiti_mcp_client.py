@@ -82,8 +82,8 @@ async def _with_session(fn):
             headers=_mcp_host_header(),
         ) as (read_stream, write_stream, _get_session_id):
             async with ClientSession(read_stream, write_stream) as session:
-                await session.initialize()
-                return await fn(session)
+                await asyncio.wait_for(session.initialize(), timeout=8.0)
+                return await asyncio.wait_for(fn(session), timeout=10.0)
     except Exception as exc:
         logger.warning(
             "[mcp-client] error conectando a %s: %s",

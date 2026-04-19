@@ -8,27 +8,27 @@ import * as d3 from 'd3';
 // Constants
 // ----------------------------------------------------------------
 export const NODE_COLORS = {
-  Cliente: '#00d4ff',
-  Agente: '#7c4dff',
-  Interaccion: '#00e676',
-  PromesaPago: '#ff9100',
-  Pago: '#ff2d55',
-  PlanPago: '#d500f9',
-  default: '#90a4ae',
+  Cliente:     '#3b82f6',
+  Agente:      '#10b981',
+  Interaccion: '#f59e0b',
+  PromesaPago: '#8b5cf6',
+  Pago:        '#06b6d4',
+  PlanPago:    '#f97316',
+  default:     '#4a5568',
 };
 
 const EDGE_COLORS = {
-  TIENE_INTERACCION: '#00d4ff',
-  CONDUJO: '#7c4dff',
-  GENERO_PROMESA: '#ff9100',
-  PROMESA_DE: '#ffb300',
-  GENERO_PAGO: '#ff2d55',
-  PAGO_DE: '#ff5e7e',
-  GENERO_PLAN: '#d500f9',
-  PLAN_DE: '#ea80fc',
-  CUMPLE_PROMESA: '#00e676',
-  SIGUIENTE: '#b0bec5',
-  default: '#cfd8dc',
+  TIENE_INTERACCION: '#3b82f6',
+  CONDUJO:           '#10b981',
+  GENERO_PROMESA:    '#8b5cf6',
+  PROMESA_DE:        '#a78bfa',
+  GENERO_PAGO:       '#06b6d4',
+  PAGO_DE:           '#22d3ee',
+  GENERO_PLAN:       '#f97316',
+  PLAN_DE:           '#fb923c',
+  CUMPLE_PROMESA:    '#10b981',
+  SIGUIENTE:         '#374151',
+  default:           '#374151',
 };
 
 const EDGE_LABELS = {
@@ -129,7 +129,7 @@ export function renderGrafoD3(svgEl, rawNodes, rawEdges, onNodeClick) {
     .data(links).join('text')
     .attr('text-anchor', 'middle')
     .attr('font-size', '8px')
-    .attr('fill', '#999')
+    .attr('fill', () => getComputedStyle(document.documentElement).getPropertyValue('--text-muted').trim() || '#999')
     .attr('pointer-events', 'none')
     .text(d => EDGE_LABELS[d.type] ?? d.type);
 
@@ -144,15 +144,15 @@ export function renderGrafoD3(svgEl, rawNodes, rawEdges, onNodeClick) {
   node.append('circle')
     .attr('r', d => nodeRadius(d, degreeMap))
     .attr('fill', d => nodeColor(d))
-    .attr('stroke', '#fff')
-    .attr('stroke-width', 2);
+    .attr('stroke', () => getComputedStyle(document.documentElement).getPropertyValue('--border-medium').trim() || 'rgba(255,255,255,0.10)')
+    .attr('stroke-width', 1.5);
 
   // ── Node labels (human-readable) ──
   node.append('text')
     .attr('dy', d => nodeRadius(d, degreeMap) + 12)
     .attr('text-anchor', 'middle')
     .attr('font-size', '10px')
-    .attr('fill', '#374151')
+    .attr('fill', () => getComputedStyle(document.documentElement).getPropertyValue('--text-secondary').trim() || '#94a3b8')
     .attr('font-weight', d => (d.tipo === 'Cliente' || d.tipo === 'Agente') ? '600' : '400')
     .attr('pointer-events', 'none')
     .text(d => humanLabel(d));
@@ -179,13 +179,13 @@ export function renderGrafoD3(svgEl, rawNodes, rawEdges, onNodeClick) {
     .on('click', function(event, d) {
       event.stopPropagation();
       node.select('circle')
-        .attr('stroke', n => n.id === d.id ? '#fd7e14' : '#fff')
-        .attr('stroke-width', n => n.id === d.id ? 3 : 2);
+        .attr('stroke', n => n.id === d.id ? '#3b82f6' : 'rgba(255,255,255,0.12)')
+        .attr('stroke-width', n => n.id === d.id ? 2.5 : 1.5);
       if (typeof onNodeClick === 'function') onNodeClick(d, degreeMap[d.id] ?? 0);
     });
 
   svg.on('click', () => {
-    node.select('circle').attr('stroke', '#fff').attr('stroke-width', 2);
+    node.select('circle').attr('stroke', 'rgba(255,255,255,0.12)').attr('stroke-width', 1.5);
   });
 
   // ── Tick ──

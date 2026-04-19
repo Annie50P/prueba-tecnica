@@ -115,6 +115,7 @@ class PromesaPagoNode(BaseModel):
 
     Nota: `dias_hasta_vencimiento` NO se persiste (es función de la fecha actual).
     La API lo calcula on-read desde `fecha_promesa`.
+    Para cuotas de PlanPago: numero_cuota y plan_pago_id son no-None.
     """
     id: str
     interaccion_id: str
@@ -123,6 +124,9 @@ class PromesaPagoNode(BaseModel):
     fecha_promesa: str       # YYYY-MM-DD
     # Derived
     cumplida: bool = False
+    # Cuota fields (None = promesa directa, no cuota de plan)
+    numero_cuota: Optional[int] = None
+    plan_pago_id: Optional[str] = None
 
 
 class PagoNode(BaseModel):
@@ -146,6 +150,20 @@ class PlanPagoNode(BaseModel):
     # Derived
     monto_total_plan: float = 0.0
     fecha_inicio: str = ""  # ISO timestamp of the parent interaction
+
+
+class EstadoDeudaNode(BaseModel):
+    """Graph node: EstadoDeuda — snapshot de deuda en un instante.
+
+    La cadena SIGUIENTE_ESTADO entre nodos permite reconstruir la evolución
+    temporal sin recalcular en Python: basta traversar desde el nodo inicial.
+    """
+    id: str               # {cliente_id}_deuda_{n}
+    cliente_id: str
+    fecha: str            # ISO timestamp del evento que origina el estado
+    monto_pendiente: float
+    tipo: str             # 'inicial' | 'pago' | 'renegociacion'
+    evento_id: str        # interaccion_id causante (o 'inicial')
 
 
 # ---------------------------------------------------------------------------

@@ -15,7 +15,7 @@ services:
       interval: 15s
       timeout: 20s
       retries: 10
-      start_period: 30s
+      start_period: 90s
 
   graphiti:
     image: zepai/graphiti:latest
@@ -87,9 +87,10 @@ services:
       - NEO4J_PASSWORD=${NEO4J_PASSWORD}
       - GRAPHITI_DB_PATH=/app/ingesta/local_graph.db
       - GRAPHITI_GROUP_ID=${GRAPHITI_GROUP_ID:-prueba-tecnica}
-      # OPENAI_API_KEY necesario para la ingesta de episodios semánticos via Graphiti.
-      # Sin clave los nodos de dominio se escriben igual; solo se omiten los episodios.
-      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - GROQ_API_KEY=${GROQ_API_KEY:-}
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+      - GRAPHITI_LLM_MODEL=${GRAPHITI_LLM_MODEL:-llama-3.1-8b-instant}
+      - GRAPHITI_SMALL_MODEL=${GRAPHITI_SMALL_MODEL:-llama-3.1-8b-instant}
     volumes:
       - ./data:/data:ro
       - ./ingesta:/app/ingesta
@@ -121,6 +122,7 @@ services:
       - GEMINI_API_KEY=${GEMINI_API_KEY}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - GROQ_API_KEY=${GROQ_API_KEY}
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
       - LLM_PROVIDER=${LLM_PROVIDER:-auto}
       - API_PORT=8001
     volumes:
@@ -131,18 +133,20 @@ services:
       test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
       interval: 10s
       timeout: 10s
-      retries: 5
+      retries: 8
+      start_period: 40s
 
   frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
+    image: oven/bun:1
     container_name: frontend
-    depends_on:
-      api:
-        condition: service_healthy
+    working_dir: /app
+    volumes:
+      - ./frontend:/app
+    command: sh -c "bun install && bun run dev --host"
     ports:
-      - "${FRONTEND_PORT:-3000}:80"
+      - "${FRONTEND_PORT:-3000}:3000"
+    environment:
+      - VITE_API_URL=http://api:8001
 
 volumes:
   neo4j_data:

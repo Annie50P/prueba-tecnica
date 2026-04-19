@@ -1,250 +1,401 @@
 # Analizador de Patrones de Llamadas
 
-Sistema de análisis y visualización de patrones de interacción con clientes deudores, basado en grafo de conocimiento (Graphiti + Neo4j).
+Sistema de análisis de interacciones con clientes deudores modelado como grafo de conocimiento temporal (Graphiti + Neo4j). Incluye API REST, dashboard interactivo, pipeline ML y consultas en lenguaje natural.
 
 ---
 
-## Descripción
+## Estado actual del sistema
 
-El sistema ingesta datos históricos de 50 clientes, 502 interacciones y 10 agentes, los modela como un grafo de conocimiento, y expone:
+| Componente | Estado | Notas |
+|---|---|---|
+| Ingesta de nodos y relaciones (Neo4j) | ✅ Funcional | 1354 nodos, 17266 relaciones |
+| API REST (FastAPI) | ✅ Funcional | 16 endpoints |
+| Frontend (React + D3.js) | ✅ Funcional | Dashboard, grafo, timelines |
+| Pipeline ML (predicción, anomalías, segmentación) | ✅ Funcional | Entrena on-demand |
+| Chat MCP en lenguaje natural | ✅ Funcional | Requiere al menos una LLM key |
+| Episodios semánticos (Graphiti LLM) | ⚠️ Opcional | Requiere Groq + Gemini keys activas |
+| Búsqueda semántica (`/analytics/busqueda-semantica`) | ⚠️ Depende de episodios | Funciona solo si hay episodios ingeridos |
 
-- **API REST** (FastAPI) con 11+ endpoints para consultas de negocio
-- **Frontend SPA** (React + Vite + D3.js + Chart.js) con dashboard, vista de cliente y explorador de grafo
-- **Consultas en lenguaje natural** vía MCP + Claude (Anthropic)
-- **Pipeline ML offline** (predicción, anomalías, segmentación) con modelo persistido via `joblib`
-
----
-
-## Instalación y ejecución (modo local, sin Docker)
-
-### Requisitos
-- Python 3.11+
-- Node 20+ con `bun` (o `npm`) para el frontend
-- No se requiere Docker ni Neo4j para el modo local (usa SQLite como fallback)
-
-### 1. Instalar dependencias
-
-```bash
-# Ingesta
-cd ingesta
-pip install -r requirements.txt
-
-# API
-cd ../api
-pip install -r requirements.txt
-```
-
-### 2. Ejecutar ingesta
-
-```bash
-cd ingesta
-python ingest.py
-```
-
-Esto crea `ingesta/local_graph.db` con 766 nodos y 1748 relaciones.
-
-### 3. (Opcional) Entrenar el modelo ML offline
-
-```bash
-cd ..   # raíz del proyecto
-python -m api.ml.train_offline
-```
-
-Esto persiste el artifact (`model + scaler`) en `api/models/` y registra metadata
-en `api/models/registry.json`. Si no se ejecuta, la API entrena on-demand al
-primer request (bajo lock singleflight).
-
-### 4. Iniciar la API
-
-```bash
-python -m uvicorn api.main:app --host 0.0.0.0 --port 8001 --reload
-```
-
-API disponible en: http://localhost:8001
-Swagger UI: http://localhost:8001/docs
-
-### 5. Iniciar el frontend (React + Vite)
-
-```bash
-cd frontend
-bun install           # o: npm ci
-bun run dev           # o: npm run dev
-```
-
-Frontend disponible en: http://localhost:5173 (Vite dev server)
-
-En producción el frontend se sirve como estático vía nginx (ver
-`frontend/Dockerfile` + `frontend/nginx.conf`), expuesto en puerto 3000.
+> **Nota**: el sistema funciona completamente sin episodios semánticos. La búsqueda semántica es una capa adicional sobre el grafo estructurado que ya contiene toda la información de negocio.
 
 ---
 
-## Ejecución con Docker Compose
+## Descripción de la solución
 
-### Requisitos
-- Docker Desktop instalado
-- Clonar el archivo de variables de entorno
+El sistema ingesta datos históricos de interacciones de cobranza (50 clientes, 502 interacciones, 10 agentes) y los modela en un **grafo de conocimiento temporal** con 7 tipos de nodos y 9 tipos de relaciones dirigidas.
+
+Sobre ese grafo se construyen:
+
+- **API REST** (FastAPI) con endpoints de negocio, métricas derivadas y ML
+- **Frontend SPA** (React + Vite + D3.js + Chart.js) con dashboard, explorador de grafo interactivo y chat IA
+- **Pipeline ML** (predicción de riesgo, detección de anomalías, segmentación de clientes)
+- **Chat en lenguaje natural** vía protocolo MCP con múltiples proveedores LLM
+- **Búsqueda semántica** sobre hechos extraídos por LLM de las interacciones (requiere configuración de Groq + Gemini)
+
+### ¿Por qué un grafo de conocimiento en lugar de una base de datos relacional?
+
+En cobranza, la información más valiosa está en las **relaciones entre eventos**: qué agente hizo qué llamada, qué promesa generó qué pago, qué cliente incumplió en qué secuencia. En un modelo relacional esto requiere JOINs de 4-6 tablas para cada consulta de negocio. En el grafo:
+
+- La cadena temporal de interacciones es una arista `SIGUIENTE` — la consulta es un `MATCH (a)-[:SIGUIENTE*]->(b)` sin JOINs
+- Saber si un pago cumple una promesa es atravesar la arista `CUMPLE_PROMESA` directamente
+- La evolución de deuda de un cliente es un camino `ESTADO_DEUDA_EN → SIGUIENTE_ESTADO → ...`
+- Agregar un nuevo tipo de evento (llamada por WhatsApp, SMS, email automatizado) no altera el esquema — se añade un nuevo nodo sin migraciones
+
+Además, Graphiti agrega una capa de **memoria temporal**: los hechos extraídos por LLM tienen `valid_at`/`invalid_at`, lo que permite consultas del tipo *"¿qué clientes tenían promesas activas en enero?"* de forma nativa.
+
+---
+
+## Esquema del modelo de grafo
+
+```
+                    ┌─────────┐
+                    │ Cliente │
+                    └────┬────┘
+                         │ TIENE_INTERACCION
+                         ▼
+ ┌────────┐   CONDUJO   ┌──────────────┐   GENERO_PROMESA  ┌─────────────┐
+ │ Agente │────────────►│ Interaccion  │──────────────────►│ PromesaPago │
+ └────────┘             └──────┬───────┘                   └──────┬──────┘
+                               │                                  │
+                    ┌──────────┴──────────┐                       │ CUMPLE_PROMESA
+                    │                     │                        │
+            GENERO_PAGO          GENERO_PLAN                      ▼
+                    │                     │                   ┌───────┐
+                    ▼                     ▼                   │  Pago │◄──┐
+               ┌───────┐          ┌──────────┐               └───────┘   │
+               │  Pago │          │ PlanPago │──GENERA_CUOTA──►PromesaPago│
+               └───────┘          └──────────┘                            │
+                                                                          │
+                    ┌─────────┐                                           │
+                    │ Cliente │──ESTADO_DEUDA_EN──►┌─────────────┐       │
+                    └─────────┘                    │ EstadoDeuda │◄──────┘
+                                                   └──────┬──────┘
+                                                          │ SIGUIENTE_ESTADO
+                                                          ▼
+                                                   ┌─────────────┐
+                                                   │ EstadoDeuda │ ...
+                                                   └─────────────┘
+```
+
+### Nodos
+
+| Label | Descripción |
+|---|---|
+| `Cliente` | Deudor con métricas derivadas (tasa cumplimiento, monto pendiente) |
+| `Agente` | Agente de cobranza con métricas de efectividad |
+| `Interaccion` | Llamada, email o pago recibido — evento central del grafo |
+| `PromesaPago` | Compromiso de pago generado en una interacción |
+| `Pago` | Pago recibido, puede cumplir una promesa |
+| `PlanPago` | Plan de renegociación con N cuotas |
+| `EstadoDeuda` | Snapshot del saldo en un momento dado — cadena temporal |
+
+### Relaciones
+
+| Tipo | Dirección | Semántica |
+|---|---|---|
+| `TIENE_INTERACCION` | Cliente → Interaccion | El cliente participó en este evento |
+| `CONDUJO` | Agente → Interaccion | El agente gestionó este evento |
+| `GENERO_PROMESA` | Interaccion → PromesaPago | La interacción generó esta promesa |
+| `GENERO_PAGO` | Interaccion → Pago | La interacción registró este pago |
+| `GENERO_PLAN` | Interaccion → PlanPago | La interacción originó este plan |
+| `GENERA_CUOTA` | PlanPago → PromesaPago | El plan genera N promesas (una por cuota) |
+| `CUMPLE_PROMESA` | Pago → PromesaPago | El pago satisface la promesa |
+| `SIGUIENTE` | Interaccion → Interaccion | Cadena cronológica de interacciones del cliente |
+| `ESTADO_DEUDA_EN` | Cliente → EstadoDeuda | El cliente tiene este estado de deuda |
+| `SIGUIENTE_ESTADO` | EstadoDeuda → EstadoDeuda | Cadena temporal de evolución de deuda |
+
+---
+
+## Instalación y ejecución
+
+### Prerrequisitos
+
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/) instalado y corriendo
+- Al menos una API key gratuita de LLM (ver tabla abajo)
+
+### Variables de entorno requeridas
+
+Copia `.env.example` a `.env` y completa:
 
 ```bash
 cp .env.example .env
-# Editar .env con tus credenciales (especialmente ANTHROPIC_API_KEY)
-
-docker compose up --build
 ```
 
-Servicios:
-| Servicio | Puerto | URL |
+| Variable | Obligatoria | Dónde obtener |
 |---|---|---|
-| Frontend | 3000 | http://localhost:3000 |
-| API REST | 8001 | http://localhost:8001/docs |
-| Graphiti | 8000 | http://localhost:8000 |
-| Neo4j Browser | 7474 | http://localhost:7474 |
-| MCP Server | 8002 | http://localhost:8002 |
+| `NEO4J_PASSWORD` | Sí | Elige una contraseña (mín. 8 chars) |
+| `GROQ_API_KEY` | Para chat IA | [console.groq.com](https://console.groq.com) — gratis |
+| `GEMINI_API_KEY` | Para embeddings | [aistudio.google.com](https://aistudio.google.com) — gratis |
+| `OPENROUTER_API_KEY` | Alternativa | [openrouter.ai](https://openrouter.ai) — gratis |
+| `ANTHROPIC_API_KEY` | Alternativa | [console.anthropic.com](https://console.anthropic.com) |
+
+> El sistema funciona con **solo Groq key** para el chat. Los episodios semánticos requieren además Gemini.
+
+---
+
+## Cómo ejecutar el proyecto
+
+### Opción A — Script automático (recomendado)
+
+Un solo comando levanta todo: Neo4j, Graphiti, ingesta, API y frontend.
+
+```bash
+bash start.sh
+```
+
+El script:
+1. Verifica que Docker esté corriendo
+2. Crea `.env` desde `.env.example` si no existe
+3. Levanta todos los servicios en orden correcto
+4. Espera a que cada servicio esté healthy antes de continuar
+5. Corre la ingesta (la omite si los datos ya están cargados)
+6. Verifica que todos los endpoints respondan
+7. Imprime las URLs finales
+
+Al terminar verás:
+
+```
+============================================================
+   Sistema listo
+============================================================
+
+  Frontend        →  http://localhost:3000
+  API Swagger     →  http://localhost:8001/docs
+  Neo4j Browser   →  http://localhost:7474
+
+  ML endpoints:
+    Predicción    →  http://localhost:8001/analytics/prediccion
+    Anomalías     →  http://localhost:8001/analytics/anomalias
+    Estrategias   →  http://localhost:8001/analytics/estrategias
+    Dashboard     →  http://localhost:8001/analytics/dashboard
+
+  Para detener:   docker compose down
+============================================================
+```
+
+> La primera ejecución tarda ~20 minutos (ingesta de datos en Neo4j). Las siguientes son inmediatas — el script detecta que los datos ya existen y omite la ingesta.
+
+---
+
+### Opción B — Manual paso a paso
+
+```bash
+# 1. Copiar variables de entorno
+cp .env.example .env
+# Editar .env y agregar al menos GROQ_API_KEY
+
+# 2. Levantar infraestructura
+docker compose up -d neo4j graphiti graphiti-mcp
+# Esperar ~90 segundos
+
+# 3. Levantar API y frontend
+docker compose up -d api frontend
+
+# 4. Ingestar datos (una sola vez, ~17 minutos)
+docker compose run --rm ingesta
+```
+
+| Servicio | URL |
+|---|---|
+| **Frontend** | http://localhost:3000 |
+| **API Swagger** | http://localhost:8001/docs |
+| **Neo4j Browser** | http://localhost:7474 |
+
+### (Opcional) Episodios semánticos
+
+Activa la búsqueda semántica en lenguaje natural. Requiere `GROQ_API_KEY` + `GEMINI_API_KEY` en `.env`.
+
+```bash
+docker compose build ingesta
+docker compose run --rm ingesta python ingest_episodes.py
+```
+
+Tarda ~20 minutos (throttling para respetar rate limits gratuitos).
+
+---
+
+### Sin Docker (modo desarrollo, SQLite)
+
+```bash
+cd ingesta && pip install -r requirements.txt
+cd ../api  && pip install -r requirements.txt
+
+cd ../ingesta && python ingest.py        # crea local_graph.db
+cd ..
+GRAPH_BACKEND=sqlite python -m uvicorn api.main:app --port 8001 --reload
+
+cd frontend && bun install && bun run dev  # http://localhost:5173
+```
+
+> En modo SQLite el chat MCP y la búsqueda semántica no están disponibles.
 
 ---
 
 ## Endpoints API
 
-| Método | Ruta | Descripción |
-|---|---|---|
-| GET | `/health` | Estado del servicio |
-| GET | `/clientes` | Lista todos los clientes con métricas |
-| GET | `/clientes/{id}` | Detalle completo de un cliente |
-| GET | `/clientes/{id}/timeline` | Historial cronológico del cliente |
-| GET | `/agentes` | Lista agentes con métricas |
-| GET | `/agentes/{id}/efectividad` | Desempeño del agente |
-| GET | `/analytics/promesas-incumplidas` | Promesas vencidas sin pago |
-| GET | `/analytics/mejores-horarios` | Horarios más efectivos |
-| GET | `/analytics/dashboard` | KPIs globales |
-| GET | `/grafo/nodos` | Nodos para visualización D3.js |
-| GET | `/grafo/relaciones` | Relaciones para visualización D3.js |
-| POST | `/mcp/query` | Consulta en lenguaje natural (requiere ANTHROPIC_API_KEY) |
+**Base URL**: `http://localhost:8001`  
+**Documentación interactiva**: `http://localhost:8001/docs`
 
----
-
-## Modelo de Grafo
-
-### Nodos
-| Label | Cantidad | Descripción |
-|---|---|---|
-| Cliente | 50 | Deudores con métricas derivadas |
-| Agente | 10 | Agentes de cobro |
-| Interaccion | 502 | Llamadas, emails, SMS, pagos |
-| PromesaPago | 96 | Compromisos de pago |
-| Pago | 53 | Pagos recibidos |
-| PlanPago | 55 | Planes de renegociación |
-
-### Relaciones
-| Tipo | Desde → Hacia | Cardinalidad |
-|---|---|---|
-| TIENE_INTERACCION | Cliente → Interaccion | 1:N |
-| CONDUJO | Agente → Interaccion | 1:N |
-| GENERO_PROMESA | Interaccion → PromesaPago | 1:1 |
-| GENERO_PAGO | Interaccion → Pago | 1:1 |
-| GENERO_PLAN | Interaccion → PlanPago | 1:1 |
-| PROMESA_DE | PromesaPago → Cliente | N:1 |
-| PAGO_DE | Pago → Cliente | N:1 |
-| PLAN_DE | PlanPago → Cliente | N:1 |
-| CUMPLE_PROMESA | Pago → PromesaPago | inferida |
-| SIGUIENTE | Interaccion → Interaccion | cadena temporal |
-
----
-
-## Decisiones Técnicas
-
-### ¿Por qué grafo en lugar de relacional?
-
-Un modelo relacional requeriría JOINs complejos para reconstruir la cadena temporal de interacciones por cliente o para inferir si un pago cumple una promesa previa. En un grafo, las relaciones `SIGUIENTE` y `CUMPLE_PROMESA` son aristas directas, lo que hace las consultas de caminos más intuitivas y eficientes. Además, el grafo permite agregar nuevos tipos de nodos (ej. `Canal`, `Producto`) sin alterar el esquema existente.
-
-### Escalabilidad a 1 millón de clientes
-
-- Índices en `Cliente.id`, `Interaccion.timestamp`, `PromesaPago.fecha_promesa`
-- Particionamiento de `Interaccion` por `timestamp` (sharding temporal)
-- Paginación en todos los endpoints (`?limite=` + `?offset=`)
-- Cache de KPIs del dashboard (Redis, TTL 5 min)
-- Graphiti distribuido sobre Neo4j Cluster (Causal Clustering)
-- Ingesta en batch con workers paralelos (Celery)
-
-### Otras fuentes de datos útiles
-
-1. **CRM / historial de crédito**: enriquecer nodos `Cliente` con score crediticio, historial bancario
-2. **Calendarios y feriados**: optimizar horarios de llamada considerando días no laborables por país
-3. **Canales digitales**: WhatsApp, portal web — capturar interacciones autogestionadas que hoy no están en el grafo
-4. **Datos macroeconómicos**: correlacionar tasas de incumplimiento con indicadores económicos (inflación, desempleo)
-
----
-
-## Pipeline ML - Análisis Predictivo
-
-### Arquitectura
-
-```
-features.py  ─┐
-              │
-train.py  ◄───┼─── train_offline.py  (job offline: CLI / cron / Celery beat)
-              │         │
-              │         ▼
-              │    model_registry.py  (joblib dump + registry.json)
-              │         │
-              │         ▼
-inference.py ◄┴─── predictor.py  (load_latest en startup, lock singleflight)
-```
-
-### Modelos
-- **GradientBoosting** vs **XGBoost** vs **LightGBM**
-- Selección automática por ROC-AUC en CV estratificado
-- **Anti data-leakage**: `StandardScaler` dentro de `Pipeline` → se ajusta por fold, nunca ve validación
-- **Calibración**: `sigmoid` (Platt) si n<1000, `isotonic` si n≥1000
-- **Cutoff temporal derivado** de los timestamps reales del dataset (no hardcoded)
-
-### Métricas
-- precision, recall, F1, ROC-AUC, accuracy
-
-### Ground Truth
-- label=1: tiene pagos reales O promesa cumplida
-- label=0: sin actividad reciente (>30 días)
-- label=None: sin evidencia suficiente (semi-supervisado)
-
-### Detección de Anomalías
-- **IsolationForest + LOF** ensemble (reducen ~30% FP)
-- Contamination adaptivo (IQR de Tukey)
-- Z-score univariado por feature
-
-### Segmentación
-- **KMeans** con k óptimo por **Silhouette score**
-- Análisis de mejores horarios y agentes
-
-### Endpoints ML
+### Clientes
 
 | Método | Ruta | Descripción |
 |---|---|---|
-| GET | `/analytics/prediccion` | Score de riesgo por cliente |
-| GET | `/analytics/anomalias` | Anomalías detectadas |
-| GET | `/analytics/estrategias` | Segmentos y recomendaciones |
+| GET | `/clientes` | Lista clientes con métricas derivadas. Params: `limite`, `offset` |
+| GET | `/clientes/{id}` | Detalle completo: métricas, promesas, pagos, plan |
+| GET | `/clientes/{id}/timeline` | Historial cronológico de interacciones |
+| GET | `/clientes/{id}/evolucion-deuda` | Evolución del saldo en el tiempo |
+
+### Agentes
+
+| Método | Ruta | Descripción |
+|---|---|---|
+| GET | `/agentes` | Lista agentes con métricas de efectividad |
+| GET | `/agentes/{id}/efectividad` | Desempeño detallado del agente |
+
+### Analytics
+
+| Método | Ruta | Descripción |
+|---|---|---|
+| GET | `/analytics/dashboard` | KPIs globales (tasa cumplimiento, monto pendiente, etc.) |
+| GET | `/analytics/promesas-incumplidas` | Promesas vencidas. Param: `fecha` (YYYY-MM-DD) |
+| GET | `/analytics/mejores-horarios` | Análisis de horarios por resultado. Param: `resultado` |
+| GET | `/analytics/prediccion` | Score de riesgo por cliente (ML) |
+| GET | `/analytics/anomalias` | Clientes con comportamiento anómalo (ML) |
+| GET | `/analytics/estrategias` | Segmentos de clientes y recomendaciones (ML) |
+| GET | `/analytics/busqueda-semantica` | Búsqueda semántica en el grafo. Params: `q`, `n`, `fecha` |
+
+### Grafo
+
+| Método | Ruta | Descripción |
+|---|---|---|
+| GET | `/grafo/nodos` | Nodos para visualización D3.js. Param: `tipo` |
+| GET | `/grafo/relaciones` | Relaciones para visualización D3.js. Params: `cliente_id`, `tipo` |
+
+### Chat / MCP
+
+| Método | Ruta | Descripción |
+|---|---|---|
+| POST | `/mcp/query` | Consulta en lenguaje natural sobre el grafo |
+
+### Sistema
+
+| Método | Ruta | Descripción |
+|---|---|---|
+| GET | `/health` | Estado del servicio y backends disponibles |
+| GET | `/` | Metadata de la API |
+
+---
+
+## Decisiones técnicas
+
+### Backend de datos intercambiable
+
+El sistema tiene tres backends detrás de una interfaz `GraphRepository`:
+
+- **`graphiti`** — usa Neo4j vía graphiti-core SDK. Modo de producción. Soporta búsqueda semántica y temporalidad.
+- **`neo4j`** — usa Neo4j directo con Cypher. Más control, sin capa semántica.
+- **`sqlite`** — fallback local para desarrollo sin infraestructura. Automático si Neo4j no está disponible.
+
+Configurable con `GRAPH_BACKEND=graphiti|neo4j|sqlite` en `.env`.
+
+### Promesa cumplida: modo dinámico vs snapshot
+
+`cumplida` en `PromesaPago` puede evaluarse de dos formas:
+
+- **`snapshot`**: lee el bool guardado en el nodo al momento de la ingesta
+- **`dynamic`** (por defecto): traversa la arista `CUMPLE_PROMESA` en el grafo — detecta pagos registrados después de la ingesta
+
+El modo dinámico evita inconsistencias cuando se reciben pagos tardíos sin re-ingestar.
+
+### Pipeline ML anti-leakage
+
+El `StandardScaler` vive **dentro** del `Pipeline` de scikit-learn. Se ajusta por fold en CV estratificado — nunca ve datos de validación. Todos los modelos (GradientBoosting, XGBoost, LightGBM) se evalúan con ROC-AUC y el mejor se persiste vía joblib. Si no hay modelo entrenado, la API entrena on-demand bajo lock singleflight.
+
+### Proveedores LLM intercambiables
+
+El chat MCP soporta 5 proveedores con selección automática:
+
+```
+OpenRouter → Groq → OpenAI → Gemini → Anthropic
+```
+
+El primer proveedor con API key válida en el `.env` se usa automáticamente. Configurable con `LLM_PROVIDER=auto|groq|openai|gemini|anthropic|openrouter`.
+
+---
+
+## Escalabilidad a 1 millón de clientes
+
+| Capa | Estrategia |
+|---|---|
+| **Neo4j** | Índices compuestos en `(cliente_id, timestamp)`, `(agente_id)`, `(tipo, resultado)`. Cluster causal para HA y sharding. |
+| **Ingesta** | Workers en paralelo con Celery + Redis. Batch de 500 nodos por transacción Neo4j. |
+| **API** | Paginación en todos los endpoints. Cache de KPIs en Redis (TTL 5 min). |
+| **ML** | Reentrenamiento incremental con datos de las últimas N semanas. Inferencia en batch asíncrono. |
+| **Graphiti** | Particionamiento por `group_id` — cada empresa/cartera es un grupo aislado. |
+
+Con Neo4j Enterprise y Causal Clustering, el grafo escala horizontalmente. La arquitectura actual ya usa MERGE en lugar de INSERT, lo que garantiza idempotencia en re-ingestas.
+
+---
+
+## Otras fuentes de datos útiles
+
+| Fuente | Valor aportado |
+|---|---|
+| **Score crediticio externo** (Equifax, bureaus locales) | Enriquecer `Cliente` con historial crediticio previo al préstamo — mejor predicción de riesgo |
+| **Canales digitales** (WhatsApp, portal web, SMS) | Capturar interacciones autogestionadas que hoy no están en el grafo |
+| **Calendarios y feriados por país** | Optimizar horarios de llamada evitando días no laborables |
+| **Datos macroeconómicos** (inflación, desempleo) | Correlacionar picos de incumplimiento con indicadores económicos |
+| **Grabaciones de llamadas** (transcripciones ASR) | Extraer sentimiento y compromisos verbales directamente del audio |
+| **Historial de deudas anteriores** | Detectar patrones de reincidencia en el mismo cliente |
+
+---
+
+## Pipeline ML
+
+```
+features.py ─┐
+             ├──► train.py ──► model_registry.py (joblib + registry.json)
+train_offline.py              │
+                              ▼
+                    predictor.py (load_latest en startup, lock singleflight)
+                              │
+              ┌───────────────┼───────────────┐
+              ▼               ▼               ▼
+        inference.py    anomalies.py   segmentation.py
+```
+
+- **Modelos**: GradientBoosting vs XGBoost vs LightGBM — selección por ROC-AUC
+- **Ground truth**: label=1 si tiene pagos reales o promesa cumplida; label=0 si sin actividad >30 días
+- **Anomalías**: IsolationForest + LOF ensemble con contamination adaptivo (IQR de Tukey)
+- **Segmentación**: KMeans con k óptimo por Silhouette score
 
 ---
 
 ## Tests
 
-Ejecutar todos los tests:
-
 ```bash
-# Tests API
+# Todos los tests
 python -m pytest api/tests/ -v
 
-# Tests ML específicos
+# Solo ML
 python -m pytest api/tests/test_ml/ -v
 
-# Tests de integración pipeline
+# Solo integración pipeline
 python -m pytest api/tests/test_pipeline.py -v
 ```
 
+**Baseline esperado**: 69 fallan (requieren Neo4j activo), 43 pasan (unit tests puros).  
+Con Docker levantado: todos los tests de API pasan.
+
 ---
 
-## Mejoras Futuras
+## Mejoras futuras
 
-- Tests automatizados (pytest + httpx para la API, playwright para el frontend)
-- Tests de ML unitarios
-- Modelo de ML para predicción de cumplimiento de promesas
-- Alertas automáticas para promesas próximas a vencer
-- Exportación a CSV/Excel desde el dashboard
-- Autenticación JWT en la API
+- **Autenticación JWT** con roles (agente / supervisor / admin)
+- **Alertas automáticas** para promesas próximas a vencer (webhook / email)
+- **Reentrenamiento automático** del modelo ML (job nocturno con Celery beat)
+- **Tests E2E** del frontend con Playwright
+- **Exportación CSV/Excel** del dashboard y listas de clientes
+- **Ingesta en tiempo real** vía webhook — registrar pagos y llamadas en el momento
+- **Métricas de Graphiti** en el dashboard — visualizar entidades y hechos extraídos por LLM
+- **Multi-tenancy** — un `group_id` por empresa para aislar grafos de diferentes carteras

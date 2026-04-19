@@ -1,105 +1,219 @@
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { getAgentes } from '../api/client';
+import DataCard from '../components/ui/DataCard';
+import MiniBar from '../components/ui/MiniBar';
 
-function RingChart({ value, max = 100, size = 48, stroke = 4, color = '#00d4ff' }) {
-  const r = (size - stroke) / 2;
-  const circ = 2 * Math.PI * r;
-  const pct = Math.min(value / max, 1);
-  return (
-    <svg width={size} height={size} className="flex-shrink-0">
-      <circle cx={size/2} cy={size/2} r={r} fill="none" stroke="#f1f5f9" strokeWidth={stroke} />
-      <circle cx={size/2} cy={size/2} r={r} fill="none" stroke={color} strokeWidth={stroke}
-        strokeDasharray={`${circ * pct} ${circ * (1 - pct)}`}
-        strokeLinecap="round" transform={`rotate(-90 ${size/2} ${size/2})`}
-        className="transition-all duration-500"
-      />
-      <text x="50%" y="50%" textAnchor="middle" dominantBaseline="central"
-        className="text-[10px] font-bold fill-slate-700">
-        {value.toFixed(0)}%
-      </text>
-    </svg>
-  );
+function pct(n) { return n == null ? '--' : `${(n * 100).toFixed(1)}%`; }
+
+const RANK_STYLES = [
+  { color: '#f59e0b', bg: 'rgba(245,158,11,0.12)', label: '1°' },
+  { color: '#94a3b8', bg: 'rgba(148,163,184,0.12)', label: '2°' },
+  { color: '#c2773a', bg: 'rgba(194,119,58,0.12)',  label: '3°' },
+];
+
+function getRankStyle(idx) {
+  return RANK_STYLES[idx] ?? { color: 'var(--text-muted)', bg: 'var(--bg-elevated)', label: `${idx + 1}°` };
 }
+
+function AgentInitials(agent) {
+  return (agent.nombre ?? agent.id ?? '?')
+    .replace('agente_0', '').replace('agente_', '')
+    .slice(0, 2).toUpperCase();
+}
+
+const SORT_OPTIONS = [
+  { key: 'tasa_exito',          label: 'Éxito' },
+  { key: 'tasa_promesa',        label: 'Promesas' },
+  { key: 'tasa_pago_inmediato', label: 'Pago inm.' },
+  { key: 'total_llamadas',      label: 'Llamadas' },
+];
 
 export default function Agentes() {
   const navigate = useNavigate();
-  const { data, isLoading } = useQuery({ queryKey: ['agentes'], queryFn: getAgentes });
+  const [sortKey, setSortKey] = useState('tasa_exito');
 
+  const { data, isLoading } = useQuery({ queryKey: ['agentes'], queryFn: getAgentes });
   const agentes = Array.isArray(data) ? data : (data?.agentes ?? []);
 
   if (isLoading) {
     return (
-      <div className="p-6 max-w-6xl mx-auto">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {[...Array(6)].map((_, i) => <div key={i} className="skeleton h-40" />)}
+      <div className="space-y-4 max-w-5xl mx-auto">
+        <div className="ds-skeleton h-48" />
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 12 }}>
+          {[...Array(6)].map((_, i) => <div key={i} className="ds-skeleton h-36" />)}
         </div>
       </div>
     );
   }
 
-  // Sort by total_llamadas desc
-  const sorted = [...agentes].sort((a, b) => (b.total_llamadas ?? 0) - (a.total_llamadas ?? 0));
+  const withExito = agentes.map(a => ({
+    ...a,
+    tasa_exito: Math.min((a.tasa_promesa ?? 0) + (a.tasa_pago_inmediato ?? 0), 1),
+  }));
+
+  const sorted = [...withExito].sort((a, b) => (b[sortKey] ?? 0) - (a[sortKey] ?? 0));
+
+  if (agentes.length === 0) {
+    return (
+      <div className="ds-empty" style={{ height: 400 }}>
+        <div className="ds-empty-title">No se encontraron agentes</div>
+      </div>
+    );
+  }
 
   return (
-    <div className="poll-container poll-space">
-      <div>
-        <h1 className="text-lg font-bold text-slate-800">
-          Agentes
-          <span className="ml-2 text-sm font-normal text-slate-400">({agentes.length})</span>
-        </h1>
-        <p className="text-xs text-slate-400 mt-0.5">Rendimiento de cada agente de cobranza. Haz clic para ver detalle</p>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-        {sorted.map((a, idx) => {
-          const tasaProm = (a.tasa_promesa ?? 0) * 100;
-          const tasaPago = (a.tasa_pago_inmediato ?? 0) * 100;
-          return (
-            <div
-              key={a.id}
-              onClick={() => navigate(`/agentes/${a.id}`)}
-              className="bg-white rounded-xl border border-slate-200/60 shadow-sm p-5 cursor-pointer card-hover group"
-            >
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-slate-600 to-slate-800 flex items-center justify-center text-white font-bold text-sm shadow-sm">
-                  {(a.nombre ?? a.id ?? '?').replace('agente_0', '').replace('agente_', '').slice(0, 2).toUpperCase()}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-semibold text-slate-800 group-hover:text-blue-700 transition-colors truncate">{a.nombre ?? a.id}</h3>
-                  <p className="text-[11px] text-slate-400">{a.id} &middot; {a.total_llamadas ?? 0} llamadas</p>
-                </div>
-                {idx === 0 && (
-                  <span className="text-[10px] font-semibold bg-amber-50 text-amber-700 border border-amber-200 px-2 py-0.5 rounded-full">TOP</span>
-                )}
-              </div>
-
-              <div className="flex items-center justify-around">
-                <div className="text-center">
-                  <RingChart value={tasaProm} color="#ff9100" />
-                  <p className="text-[10px] text-slate-500 mt-1">Promesas</p>
-                </div>
-                <div className="text-center">
-                  <RingChart value={tasaPago} color="#00e676" />
-                  <p className="text-[10px] text-slate-500 mt-1">Pago Inm.</p>
-                </div>
-                <div className="text-center">
-                  <div className="w-12 h-12 flex items-center justify-center">
-                    <span className="text-xl font-bold text-slate-700">{a.total_llamadas ?? 0}</span>
-                  </div>
-                  <p className="text-[10px] text-slate-500 mt-1">Llamadas</p>
-                </div>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      {agentes.length === 0 && (
-        <div className="text-center py-16 text-slate-400">
-          <p className="text-sm">No se encontraron agentes</p>
+    <div className="space-y-5 max-w-5xl mx-auto">
+      {/* Ranking table */}
+      <DataCard
+        title="Ranking del Equipo"
+        subtitle="Ordenar por métrica"
+        aside={
+          <div style={{ display: 'flex', gap: 4 }}>
+            {SORT_OPTIONS.map(opt => (
+              <button
+                key={opt.key}
+                onClick={() => setSortKey(opt.key)}
+                className={`ds-btn ${sortKey === opt.key ? 'ds-btn-active' : 'ds-btn-ghost'}`}
+                style={{ fontSize: 11, padding: '4px 10px' }}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+        }
+        flush
+      >
+        <div className="ds-table-wrap ds-table-scroll">
+          <table className="ds-table">
+            <thead>
+              <tr>
+                <th style={{ width: 48 }}>#</th>
+                <th>Agente</th>
+                <th style={{ minWidth: 130 }}>Tasa Éxito</th>
+                <th style={{ minWidth: 120 }}>Promesas</th>
+                <th style={{ minWidth: 120 }}>Pago Inm.</th>
+                <th className="right">Llamadas</th>
+              </tr>
+            </thead>
+            <tbody>
+              {sorted.map((a, idx) => {
+                const rank = getRankStyle(idx);
+                return (
+                  <tr key={a.id} onClick={() => navigate(`/agentes/${a.id}`)}>
+                    <td>
+                      <span style={{
+                        display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                        width: 28, height: 20, borderRadius: 4,
+                        background: rank.bg, color: rank.color,
+                        fontSize: 11, fontWeight: 700,
+                      }}>
+                        {rank.label}
+                      </span>
+                    </td>
+                    <td>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <div style={{
+                          width: 30, height: 30, borderRadius: 8,
+                          background: 'linear-gradient(135deg, #374151, #1f2937)',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          fontSize: 11, fontWeight: 700, color: '#fff', flexShrink: 0,
+                        }}>
+                          {AgentInitials(a)}
+                        </div>
+                        <div>
+                          <div style={{ fontWeight: 500, fontSize: 13 }}>{a.nombre ?? a.id}</div>
+                          <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{a.id}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td><MiniBar value={a.tasa_exito}          color="var(--state-success)" /></td>
+                    <td><MiniBar value={a.tasa_promesa}        color="var(--state-warning)" /></td>
+                    <td><MiniBar value={a.tasa_pago_inmediato} color="var(--state-info)"    /></td>
+                    <td className="right" style={{ fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>
+                      {a.total_llamadas ?? 0}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
-      )}
+      </DataCard>
+
+      {/* Cards grid */}
+      <div>
+        <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 12 }}>
+          Vista de tarjetas
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 12 }}>
+          {sorted.map((a, idx) => {
+            const rank = getRankStyle(idx);
+            return (
+              <div
+                key={a.id}
+                onClick={() => navigate(`/agentes/${a.id}`)}
+                className="ds-card"
+                style={{ cursor: 'pointer', padding: 18, transition: 'border-color 150ms' }}
+                onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--border-focus)'}
+                onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border-medium)'}
+              >
+                {/* Card header */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
+                  <div style={{
+                    width: 40, height: 40, borderRadius: 10,
+                    background: 'linear-gradient(135deg, #374151, #1f2937)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: 14, fontWeight: 700, color: '#fff', flexShrink: 0,
+                  }}>
+                    {AgentInitials(a)}
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--text-primary)' }}>
+                      {a.nombre ?? a.id}
+                    </div>
+                    <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+                      {a.id} · {a.total_llamadas ?? 0} llamadas
+                    </div>
+                  </div>
+                  <span style={{
+                    fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 4,
+                    background: rank.bg, color: rank.color,
+                  }}>
+                    {rank.label}
+                  </span>
+                </div>
+
+                {/* Metrics */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'var(--text-muted)', marginBottom: 4 }}>
+                      <span>Tasa de éxito</span>
+                      <span style={{ fontWeight: 700, color: 'var(--state-success)' }}>{pct(a.tasa_exito)}</span>
+                    </div>
+                    <MiniBar value={a.tasa_exito} color="var(--state-success)" showLabel={false} />
+                  </div>
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'var(--text-muted)', marginBottom: 4 }}>
+                      <span>Promesas</span>
+                      <span style={{ fontWeight: 700, color: 'var(--state-warning)' }}>{pct(a.tasa_promesa)}</span>
+                    </div>
+                    <MiniBar value={a.tasa_promesa} color="var(--state-warning)" showLabel={false} />
+                  </div>
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'var(--text-muted)', marginBottom: 4 }}>
+                      <span>Pago inmediato</span>
+                      <span style={{ fontWeight: 700, color: 'var(--state-info)' }}>{pct(a.tasa_pago_inmediato)}</span>
+                    </div>
+                    <MiniBar value={a.tasa_pago_inmediato} color="var(--state-info)" showLabel={false} />
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
     </div>
   );
 }

@@ -81,7 +81,7 @@ def main() -> int:
 
         # Índices por label (equivalente a lo que hicimos en SQLite: label scan fast).
         logger.info("Creando constraints + índices...")
-        for label in ("Cliente", "Agente", "Interaccion", "PromesaPago", "Pago", "PlanPago"):
+        for label in ("Cliente", "Agente", "Interaccion", "PromesaPago", "Pago", "PlanPago", "EstadoDeuda"):
             session.run(
                 f"CREATE CONSTRAINT {label.lower()}_id IF NOT EXISTS "
                 f"FOR (n:{label}) REQUIRE n.id IS UNIQUE"
@@ -91,8 +91,28 @@ def main() -> int:
             "FOR (i:Interaccion) ON (i.timestamp)"
         )
         session.run(
+            "CREATE INDEX interaccion_cliente_ts IF NOT EXISTS "
+            "FOR (i:Interaccion) ON (i.cliente_id, i.timestamp)"
+        )
+        session.run(
+            "CREATE INDEX interaccion_agente IF NOT EXISTS "
+            "FOR (i:Interaccion) ON (i.agente_id)"
+        )
+        session.run(
+            "CREATE INDEX interaccion_tipo_resultado IF NOT EXISTS "
+            "FOR (i:Interaccion) ON (i.tipo, i.resultado)"
+        )
+        session.run(
             "CREATE INDEX promesa_fecha IF NOT EXISTS "
             "FOR (p:PromesaPago) ON (p.fecha_promesa)"
+        )
+        session.run(
+            "CREATE INDEX promesa_cumplida IF NOT EXISTS "
+            "FOR (p:PromesaPago) ON (p.cumplida)"
+        )
+        session.run(
+            "CREATE INDEX estadodeuda_cliente_fecha IF NOT EXISTS "
+            "FOR (e:EstadoDeuda) ON (e.cliente_id, e.fecha)"
         )
 
         # Bulk load de nodos, agrupado por label.

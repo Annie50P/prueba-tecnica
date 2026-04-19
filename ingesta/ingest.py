@@ -12,6 +12,7 @@ Environment variables (optional, loaded from .env):
 """
 from __future__ import annotations
 
+import asyncio
 import json
 import os
 import sys
@@ -35,7 +36,6 @@ try:
         load_dotenv(_env_file)
         print(f"[env] Loaded environment from {_env_file}")
     else:
-        # Try project root .env
         _root_env = os.path.join(os.path.dirname(_HERE), ".env")
         if os.path.exists(_root_env):
             load_dotenv(_root_env)
@@ -47,6 +47,7 @@ from graphiti_client import GraphitiClient
 from models import (
     AgenteNode,
     ClienteNode,
+    EstadoDeudaNode,
     InteraccionNode,
     PagoNode,
     PlanPagoNode,
@@ -69,7 +70,89 @@ PROGRESS_INTERVAL = 50
 
 
 # ---------------------------------------------------------------------------
-# Helpers
+# Episode text builder — lenguaje natural para extracción LLM de Graphiti
+# ---------------------------------------------------------------------------
+
+def _build_episode_text(raw_ix, cliente_nombre_map: Dict[str, str]) -> str:
+    """
+    Convierte una interacción cruda en una descripción en lenguaje natural.
+    Graphiti extrae entidades y hechos mucho mejor desde texto que desde JSON.
+    """
+    nombre = cliente_nombre_map.get(raw_ix.cliente_id, raw_ix.cliente_id)
+    tipo = raw_ix.tipo
+    resultado = raw_ix.resultado or ""
+    fecha = raw_ix.timestamp[:10]
+
+    _TIPO_LABEL = {
+        "llamada_saliente": "llamada saliente",
+        "llamada_entrante": "llamada entrante",
+        "pago_recibido": "pago recibido",
+        "email": "email",
+    }
+    _SENT_LABEL = {
+        "positivo": "actitud positiva",
+        "negativo": "actitud negativa",
+        "neutral": "actitud neutral",
+    }
+    _RESULTADO_LABEL = {
+        "promesa_pago": "prometió pagar",
+        "pago_inmediato": "realizó pago inmediato",
+        "renegociacion": "solicitó renegociación",
+        "se_niega": "se negó a pagar",
+        "sin_respuesta": "no contestó",
+        "sin respuesta": "no contestó",
+    }
+
+    parts = [f"El {fecha}"]
+
+    if tipo in ("llamada_saliente", "llamada_entrante"):
+        if raw_ix.agente_id:
+            parts.append(
+                f"el agente {raw_ix.agente_id} realizó una {_TIPO_LABEL[tipo]} "
+                f"con el cliente {nombre} (id: {raw_ix.cliente_id})."
+            )
+        else:
+            parts.append(
+                f"se registró una {_TIPO_LABEL[tipo]} con el cliente {nombre} "
+                f"(id: {raw_ix.cliente_id})."
+            )
+        if raw_ix.duracion_segundos:
+            parts.append(f"La llamada duró {raw_ix.duracion_segundos} segundos.")
+        if raw_ix.sentimiento:
+            parts.append(f"El cliente mostró {_SENT_LABEL.get(raw_ix.sentimiento, raw_ix.sentimiento)}.")
+        if resultado in _RESULTADO_LABEL:
+            parts.append(f"El cliente {_RESULTADO_LABEL[resultado]}.")
+        if resultado == "promesa_pago" and raw_ix.monto_prometido:
+            parts.append(
+                f"Prometió pagar ${raw_ix.monto_prometido} "
+                f"antes del {raw_ix.fecha_promesa}."
+            )
+        if resultado == "renegociacion" and raw_ix.nuevo_plan_pago:
+            p = raw_ix.nuevo_plan_pago
+            parts.append(
+                f"Se acordó un plan de pago de {p.cuotas} cuotas "
+                f"de ${p.monto_mensual} mensuales."
+            )
+
+    elif tipo == "pago_recibido":
+        monto = raw_ix.monto or 0
+        metodo = raw_ix.metodo_pago or "método no especificado"
+        completo = "pago total" if raw_ix.pago_completo else "pago parcial"
+        parts.append(
+            f"el cliente {nombre} (id: {raw_ix.cliente_id}) realizó un {completo} "
+            f"de ${monto} mediante {metodo}."
+        )
+
+    elif tipo == "email":
+        parts.append(
+            f"se envió un email al cliente {nombre} (id: {raw_ix.cliente_id})."
+        )
+
+    return " ".join(parts)
+
+
+# ---------------------------------------------------------------------------
+# Helpers async
 # ---------------------------------------------------------------------------
 
 def _load_json(path: str) -> Dict[str, Any]:
@@ -80,30 +163,30 @@ def _load_json(path: str) -> Dict[str, Any]:
         return json.load(fh)
 
 
-def _ingest_nodes(
+async def _ingest_nodes(
     client: GraphitiClient,
     label: str,
     nodes: List[Any],
 ) -> int:
-    """Persist a list of Pydantic node models.  Returns count ingested."""
+    """Persist a list of Pydantic node models. Returns count ingested."""
     count = 0
     for node in nodes:
         props = node.model_dump()
-        client.create_node(label, props)
+        await client.create_node(label, props)
         count += 1
         if count % PROGRESS_INTERVAL == 0:
             print(f"  [{label}] {count}/{len(nodes)} nodes ingested ...")
     return count
 
 
-def _ingest_relationships(
+async def _ingest_relationships(
     client: GraphitiClient,
     relationships: List[RelationRecord],
 ) -> int:
-    """Persist all relationship records.  Returns count ingested."""
+    """Persist all relationship records. Returns count ingested."""
     count = 0
     for rel in relationships:
-        client.create_relationship(rel.from_id, rel.rel_type, rel.to_id, rel.properties)
+        await client.create_relationship(rel.from_id, rel.rel_type, rel.to_id, rel.properties)
         count += 1
         if count % PROGRESS_INTERVAL == 0:
             print(f"  [relationships] {count}/{len(relationships)} ingested ...")
@@ -111,10 +194,10 @@ def _ingest_relationships(
 
 
 # ---------------------------------------------------------------------------
-# Main
+# Main async
 # ---------------------------------------------------------------------------
 
-def main() -> None:
+async def main() -> None:
     start_time = time.time()
     print("=" * 60)
     print("  Call Pattern Analyzer – Data Ingestion")
@@ -136,79 +219,69 @@ def main() -> None:
 
     # 3. Transform
     print("[transform] Computing graph nodes and relationships ...")
-    agentes, clientes, interacciones, promesas, pagos, planes, relationships = transform(dataset)
+    agentes, clientes, interacciones, promesas, pagos, planes, estados_deuda, relationships = transform(dataset)
     print(
         f"[transform] Nodes: {len(agentes)} Agentes, {len(clientes)} Clientes, "
         f"{len(interacciones)} Interacciones, {len(promesas)} PromesasPago, "
-        f"{len(pagos)} Pagos, {len(planes)} PlanesPago"
+        f"{len(pagos)} Pagos, {len(planes)} PlanesPago, {len(estados_deuda)} EstadosDeuda"
     )
     print(f"[transform] Relationships: {len(relationships)}")
 
-    # 4. Initialise client (conecta a Neo4j vía graphiti-core o cae a SQLite)
+    # 4. Initialise client
     client = GraphitiClient()
-    graphiti_online = client.health_check()
+    graphiti_online = await client.health_check()
     if graphiti_online:
         print("[client] Neo4j/Graphiti ONLINE – ingesta vía graphiti-core")
-        client.setup_constraints()
+        await client.setup_constraints()
     else:
         print(f"[client] Neo4j OFFLINE – usando SQLite fallback: {client.db_path}")
 
-    # 5. Ingest nodes in required order: Agente → Cliente → Interaccion →
-    #    PromesaPago → Pago → PlanPago
+    # 5. Ingest nodes
     print("\n[ingest] Ingesting nodes ...")
 
     print(f"  Agentes ({len(agentes)}) ...")
-    n_agentes = _ingest_nodes(client, "Agente", agentes)
+    n_agentes = await _ingest_nodes(client, "Agente", agentes)
     print(f"  -> {n_agentes} Agentes done")
 
     print(f"  Clientes ({len(clientes)}) ...")
-    n_clientes = _ingest_nodes(client, "Cliente", clientes)
+    n_clientes = await _ingest_nodes(client, "Cliente", clientes)
     print(f"  -> {n_clientes} Clientes done")
 
     print(f"  Interacciones ({len(interacciones)}) ...")
-    n_interacciones = _ingest_nodes(client, "Interaccion", interacciones)
+    n_interacciones = await _ingest_nodes(client, "Interaccion", interacciones)
     print(f"  -> {n_interacciones} Interacciones done")
 
     print(f"  PromesasPago ({len(promesas)}) ...")
-    n_promesas = _ingest_nodes(client, "PromesaPago", promesas)
+    n_promesas = await _ingest_nodes(client, "PromesaPago", promesas)
     print(f"  -> {n_promesas} PromesasPago done")
 
     print(f"  Pagos ({len(pagos)}) ...")
-    n_pagos = _ingest_nodes(client, "Pago", pagos)
+    n_pagos = await _ingest_nodes(client, "Pago", pagos)
     print(f"  -> {n_pagos} Pagos done")
 
     print(f"  PlanesPago ({len(planes)}) ...")
-    n_planes = _ingest_nodes(client, "PlanPago", planes)
+    n_planes = await _ingest_nodes(client, "PlanPago", planes)
     print(f"  -> {n_planes} PlanesPago done")
+
+    print(f"  EstadosDeuda ({len(estados_deuda)}) ...")
+    n_estados = await _ingest_nodes(client, "EstadoDeuda", estados_deuda)
+    print(f"  -> {n_estados} EstadosDeuda done")
 
     # 6. Ingest relationships
     print(f"\n[ingest] Ingesting {len(relationships)} relationships ...")
-    n_rels = _ingest_relationships(client, relationships)
+    n_rels = await _ingest_relationships(client, relationships)
     print(f"  -> {n_rels} relationships done")
 
-    # 6b. Episodios semánticos — cada interacción se ingesta en Graphiti para
-    #     que extraiga entidades y relaciones vía LLM (complementario a los nodos
-    #     de dominio ya escritos; silencioso si el LLM no está configurado).
+    # 6b. Episodios semánticos en lenguaje natural
+    # Graphiti extrae entidades y hechos mucho mejor desde texto descriptivo
+    # que desde JSON crudo. EpisodeType.text activa el pipeline LLM completo.
     if graphiti_online:
         print(f"\n[ingest] Ingesting {len(dataset.interacciones)} semantic episodes ...")
         n_episodes = 0
+        cliente_nombre_map = {c.id: c.nombre for c in dataset.clientes}
+
         for raw_ix in dataset.interacciones:
-            episode_body = json.dumps(
-                {
-                    "id": raw_ix.id,
-                    "cliente_id": raw_ix.cliente_id,
-                    "agente_id": raw_ix.agente_id,
-                    "tipo": raw_ix.tipo,
-                    "resultado": raw_ix.resultado,
-                    "timestamp": raw_ix.timestamp,
-                    "duracion_segundos": raw_ix.duracion_segundos,
-                    "sentimiento": raw_ix.sentimiento,
-                    "monto_prometido": raw_ix.monto_prometido,
-                    "monto": raw_ix.monto,
-                },
-                ensure_ascii=False,
-                default=str,
-            )
+            episode_body = _build_episode_text(raw_ix, cliente_nombre_map)
             try:
                 ref_time = datetime.fromisoformat(
                     raw_ix.timestamp.rstrip("Z")
@@ -216,11 +289,12 @@ def main() -> None:
             except (ValueError, AttributeError):
                 ref_time = datetime.now(tz=timezone.utc)
 
-            ok = client.add_episode(
+            ok = await client.add_episode(
                 name=f"interaccion_{raw_ix.id}",
                 body=episode_body,
                 reference_time=ref_time,
                 source_description="cobranza — interaccion cliente",
+                episode_type="text",
             )
             if ok:
                 n_episodes += 1
@@ -233,7 +307,6 @@ def main() -> None:
     nodes_by_label = client.count_nodes_by_label()
     rels_by_type = client.count_rels_by_type()
 
-    # Derived stats from transform data
     n_cumplidas = sum(1 for p in promesas if p.cumplida)
 
     summary: Dict[str, Any] = {
@@ -285,8 +358,8 @@ def main() -> None:
     print(f"  Warnings     : {len(warnings)}")
     print("=" * 60)
 
-    client.close()
+    await client.close()
 
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())

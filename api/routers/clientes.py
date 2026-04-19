@@ -38,3 +38,11 @@ async def get_timeline(cliente_id: str):
     if timeline is None:
         raise HTTPException(status_code=404, detail=f"Cliente '{cliente_id}' not found")
     return {"cliente_id": cliente_id, "timeline": timeline}
+
+
+@router.get("/{cliente_id}/evolucion-deuda", summary="Get debt evolution over time")
+async def get_evolucion_deuda(cliente_id: str):
+    estados = await svc.get_evolucion_deuda(cliente_id)
+    if estados is None:
+        raise HTTPException(status_code=404, detail=f"Cliente '{cliente_id}' not found")
+    return {"cliente_id": cliente_id, "evolucion": estados}
