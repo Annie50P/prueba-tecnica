@@ -85,7 +85,7 @@ export default function Agentes() {
         }
         flush
       >
-        <div className="ds-table-wrap">
+        <div className="ds-table-wrap ds-table-scroll">
           <table className="ds-table">
             <thead>
               <tr>

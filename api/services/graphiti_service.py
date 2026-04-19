@@ -130,6 +130,8 @@ async def get_all_clientes() -> list[dict]:
 
     promesas_by_client: dict[str, list] = defaultdict(list)
     for p in all_promesas:
+        if p["properties"].get("numero_cuota") is not None:
+            continue
         cid = p["properties"].get("cliente_id")
         if cid:
             promesas_by_client[cid].append(p)
@@ -262,7 +264,10 @@ async def get_cliente_by_id(cliente_id: str) -> Optional[dict]:
     )
 
     interacciones = [{"id": i["id"], **i["properties"]} for i in interacciones_nodes]
-    promesas = [{"id": p["id"], **p["properties"]} for p in promesas_nodes]
+    promesas = [
+        {"id": p["id"], **p["properties"]} for p in promesas_nodes
+        if p["properties"].get("numero_cuota") is None
+    ]
     pagos = [{"id": p["id"], **p["properties"]} for p in pagos_nodes]
     planes = [{"id": p["id"], **p["properties"]} for p in planes_nodes]
 
@@ -661,6 +666,10 @@ async def get_promesas_incumplidas(fecha: Optional[str] = None) -> list[dict]:
         props = dict(p["properties"])
         promesa_id = p["id"]
 
+        # Excluir cuotas automáticas de PlanPago
+        if props.get("numero_cuota") is not None:
+            continue
+
         if "cliente_id" not in props:
             cid = await _cliente_de_promesa(promesa_id)
             if cid:
@@ -764,21 +773,15 @@ async def get_dashboard() -> dict:
         else 0.0
     )
 
-    if _CUMPLIDA_MODE == "dynamic":
-        promesas_cumplidas = 0
-        for p in promesas:
-            props = dict(p["properties"])
-            if "cliente_id" not in props:
-                cid = await _cliente_de_promesa(p["id"])
-                if cid:
-                    props["cliente_id"] = cid
-            if await _resolve_cumplida(props):
-                promesas_cumplidas += 1
-    else:
-        promesas_cumplidas = sum(
-            1 for p in promesas if p["properties"].get("cumplida") is True
-        )
-    promesas_incumplidas = len(promesas) - promesas_cumplidas
+    # Solo contar promesas directas (excluir cuotas de PlanPago generadas automáticamente)
+    promesas_directas = [
+        p for p in promesas
+        if p["properties"].get("numero_cuota") is None
+    ]
+    promesas_cumplidas = sum(
+        1 for p in promesas_directas if p["properties"].get("cumplida") is True
+    )
+    promesas_incumplidas = len(promesas_directas) - promesas_cumplidas
 
     actividad_por_dia: dict[str, dict] = defaultdict(
         lambda: {"llamadas": 0, "pagos": 0}

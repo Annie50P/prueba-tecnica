@@ -467,6 +467,18 @@ h1, h2, h3, h4, h5, h6 { margin: 0; }
   border-bottom: 1px solid var(--border-soft);
 }
 
+.ds-table-scroll {
+  overflow-y: auto;
+  max-height: 420px;
+}
+
+.ds-table-scroll .ds-table thead th {
+  position: sticky;
+  top: 0;
+  background: var(--bg-subtle);
+  z-index: 1;
+}
+
 .ds-table thead th {
   padding: 10px 16px;
   font-size: 10px;

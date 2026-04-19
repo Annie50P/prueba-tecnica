@@ -135,10 +135,33 @@ class GraphitiClient:
             return None
         try:
             from graphiti_core import Graphiti
+            groq_key = os.environ.get("GROQ_API_KEY")
+            gemini_key = os.environ.get("GEMINI_API_KEY")
+
+            llm_client = None
+            embedder = None
+
+            if groq_key:
+                from graphiti_core.llm_client.groq_client import GroqClient
+                from graphiti_core.llm_client.config import LLMConfig
+                llm_client = GroqClient(config=LLMConfig(
+                    api_key=groq_key,
+                    model=os.environ.get("GRAPHITI_LLM_MODEL", "llama-3.1-8b-instant"),
+                    small_model=os.environ.get("GRAPHITI_SMALL_MODEL", "llama-3.1-8b-instant"),
+                ))
+                logger.info("[graphiti-client] LLM: Groq (%s)", os.environ.get("GRAPHITI_LLM_MODEL", "llama-3.1-8b-instant"))
+
+            if gemini_key:
+                from graphiti_core.embedder.gemini import GeminiEmbedder, GeminiEmbedderConfig
+                embedder = GeminiEmbedder(config=GeminiEmbedderConfig(api_key=gemini_key))
+                logger.info("[graphiti-client] Embedder: Gemini")
+
             g = Graphiti(
                 uri=self._neo4j_uri,
                 user=self._neo4j_user,
                 password=self._neo4j_password,
+                llm_client=llm_client,
+                embedder=embedder,
             )
             await g.driver.verify_connectivity()
             self._graphiti = g
@@ -177,19 +200,24 @@ class GraphitiClient:
             return
         try:
             async with g.driver.session() as session:
-                for label in ("Cliente", "Agente", "Interaccion", "PromesaPago", "Pago", "PlanPago"):
+                for label in (
+                    "Cliente", "Agente", "Interaccion",
+                    "PromesaPago", "Pago", "PlanPago", "EstadoDeuda",
+                ):
                     await session.run(
                         f"CREATE CONSTRAINT {label.lower()}_id IF NOT EXISTS "
                         f"FOR (n:{label}) REQUIRE n.id IS UNIQUE"
                     )
-                await session.run(
-                    "CREATE INDEX interaccion_ts IF NOT EXISTS "
-                    "FOR (i:Interaccion) ON (i.timestamp)"
-                )
-                await session.run(
-                    "CREATE INDEX promesa_fecha IF NOT EXISTS "
-                    "FOR (p:PromesaPago) ON (p.fecha_promesa)"
-                )
+                for stmt in (
+                    "CREATE INDEX interaccion_ts IF NOT EXISTS FOR (i:Interaccion) ON (i.timestamp)",
+                    "CREATE INDEX interaccion_cliente_ts IF NOT EXISTS FOR (i:Interaccion) ON (i.cliente_id, i.timestamp)",
+                    "CREATE INDEX interaccion_agente IF NOT EXISTS FOR (i:Interaccion) ON (i.agente_id)",
+                    "CREATE INDEX interaccion_tipo_resultado IF NOT EXISTS FOR (i:Interaccion) ON (i.tipo, i.resultado)",
+                    "CREATE INDEX promesa_fecha IF NOT EXISTS FOR (p:PromesaPago) ON (p.fecha_promesa)",
+                    "CREATE INDEX promesa_cumplida IF NOT EXISTS FOR (p:PromesaPago) ON (p.cumplida)",
+                    "CREATE INDEX estadodeuda_cliente_fecha IF NOT EXISTS FOR (e:EstadoDeuda) ON (e.cliente_id, e.fecha)",
+                ):
+                    await session.run(stmt)
             logger.info("[graphiti-client] Constraints e índices creados.")
         except Exception as exc:
             logger.warning("[graphiti-client] No se pudieron crear constraints: %s", exc)
@@ -255,20 +283,25 @@ class GraphitiClient:
         body: str,
         reference_time: Optional[datetime] = None,
         source_description: str = "call data",
+        episode_type: str = "text",
     ) -> bool:
         """
         Ingesta semántica: añade un episodio a Graphiti para que extraiga
         entidades y relaciones vía LLM. Silencioso si falla.
+
+        episode_type='text'  → lenguaje natural (extracción LLM más efectiva)
+        episode_type='json'  → JSON estructurado
         """
         if not await self.health_check():
             return False
         try:
             from graphiti_core.nodes import EpisodeType
             ref_time = reference_time or datetime.now(tz=timezone.utc)
+            source = EpisodeType.text if episode_type == "text" else EpisodeType.json
             await self._graphiti.add_episode(
                 name=name,
                 episode_body=body,
-                source=EpisodeType.json,
+                source=source,
                 source_description=source_description,
                 reference_time=ref_time,
                 group_id=self.group_id,

@@ -214,7 +214,7 @@ export default function Clientes() {
 
       {/* Table */}
       <DataCard flush>
-        <div className="ds-table-wrap">
+        <div className="ds-table-wrap ds-table-scroll">
           <table className="ds-table">
             <thead>
               <tr>

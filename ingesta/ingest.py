@@ -70,6 +70,88 @@ PROGRESS_INTERVAL = 50
 
 
 # ---------------------------------------------------------------------------
+# Episode text builder — lenguaje natural para extracción LLM de Graphiti
+# ---------------------------------------------------------------------------
+
+def _build_episode_text(raw_ix, cliente_nombre_map: Dict[str, str]) -> str:
+    """
+    Convierte una interacción cruda en una descripción en lenguaje natural.
+    Graphiti extrae entidades y hechos mucho mejor desde texto que desde JSON.
+    """
+    nombre = cliente_nombre_map.get(raw_ix.cliente_id, raw_ix.cliente_id)
+    tipo = raw_ix.tipo
+    resultado = raw_ix.resultado or ""
+    fecha = raw_ix.timestamp[:10]
+
+    _TIPO_LABEL = {
+        "llamada_saliente": "llamada saliente",
+        "llamada_entrante": "llamada entrante",
+        "pago_recibido": "pago recibido",
+        "email": "email",
+    }
+    _SENT_LABEL = {
+        "positivo": "actitud positiva",
+        "negativo": "actitud negativa",
+        "neutral": "actitud neutral",
+    }
+    _RESULTADO_LABEL = {
+        "promesa_pago": "prometió pagar",
+        "pago_inmediato": "realizó pago inmediato",
+        "renegociacion": "solicitó renegociación",
+        "se_niega": "se negó a pagar",
+        "sin_respuesta": "no contestó",
+        "sin respuesta": "no contestó",
+    }
+
+    parts = [f"El {fecha}"]
+
+    if tipo in ("llamada_saliente", "llamada_entrante"):
+        if raw_ix.agente_id:
+            parts.append(
+                f"el agente {raw_ix.agente_id} realizó una {_TIPO_LABEL[tipo]} "
+                f"con el cliente {nombre} (id: {raw_ix.cliente_id})."
+            )
+        else:
+            parts.append(
+                f"se registró una {_TIPO_LABEL[tipo]} con el cliente {nombre} "
+                f"(id: {raw_ix.cliente_id})."
+            )
+        if raw_ix.duracion_segundos:
+            parts.append(f"La llamada duró {raw_ix.duracion_segundos} segundos.")
+        if raw_ix.sentimiento:
+            parts.append(f"El cliente mostró {_SENT_LABEL.get(raw_ix.sentimiento, raw_ix.sentimiento)}.")
+        if resultado in _RESULTADO_LABEL:
+            parts.append(f"El cliente {_RESULTADO_LABEL[resultado]}.")
+        if resultado == "promesa_pago" and raw_ix.monto_prometido:
+            parts.append(
+                f"Prometió pagar ${raw_ix.monto_prometido} "
+                f"antes del {raw_ix.fecha_promesa}."
+            )
+        if resultado == "renegociacion" and raw_ix.nuevo_plan_pago:
+            p = raw_ix.nuevo_plan_pago
+            parts.append(
+                f"Se acordó un plan de pago de {p.cuotas} cuotas "
+                f"de ${p.monto_mensual} mensuales."
+            )
+
+    elif tipo == "pago_recibido":
+        monto = raw_ix.monto or 0
+        metodo = raw_ix.metodo_pago or "método no especificado"
+        completo = "pago total" if raw_ix.pago_completo else "pago parcial"
+        parts.append(
+            f"el cliente {nombre} (id: {raw_ix.cliente_id}) realizó un {completo} "
+            f"de ${monto} mediante {metodo}."
+        )
+
+    elif tipo == "email":
+        parts.append(
+            f"se envió un email al cliente {nombre} (id: {raw_ix.cliente_id})."
+        )
+
+    return " ".join(parts)
+
+
+# ---------------------------------------------------------------------------
 # Helpers async
 # ---------------------------------------------------------------------------
 
@@ -190,27 +272,16 @@ async def main() -> None:
     n_rels = await _ingest_relationships(client, relationships)
     print(f"  -> {n_rels} relationships done")
 
-    # 6b. Episodios semánticos
+    # 6b. Episodios semánticos en lenguaje natural
+    # Graphiti extrae entidades y hechos mucho mejor desde texto descriptivo
+    # que desde JSON crudo. EpisodeType.text activa el pipeline LLM completo.
     if graphiti_online:
         print(f"\n[ingest] Ingesting {len(dataset.interacciones)} semantic episodes ...")
         n_episodes = 0
+        cliente_nombre_map = {c.id: c.nombre for c in dataset.clientes}
+
         for raw_ix in dataset.interacciones:
-            episode_body = json.dumps(
-                {
-                    "id": raw_ix.id,
-                    "cliente_id": raw_ix.cliente_id,
-                    "agente_id": raw_ix.agente_id,
-                    "tipo": raw_ix.tipo,
-                    "resultado": raw_ix.resultado,
-                    "timestamp": raw_ix.timestamp,
-                    "duracion_segundos": raw_ix.duracion_segundos,
-                    "sentimiento": raw_ix.sentimiento,
-                    "monto_prometido": raw_ix.monto_prometido,
-                    "monto": raw_ix.monto,
-                },
-                ensure_ascii=False,
-                default=str,
-            )
+            episode_body = _build_episode_text(raw_ix, cliente_nombre_map)
             try:
                 ref_time = datetime.fromisoformat(
                     raw_ix.timestamp.rstrip("Z")
@@ -223,6 +294,7 @@ async def main() -> None:
                 body=episode_body,
                 reference_time=ref_time,
                 source_description="cobranza — interaccion cliente",
+                episode_type="text",
             )
             if ok:
                 n_episodes += 1

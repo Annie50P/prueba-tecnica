@@ -128,5 +128,57 @@
       "promesa_monto_ratio"
     ],
     "artifact": "GradientBoosting_1776369716.joblib"
+  },
+  "GradientBoosting_1776519695": {
+    "model_name": "GradientBoosting",
+    "timestamp": 1776519696.0956502,
+    "metrics": {
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "roc_auc": 0.761,
+      "accuracy": 0.9
+    },
+    "n_samples": 50,
+    "label_mode": "temporal_split",
+    "features": [
+      "tasa_cumplimiento",
+      "ratio_deuda_pendiente",
+      "rfm_recency",
+      "rfm_frequency",
+      "rfm_monetary",
+      "ratio_exito_interacciones",
+      "avg_sentimiento",
+      "total_interacciones",
+      "tendencia_pagos",
+      "promesa_monto_ratio"
+    ],
+    "artifact": "GradientBoosting_1776519695.joblib"
+  },
+  "GradientBoosting_1776519787": {
+    "model_name": "GradientBoosting",
+    "timestamp": 1776519787.6598778,
+    "metrics": {
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "roc_auc": 0.761,
+      "accuracy": 0.9
+    },
+    "n_samples": 50,
+    "label_mode": "temporal_split",
+    "features": [
+      "tasa_cumplimiento",
+      "ratio_deuda_pendiente",
+      "rfm_recency",
+      "rfm_frequency",
+      "rfm_monetary",
+      "ratio_exito_interacciones",
+      "avg_sentimiento",
+      "total_interacciones",
+      "tendencia_pagos",
+      "promesa_monto_ratio"
+    ],
+    "artifact": "GradientBoosting_1776519787.joblib"
   }
 }

@@ -57,6 +57,36 @@ export default function Dashboard() {
   const actividad = dash?.actividad_por_dia ?? [];
   const promesasList = Array.isArray(promesas) ? promesas : [];
   const horariosDetalle = horarios?.detalle_por_hora ?? [];
+
+  const RESULTADO_LABEL = {
+    pago_inmediato:  'Pago inm.',
+    promesa_pago:    'Promesa',
+    sin_respuesta:   'Sin resp.',
+    se_niega_pagar:  'Negativa',
+    renegociacion:   'Renegoc.',
+    disputa:         'Disputa',
+    '':              'Sin dato',
+  };
+  const RESULTADO_COLOR = {
+    pago_inmediato: '#10b981',
+    promesa_pago:   '#3b82f6',
+    sin_respuesta:  '#94a3b8',
+    se_niega_pagar: '#ef4444',
+    renegociacion:  '#f59e0b',
+    disputa:        '#8b5cf6',
+    '':             '#4a5568',
+  };
+  const resultadoDist = Object.entries(
+    horariosDetalle.reduce((acc, h) => {
+      Object.entries(h.distribucion_resultados ?? {}).forEach(([k, v]) => {
+        acc[k] = (acc[k] ?? 0) + v;
+      });
+      return acc;
+    }, {})
+  )
+    .map(([key, value]) => ({ key, name: RESULTADO_LABEL[key] ?? key, value, fill: RESULTADO_COLOR[key] ?? '#4a5568' }))
+    .filter(d => d.key !== '')
+    .sort((a, b) => b.value - a.value);
   const tasaRec = ((dash?.tasa_recuperacion ?? 0) * 100).toFixed(1);
 
   const byClient = {};
@@ -183,18 +213,21 @@ export default function Dashboard() {
 
       {/* Charts row 2 */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <DataCard title="Efectividad por hora" subtitle="Volumen de llamadas por franja horaria">
+        <DataCard title="Distribución de resultados" subtitle="Tipo de resultado por interacción">
           <ResponsiveContainer width="100%" height={240}>
-            <BarChart data={horariosDetalle}>
+            <BarChart data={resultadoDist} layout="vertical">
               <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="hora" tick={TICK} tickFormatter={h => `${h}h`} />
-              <YAxis tick={TICK} />
+              <XAxis type="number" tick={TICK} />
+              <YAxis type="category" dataKey="name" tick={{ fontSize: 10, fill: 'var(--text-secondary)' }} width={65} />
               <Tooltip
-                formatter={(v) => [v, 'Llamadas']}
-                labelFormatter={(l) => `${l}:00`}
+                formatter={(v, _, props) => [v + ' interacciones', props.payload?.name]}
                 contentStyle={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-medium)', borderRadius: 8 }}
               />
-              <Bar dataKey="total_llamadas" fill={CHART_COLORS.bars} radius={[3, 3, 0, 0]} name="Llamadas" />
+              <Bar dataKey="value" radius={[0, 4, 4, 0]}>
+                {resultadoDist.map((entry, i) => (
+                  <Cell key={i} fill={entry.fill} />
+                ))}
+              </Bar>
             </BarChart>
           </ResponsiveContainer>
         </DataCard>

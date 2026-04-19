@@ -32,8 +32,9 @@ logger = logging.getLogger("train_offline")
 
 
 def main() -> int:
+    import asyncio, inspect
     logger.info("train_offline: cargando datos ...")
-    data = _load_all_data()
+    data = asyncio.run(_load_all_data()) if inspect.iscoroutinefunction(_load_all_data) else _load_all_data()
 
     cutoff, data_end = infer_cutoff_from_data(data)
     logger.info(

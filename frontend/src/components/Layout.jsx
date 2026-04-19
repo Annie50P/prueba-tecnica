@@ -165,7 +165,7 @@ export default function Layout() {
           </header>
         )}
 
-        <main className={isGrafo ? '' : 'ds-content'} style={{ overflow: 'auto' }}>
+        <main className={isGrafo ? '' : 'ds-content'}>
           <div className="page-enter">
             <Outlet />
           </div>

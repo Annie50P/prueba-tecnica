@@ -37,18 +37,29 @@ export default function Analisis() {
   const error   = (tab === 'prediccion' && e1) || (tab === 'anomalias' && e2) || (tab === 'estrategias' && e3);
 
   return (
-    <div className="space-y-5 max-w-7xl mx-auto">
-      {/* Tabs */}
-      <div className="ds-tabs" style={{ marginBottom: 0 }}>
-        {TABS.map(t => (
-          <button
-            key={t.id}
-            className={`ds-tab${tab === t.id ? ' ds-tab-active' : ''}`}
-            onClick={() => setTab(t.id)}
-          >
-            {t.label}
-          </button>
-        ))}
+    <div className="max-w-7xl mx-auto" style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+      {/* Tabs — sticky dentro del scroll container del main */}
+      <div style={{
+        position: 'sticky',
+        top: 'var(--topbar-height)',
+        zIndex: 9,
+        background: 'var(--bg-base)',
+        marginLeft: 'calc(-1 * var(--content-pad))',
+        marginRight: 'calc(-1 * var(--content-pad))',
+        padding: '8px var(--content-pad) 0',
+        borderBottom: '1px solid var(--border-soft)',
+      }}>
+        <div className="ds-tabs" style={{ marginBottom: 0 }}>
+          {TABS.map(t => (
+            <button
+              key={t.id}
+              className={`ds-tab${tab === t.id ? ' ds-tab-active' : ''}`}
+              onClick={() => setTab(t.id)}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {loading && (
@@ -84,6 +95,44 @@ export default function Analisis() {
   );
 }
 
+function MetricCell({ value, suffix = '', good, bad, isCount = false }) {
+  if (value == null) return <span style={{ color: 'var(--text-muted)' }}>—</span>;
+  const isGood = good?.(value);
+  const isBad  = bad?.(value);
+  const color  = isGood ? 'var(--state-success)' : isBad ? 'var(--state-danger)' : 'var(--state-warning)';
+  return (
+    <span style={{ fontSize: 12, fontWeight: 700, color, fontVariantNumeric: 'tabular-nums' }}>
+      {isCount ? value : `${value}${suffix}`}
+    </span>
+  );
+}
+
+const NEGATIVE_KEYWORDS = ['sin ', 'baja', 'muy baja', 'hostil', 'frustrad', 'decreciente', 'pendiente', 'último pago hace', 'solo '];
+const POSITIVE_KEYWORDS = ['consistente', 'alta tasa'];
+
+function FactorPills({ factors }) {
+  if (!factors?.length) return <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>—</span>;
+  return (
+    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+      {factors.map((f, i) => {
+        const lower = f.toLowerCase();
+        const isNeg = NEGATIVE_KEYWORDS.some(k => lower.includes(k));
+        const isPos = POSITIVE_KEYWORDS.some(k => lower.includes(k));
+        const color = isNeg ? 'var(--state-danger)' : isPos ? 'var(--state-success)' : 'var(--text-muted)';
+        const bg    = isNeg ? 'rgba(239,68,68,0.08)' : isPos ? 'rgba(16,185,129,0.08)' : 'var(--bg-elevated)';
+        return (
+          <span key={i} style={{
+            fontSize: 10, fontWeight: 500, padding: '2px 7px', borderRadius: 4,
+            background: bg, color, whiteSpace: 'nowrap',
+          }}>
+            {f}
+          </span>
+        );
+      })}
+    </div>
+  );
+}
+
 // ── Prediccion ────────────────────────────────────────────────
 function PrediccionTab({ data, navigate }) {
   const clientes = Array.isArray(data) ? data : [];
@@ -108,40 +157,53 @@ function PrediccionTab({ data, navigate }) {
       {modelInfo && (
         <div style={{
           background: 'var(--state-purple-bg)', border: '1px solid rgba(139,92,246,0.2)',
-          borderRadius: 12, padding: 16,
+          borderRadius: 12, padding: '14px 18px', display: 'flex', flexDirection: 'column', gap: 12,
         }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
-            <div>
-              <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--state-purple)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 4 }}>
-                Modelo ML
-              </div>
-              <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)' }}>
-                {modelInfo.modelo} ({modelInfo.n_estimators} árboles)
-              </div>
-            </div>
-            <div style={{ display: 'flex', gap: 20 }}>
-              <div style={{ textAlign: 'center' }}>
-                <div style={{ fontSize: 22, fontWeight: 700, color: 'var(--state-purple)' }}>{modelInfo.accuracy_train}%</div>
-                <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>Accuracy</div>
-              </div>
-              {modelInfo.cross_validation && (
-                <div style={{ textAlign: 'center' }}>
-                  <div style={{ fontSize: 22, fontWeight: 700, color: 'var(--state-purple)' }}>{modelInfo.cross_validation.accuracy_mean}%</div>
-                  <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>CV {modelInfo.cross_validation.folds}-fold</div>
-                </div>
-              )}
-            </div>
+          {/* Header row */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+            <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--state-purple)', textTransform: 'uppercase', letterSpacing: '0.07em' }}>
+              Modelo ML activo
+            </span>
+            <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>
+              {modelInfo.modelo?.replace(/_\d+$/, '')}
+            </span>
+            <span style={{ fontSize: 11, color: 'var(--text-muted)', marginLeft: 'auto' }}>
+              Modo: <span style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>
+                {modelInfo.label_mode === 'temporal_split' ? 'Corte temporal (datos reales)' : (modelInfo.label_mode ?? '—')}
+              </span>
+            </span>
           </div>
-          {modelInfo.label_criteria && (
-            <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid rgba(139,92,246,0.15)', display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-              {modelInfo.label_criteria.map((c, i) => (
-                <span key={i} style={{
-                  fontSize: 11, background: 'var(--bg-elevated)',
-                  color: 'var(--state-purple)', padding: '2px 8px', borderRadius: 4,
-                }}>
-                  {c}
-                </span>
-              ))}
+          {/* Metrics row */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 8 }}>
+            {[
+              { label: 'ROC-AUC',   value: modelInfo.metrics?.roc_auc   != null ? (modelInfo.metrics.roc_auc   * 100).toFixed(1) + '%' : '—' },
+              { label: 'Accuracy',  value: modelInfo.metrics?.accuracy   != null ? (modelInfo.metrics.accuracy  * 100).toFixed(0) + '%' : '—' },
+              { label: 'Precision', value: modelInfo.metrics?.precision  != null ? (modelInfo.metrics.precision * 100).toFixed(0) + '%' : '—' },
+              { label: 'Recall',    value: modelInfo.metrics?.recall     != null ? (modelInfo.metrics.recall    * 100).toFixed(0) + '%' : '—' },
+              { label: 'F1',        value: modelInfo.metrics?.f1         != null ? (modelInfo.metrics.f1        * 100).toFixed(0) + '%' : '—' },
+            ].map(({ label, value }) => (
+              <div key={label} style={{
+                textAlign: 'center', background: 'var(--bg-elevated)',
+                borderRadius: 8, padding: '8px 4px',
+                border: '1px solid rgba(139,92,246,0.12)',
+              }}>
+                <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--state-purple)' }}>{value}</div>
+                <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 2 }}>{label}</div>
+              </div>
+            ))}
+          </div>
+          {/* Nota: Precision/Recall/F1 = 0 es esperado con datos desbalanceados */}
+          {(modelInfo.metrics?.precision === 0 || modelInfo.metrics?.recall === 0) && (
+            <div style={{
+              fontSize: 11, color: 'var(--text-muted)', lineHeight: 1.5,
+              padding: '8px 10px', background: 'rgba(139,92,246,0.06)',
+              borderRadius: 6, borderLeft: '3px solid rgba(139,92,246,0.3)',
+            }}>
+              <strong style={{ color: 'var(--text-secondary)' }}>¿Por qué Precision/Recall/F1 = 0%?</strong>{' '}
+              Con solo ~50 clientes y pocos pagos confirmados post-corte, el modelo predice "no paga" para todos (clase mayoritaria).
+              El <strong style={{ color: 'var(--state-purple)' }}>ROC-AUC de {(modelInfo.metrics.roc_auc * 100).toFixed(1)}%</strong> confirma
+              que el modelo sí distingue quién es más o menos riesgoso — ese ordenamiento es el que usa el ranking de terciles.
+              Con más datos históricos, Precision y Recall mejorarían.
             </div>
           )}
         </div>
@@ -178,7 +240,7 @@ function PrediccionTab({ data, navigate }) {
           <ResponsiveContainer width="100%" height={240}>
             <BarChart data={top10} layout="vertical">
               <CartesianGrid strokeDasharray="3 3" />
-              <XAxis type="number" domain={[0, 100]} tick={TICK} />
+              <XAxis type="number" domain={['auto', 'auto']} tick={TICK} tickFormatter={v => `${v}%`} />
               <YAxis dataKey="nombre" type="category" tick={{ fontSize: 9, fill: 'var(--text-secondary)' }} width={80} />
               <Tooltip
                 formatter={(v) => [`${v}%`, 'Score']}
@@ -210,45 +272,73 @@ function PrediccionTab({ data, navigate }) {
       </div>
 
       {/* Detail table */}
-      <DataCard title="Detalle por Cliente" subtitle="Clic en una fila para ver el detalle del cliente" flush>
-        <div style={{ overflowY: 'auto', maxHeight: 400 }}>
+      <div style={{ fontSize: 11, color: 'var(--text-muted)', padding: '4px 0 8px', fontStyle: 'italic' }}>
+        El riesgo es una posición relativa (tercil) entre todos los clientes, no un umbral absoluto.
+        Un cliente puede tener 0% pagado pero riesgo "medio" si sus otros indicadores son mejores que el tercio inferior.
+      </div>
+
+      <DataCard
+        title="Detalle por Cliente"
+        subtitle="Clic en una fila para ver el perfil completo"
+        flush
+      >
+        <div className="ds-table-scroll">
           <table className="ds-table">
             <thead>
               <tr>
                 <th>Cliente</th>
                 <th className="center">Riesgo</th>
-                <th className="right">Score</th>
-                <th className="right">Prob. Pago</th>
-                <th>Factores Principales</th>
+                <th className="center" title="Porcentaje de deuda ya pagada">Deuda pagada</th>
+                <th className="center" title="Número de pagos realizados">Pagos</th>
+                <th className="center" title="Promesas de pago que cumplió">Cumplimiento</th>
+                <th className="center" title="Interacciones con el equipo">Contactos</th>
+                <th>Señales del modelo</th>
               </tr>
             </thead>
             <tbody>
-              {clientes.map(c => (
+              {clientes.map(c => {
+                const m = c.metricas ?? {};
+                const pagadoPct = m.deuda_pendiente_pct != null ? (100 - m.deuda_pendiente_pct) : null;
+                return (
                 <tr key={c.cliente_id} onClick={() => navigate(`/clientes/${c.cliente_id}`)}>
-                  <td style={{ fontWeight: 500 }}>{c.nombre}</td>
+                  <td>
+                    <div style={{ fontWeight: 500 }}>{c.nombre}</div>
+                    <div style={{ fontSize: 10, color: 'var(--text-muted)', fontVariantNumeric: 'tabular-nums' }}>
+                      Prob. pago: <span style={{
+                        fontWeight: 700,
+                        color: c.probabilidad_pago >= 60 ? 'var(--state-success)'
+                             : c.probabilidad_pago >= 30 ? 'var(--state-warning)'
+                             : 'var(--state-danger)',
+                      }}>{c.probabilidad_pago}%</span>
+                    </div>
+                  </td>
                   <td className="center">
                     <span style={{
-                      fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 4,
+                      fontSize: 11, fontWeight: 700, padding: '2px 10px', borderRadius: 4,
                       background: (RISK_COLORS[c.categoria_riesgo] ?? '#4a5568') + '20',
                       color: RISK_COLORS[c.categoria_riesgo] ?? 'var(--text-muted)',
                     }}>
                       {c.categoria_riesgo}
                     </span>
                   </td>
-                  <td className="right" style={{ fontFamily: 'monospace', fontSize: 12 }}>{c.score_riesgo}</td>
-                  <td className="right" style={{
-                    fontWeight: 700,
-                    color: c.probabilidad_pago >= 60 ? 'var(--state-success)'
-                         : c.probabilidad_pago >= 30 ? 'var(--state-warning)'
-                         : 'var(--state-danger)',
-                  }}>
-                    {c.probabilidad_pago}%
+                  <td className="center">
+                    <MetricCell value={pagadoPct} suffix="%" good={v => v >= 30} bad={v => v < 5} />
                   </td>
-                  <td style={{ fontSize: 11, color: 'var(--text-secondary)', maxWidth: 260 }}>
-                    {c.factores?.join(', ')}
+                  <td className="center">
+                    <MetricCell value={m.total_pagos} good={v => v >= 3} bad={v => v === 0} isCount />
+                  </td>
+                  <td className="center">
+                    <MetricCell value={m.tasa_cumplimiento} suffix="%" good={v => v >= 50} bad={v => v < 15} />
+                  </td>
+                  <td className="center">
+                    <MetricCell value={m.total_interacciones} good={v => v >= 5} bad={v => v <= 1} isCount />
+                  </td>
+                  <td style={{ maxWidth: 260 }}>
+                    <FactorPills factors={c.factores} />
                   </td>
                 </tr>
-              ))}
+              );
+              })}
             </tbody>
           </table>
         </div>
@@ -266,20 +356,30 @@ function AnomaliasTab({ data }) {
       {modelos_utilizados.length > 0 && (
         <div style={{
           background: 'var(--state-warning-bg)', border: '1px solid rgba(245,158,11,0.2)',
-          borderRadius: 12, padding: 14,
+          borderRadius: 12, padding: '14px 18px', display: 'flex', flexDirection: 'column', gap: 10,
         }}>
-          <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--state-warning)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 8 }}>
-            Modelos de Detección
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+            <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--state-warning)', textTransform: 'uppercase', letterSpacing: '0.07em' }}>
+              Modelos de Detección
+            </span>
+            <span style={{ fontSize: 11, color: 'var(--text-muted)', marginLeft: 'auto' }}>
+              {total_anomalias} anomalía{total_anomalias !== 1 ? 's' : ''} detectada{total_anomalias !== 1 ? 's' : ''}
+            </span>
           </div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
             {modelos_utilizados.map((m, i) => (
               <span key={i} style={{
-                fontSize: 11, background: 'var(--bg-elevated)',
-                color: 'var(--state-warning)', padding: '2px 8px', borderRadius: 4,
+                fontSize: 11, fontWeight: 500,
+                background: 'var(--bg-elevated)', color: 'var(--state-warning)',
+                padding: '4px 10px', borderRadius: 6,
+                border: '1px solid rgba(245,158,11,0.2)',
               }}>
                 {m}
               </span>
             ))}
+          </div>
+          <div style={{ fontSize: 11, color: 'var(--text-muted)', lineHeight: 1.5, padding: '6px 10px', background: 'rgba(245,158,11,0.06)', borderRadius: 6, borderLeft: '3px solid rgba(245,158,11,0.3)' }}>
+            La detección usa <strong style={{ color: 'var(--text-secondary)' }}>Isolation Forest</strong> y <strong style={{ color: 'var(--text-secondary)' }}>Z-Score</strong> para identificar clientes con comportamiento estadísticamente atípico (deuda muy alta, sin contacto prolongado, sentimiento extremo).
           </div>
         </div>
       )}
@@ -342,123 +442,259 @@ function AnomaliasTab({ data }) {
 }
 
 // ── Estrategias ──────────────────────────────────────────────
+const IMPACTO_COLORS = { alto: '#ef4444', medio: '#f59e0b', bajo: '#06b6d4' };
+
 function EstrategiasTab({ data, navigate }) {
-  const { mejores_horas = [], segmentos = {}, detalle_segmentos = {}, recomendaciones = [], modelo } = data;
+  const {
+    mejores_horas = [],
+    agentes = [],
+    cluster_profiles = [],
+    mejor_agente_por_resultado = {},
+    recomendaciones = [],
+    modelo,
+  } = data;
 
-  const segData = [
-    { name: 'Quick Wins',    value: segmentos.quick_wins      ?? 0 },
-    { name: 'Alto Potencial', value: segmentos.alto_potencial  ?? 0 },
-    { name: 'Req. Atención',  value: segmentos.requiere_atencion ?? 0 },
-    { name: 'Críticos',       value: segmentos.casos_criticos   ?? 0 },
-  ];
+  const segData = cluster_profiles.map((p, i) => ({
+    name: p.nombre,
+    value: p.count,
+    fill: SEG_COLORS[i % SEG_COLORS.length],
+  }));
 
-  const IMPACTO_COLORS = { alto: '#ef4444', medio: '#f59e0b', bajo: '#06b6d4' };
+  const RESULTADO_LABEL = {
+    promesa_pago:   'Mejor en Promesas',
+    pago_inmediato: 'Mejor en Pago Inm.',
+    renegociacion:  'Mejor en Renegociación',
+  };
 
   return (
     <div className="space-y-5">
+
+      {/* Model card */}
       {modelo && (
         <div style={{
           background: 'var(--state-success-bg)', border: '1px solid rgba(16,185,129,0.2)',
-          borderRadius: 12, padding: 14,
-          display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12,
+          borderRadius: 12, padding: '14px 18px', display: 'flex', flexDirection: 'column', gap: 10,
         }}>
-          <div>
-            <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--state-success)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 4 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+            <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--state-success)', textTransform: 'uppercase', letterSpacing: '0.07em' }}>
               Modelo de Segmentación
-            </div>
-            <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)' }}>
-              {modelo.tipo} ({modelo.n_clusters} clusters)
-            </div>
+            </span>
+            <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>
+              {modelo.tipo} · k={modelo.k_optimo} clusters óptimos
+            </span>
           </div>
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: 22, fontWeight: 700, color: 'var(--state-success)' }}>{modelo.inertia?.toLocaleString()}</div>
-            <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>Inertia (SSE)</div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
+            {[
+              { label: 'Inertia (SSE)', value: modelo.inertia?.toFixed(2) ?? '—' },
+              { label: 'Silhouette',    value: modelo.silhouette?.toFixed(4) ?? '—' },
+              { label: 'Davies-Bouldin',value: modelo.davies_bouldin?.toFixed(4) ?? '—' },
+            ].map(({ label, value }) => (
+              <div key={label} style={{
+                textAlign: 'center', background: 'var(--bg-elevated)',
+                borderRadius: 8, padding: '8px 4px',
+                border: '1px solid rgba(16,185,129,0.15)',
+              }}>
+                <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--state-success)' }}>{value}</div>
+                <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 2 }}>{label}</div>
+              </div>
+            ))}
+          </div>
+          <div style={{ fontSize: 11, color: 'var(--text-muted)', lineHeight: 1.5, padding: '6px 10px', background: 'rgba(16,185,129,0.06)', borderRadius: 6, borderLeft: '3px solid rgba(16,185,129,0.3)' }}>
+            <strong style={{ color: 'var(--text-secondary)' }}>K-Means</strong> agrupa los {cluster_profiles.reduce((s, p) => s + p.count, 0)} clientes en {modelo.k_optimo} segmentos según comportamiento de pago, sentimiento y engagement. Silhouette más alto = clusters más compactos y separados.
           </div>
         </div>
       )}
 
+      {/* Charts row */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
         <DataCard title="Segmentación de Cartera">
-          <ResponsiveContainer width="100%" height={250}>
-            <PieChart>
-              <Pie data={segData} cx="50%" cy="50%" innerRadius={50} outerRadius={90}
-                dataKey="value" paddingAngle={3} label={({ name, value }) => `${name}: ${value}`}>
-                {segData.map((_, i) => <Cell key={i} fill={SEG_COLORS[i]} />)}
-              </Pie>
-              <Tooltip contentStyle={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-medium)', borderRadius: 8 }} />
-              <Legend wrapperStyle={{ fontSize: 11 }} />
-            </PieChart>
-          </ResponsiveContainer>
+          {segData.length > 0 ? (
+            <ResponsiveContainer width="100%" height={250}>
+              <PieChart>
+                <Pie data={segData} cx="50%" cy="50%" innerRadius={50} outerRadius={90}
+                  dataKey="value" paddingAngle={3}
+                  label={({ name, value }) => `${value}`}>
+                  {segData.map((entry, i) => <Cell key={i} fill={entry.fill} />)}
+                </Pie>
+                <Tooltip
+                  formatter={(v, _n, props) => [v + ' clientes', props.payload?.name]}
+                  contentStyle={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-medium)', borderRadius: 8 }}
+                />
+                <Legend
+                  wrapperStyle={{ fontSize: 10 }}
+                  formatter={(value, entry) => entry.payload?.name ?? value}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="ds-empty"><div className="ds-empty-title">Sin datos de segmentación</div></div>
+          )}
         </DataCard>
 
         <DataCard title="Horarios con Mayor Éxito">
-          <ResponsiveContainer width="100%" height={250}>
-            <BarChart data={mejores_horas}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="hora" tickFormatter={h => `${h}:00`} tick={TICK} />
-              <YAxis tick={TICK} />
-              <Tooltip
-                formatter={(v, name) => [name === 'tasa_exito' ? `${v}%` : v, name === 'tasa_exito' ? 'Tasa Éxito' : 'Total']}
-                contentStyle={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-medium)', borderRadius: 8 }}
-              />
-              <Bar dataKey="tasa_exito" fill="var(--state-success)" name="Tasa Éxito %" radius={[4, 4, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
+          {mejores_horas.length > 0 ? (
+            <ResponsiveContainer width="100%" height={250}>
+              <BarChart data={mejores_horas}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="hora" tickFormatter={h => `${h}:00`} tick={TICK} />
+                <YAxis tick={TICK} tickFormatter={v => `${v}%`} />
+                <Tooltip
+                  formatter={(v, name) => [`${v}%`, 'Tasa de éxito']}
+                  labelFormatter={h => `Hora: ${h}:00`}
+                  contentStyle={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-medium)', borderRadius: 8 }}
+                />
+                <Bar dataKey="tasa_exito" fill="var(--state-success)" name="Tasa Éxito %" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="ds-empty"><div className="ds-empty-title">Sin datos de horarios</div></div>
+          )}
         </DataCard>
       </div>
 
-      {/* Recomendaciones */}
-      <DataCard title="Recomendaciones de Estrategia" subtitle="Sugerencias basadas en el análisis ML">
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          {recomendaciones.map((r, i) => (
-            <div key={i} style={{
-              display: 'flex', alignItems: 'flex-start', gap: 12,
-              padding: '12px 14px', background: 'var(--bg-elevated)',
-              border: '1px solid var(--border-soft)', borderRadius: 8,
-            }}>
-              <span style={{
-                fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 4, flexShrink: 0, marginTop: 2,
-                background: (IMPACTO_COLORS[r.impacto] ?? '#4a5568') + '20',
-                color: IMPACTO_COLORS[r.impacto] ?? 'var(--text-muted)',
+      {/* Cluster profiles — un card por segmento con sus clientes */}
+      {cluster_profiles.length > 0 && (
+        <DataCard title="Perfiles de Segmento" subtitle="Estrategia recomendada por cluster">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {cluster_profiles.map((p, i) => (
+              <div key={p.key} style={{
+                borderRadius: 8, overflow: 'hidden',
+                border: `1px solid ${SEG_COLORS[i % SEG_COLORS.length]}30`,
               }}>
-                {r.impacto}
-              </span>
-              <div>
-                <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>{r.titulo}</div>
-                <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 3, lineHeight: 1.5 }}>{r.descripcion}</div>
+                {/* Segment header */}
+                <div style={{
+                  display: 'flex', alignItems: 'center', gap: 12,
+                  padding: '10px 14px',
+                  background: `${SEG_COLORS[i % SEG_COLORS.length]}10`,
+                  borderBottom: `1px solid ${SEG_COLORS[i % SEG_COLORS.length]}20`,
+                }}>
+                  <span style={{
+                    width: 8, height: 8, borderRadius: '50%', flexShrink: 0,
+                    background: SEG_COLORS[i % SEG_COLORS.length],
+                  }} />
+                  <span style={{ fontWeight: 600, fontSize: 13, color: 'var(--text-primary)' }}>
+                    {p.nombre}
+                  </span>
+                  <span style={{
+                    fontSize: 11, fontWeight: 700, padding: '1px 8px', borderRadius: 4, marginLeft: 4,
+                    background: (IMPACTO_COLORS[p.impacto] ?? '#4a5568') + '20',
+                    color: IMPACTO_COLORS[p.impacto] ?? 'var(--text-muted)',
+                  }}>
+                    impacto {p.impacto}
+                  </span>
+                  <span style={{ marginLeft: 'auto', fontSize: 11, color: 'var(--text-muted)' }}>
+                    {p.count} cliente{p.count !== 1 ? 's' : ''}
+                  </span>
+                </div>
+                {/* Strategy */}
+                <div style={{ padding: '8px 14px', fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.5, background: 'var(--bg-surface)' }}>
+                  {p.estrategia}
+                </div>
+                {/* Clients mini-table */}
+                {p.clientes?.length > 0 && (
+                  <div style={{ overflowX: 'auto' }}>
+                    <table className="ds-table" style={{ fontSize: 11 }}>
+                      <thead>
+                        <tr>
+                          <th>Cliente</th>
+                          <th className="right">Pendiente</th>
+                          <th className="right">% Pend.</th>
+                          <th className="right">Cumplimiento</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {p.clientes.map(c => (
+                          <tr key={c.cliente_id} onClick={() => navigate(`/clientes/${c.cliente_id}`)}>
+                            <td style={{ fontWeight: 500 }}>{c.nombre}</td>
+                            <td className="right" style={{ fontVariantNumeric: 'tabular-nums' }}>
+                              ${(c.deuda_pendiente ?? 0).toLocaleString('es')}
+                            </td>
+                            <td className="right" style={{
+                              fontWeight: 700,
+                              color: c.pct_pendiente <= 30 ? 'var(--state-success)'
+                                   : c.pct_pendiente <= 70 ? 'var(--state-warning)'
+                                   : 'var(--state-danger)',
+                            }}>
+                              {c.pct_pendiente}%
+                            </td>
+                            <td className="right" style={{
+                              fontWeight: 600,
+                              color: c.tasa_cumplimiento >= 50 ? 'var(--state-success)'
+                                   : c.tasa_cumplimiento > 0  ? 'var(--state-warning)'
+                                   : 'var(--state-danger)',
+                            }}>
+                              {c.tasa_cumplimiento}%
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
               </div>
-            </div>
-          ))}
-        </div>
-      </DataCard>
-
-      {/* Quick wins */}
-      {(detalle_segmentos.quick_wins ?? []).length > 0 && (
-        <DataCard title="Quick Wins" subtitle="Clientes con mayor probabilidad de cerrar su deuda" flush>
-          <div style={{ overflowY: 'auto', maxHeight: 280 }}>
-            <table className="ds-table">
-              <thead>
-                <tr>
-                  <th>Cliente</th>
-                  <th className="right">Pendiente</th>
-                  <th className="right">% Pendiente</th>
-                  <th className="right">Cumplimiento</th>
-                </tr>
-              </thead>
-              <tbody>
-                {detalle_segmentos.quick_wins.map(c => (
-                  <tr key={c.cliente_id} onClick={() => navigate(`/clientes/${c.cliente_id}`)}>
-                    <td style={{ color: 'var(--accent-primary)', fontWeight: 500 }}>{c.nombre}</td>
-                    <td className="right" style={{ fontWeight: 600 }}>${c.deuda_pendiente.toLocaleString('es')}</td>
-                    <td className="right" style={{ fontWeight: 700, color: 'var(--state-success)' }}>{c.pct_pendiente}%</td>
-                    <td className="right" style={{ fontWeight: 600 }}>{c.tasa_cumplimiento}%</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            ))}
           </div>
         </DataCard>
       )}
+
+      {/* Mejor agente por tipo de resultado */}
+      {Object.keys(mejor_agente_por_resultado).length > 0 && (
+        <DataCard title="Mejor Agente por Tipo de Resultado">
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 10 }}>
+            {Object.entries(mejor_agente_por_resultado).map(([tipo, info]) => (
+              <div
+                key={tipo}
+                onClick={() => navigate(`/agentes/${info.agente_id}`)}
+                style={{
+                  padding: '12px 14px', borderRadius: 8, cursor: 'pointer',
+                  background: 'var(--bg-elevated)', border: '1px solid var(--border-soft)',
+                  transition: 'border-color 150ms',
+                }}
+                onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--border-focus)'}
+                onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border-soft)'}
+              >
+                <div style={{ fontSize: 10, color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>
+                  {RESULTADO_LABEL[tipo] ?? tipo.replace(/_/g, ' ')}
+                </div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 2 }}>
+                  {info.agente_id?.replace('agente_', 'Agente ')}
+                </div>
+                <div style={{ fontSize: 11, color: 'var(--state-success)', fontWeight: 600 }}>
+                  {info.tasa_tipo}% · {info.total_llamadas} llamadas
+                </div>
+              </div>
+            ))}
+          </div>
+        </DataCard>
+      )}
+
+      {/* Recomendaciones */}
+      {recomendaciones.length > 0 && (
+        <DataCard title="Recomendaciones de Estrategia" subtitle="Generadas por el análisis de segmentación">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {recomendaciones.map((r, i) => (
+              <div key={i} style={{
+                display: 'flex', alignItems: 'flex-start', gap: 12,
+                padding: '12px 14px', background: 'var(--bg-elevated)',
+                border: '1px solid var(--border-soft)', borderRadius: 8,
+              }}>
+                <span style={{
+                  fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 4, flexShrink: 0, marginTop: 2,
+                  background: (IMPACTO_COLORS[r.impacto] ?? '#4a5568') + '20',
+                  color: IMPACTO_COLORS[r.impacto] ?? 'var(--text-muted)',
+                }}>
+                  {r.impacto}
+                </span>
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>{r.titulo}</div>
+                  <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 3, lineHeight: 1.5 }}>{r.descripcion}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </DataCard>
+      )}
+
     </div>
   );
 }

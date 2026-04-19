@@ -53,9 +53,12 @@ RFM_RECENCY_NO_PAGO_DEFAULT = 180.0
 
 def _collect_timestamps(data: dict[str, Any]) -> list[datetime]:
     ts_list: list[datetime] = []
-    for bucket in ("all_inters", "all_pagos", "all_promesas"):
+    # Solo eventos reales (interacciones y pagos) determinan el rango temporal.
+    # fecha_promesa es una fecha futura comprometida, no un evento pasado —
+    # incluirla infla t_max y desplaza el cutoff más allá del fin real de los datos.
+    for bucket in ("all_inters", "all_pagos"):
         for item in data.get(bucket, []) or []:
-            ts = _parse_ts(item.get("timestamp") or item.get("fecha") or item.get("fecha_promesa"))
+            ts = _parse_ts(item.get("timestamp") or item.get("fecha"))
             if ts is not None:
                 if ts.tzinfo is None:
                     ts = ts.replace(tzinfo=timezone.utc)
