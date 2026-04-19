@@ -2,23 +2,6 @@
 
 Sistema de análisis de interacciones con clientes deudores modelado como grafo de conocimiento temporal (Graphiti + Neo4j). Incluye API REST, dashboard interactivo, pipeline ML y consultas en lenguaje natural.
 
----
-
-## Estado actual del sistema
-
-| Componente | Estado | Notas |
-|---|---|---|
-| Ingesta de nodos y relaciones (Neo4j) | ✅ Funcional | 1354 nodos, 17266 relaciones |
-| API REST (FastAPI) | ✅ Funcional | 16 endpoints |
-| Frontend (React + D3.js) | ✅ Funcional | Dashboard, grafo, timelines |
-| Pipeline ML (predicción, anomalías, segmentación) | ✅ Funcional | Entrena on-demand |
-| Chat MCP en lenguaje natural | ✅ Funcional | Requiere al menos una LLM key |
-| Episodios semánticos (Graphiti LLM) | ⚠️ Opcional | Requiere Groq + Gemini keys activas |
-| Búsqueda semántica (`/analytics/busqueda-semantica`) | ⚠️ Depende de episodios | Funciona solo si hay episodios ingeridos |
-
-> **Nota**: el sistema funciona completamente sin episodios semánticos. La búsqueda semántica es una capa adicional sobre el grafo estructurado que ya contiene toda la información de negocio.
-
----
 
 ## Descripción de la solución
 
@@ -111,7 +94,8 @@ Además, Graphiti agrega una capa de **memoria temporal**: los hechos extraídos
 ### Prerrequisitos
 
 - [Docker Desktop](https://www.docker.com/products/docker-desktop/) instalado y corriendo
-- Al menos una API key gratuita de LLM (ver tabla abajo)
+- **Windows**: ejecutar los comandos desde **Git Bash** (no CMD ni PowerShell). Git Bash viene incluido con [Git for Windows](https://gitforwindows.org/)
+- API key de LLM opcional — solo necesaria para el Chat IA (el dashboard, grafo y ML funcionan sin ninguna key)
 
 ### Variables de entorno requeridas
 
@@ -123,13 +107,16 @@ cp .env.example .env
 
 | Variable | Obligatoria | Dónde obtener |
 |---|---|---|
+| `NEO4J_USER` | Sí | Dejar como `neo4j` (valor por defecto) |
 | `NEO4J_PASSWORD` | Sí | Elige una contraseña (mín. 8 chars) |
-| `GROQ_API_KEY` | Para chat IA | [console.groq.com](https://console.groq.com) — gratis |
-| `GEMINI_API_KEY` | Para embeddings | [aistudio.google.com](https://aistudio.google.com) — gratis |
-| `OPENROUTER_API_KEY` | Alternativa | [openrouter.ai](https://openrouter.ai) — gratis |
-| `ANTHROPIC_API_KEY` | Alternativa | [console.anthropic.com](https://console.anthropic.com) |
+| `GROQ_API_KEY` | Solo para Chat IA | [console.groq.com](https://console.groq.com) — gratis, sin tarjeta |
+| `GEMINI_API_KEY` | Solo para búsqueda semántica | [aistudio.google.com](https://aistudio.google.com) — gratis |
+| `OPENROUTER_API_KEY` | Alternativa a Groq | [openrouter.ai](https://openrouter.ai) — gratis |
+| `ANTHROPIC_API_KEY` | Alternativa a Groq | [console.anthropic.com](https://console.anthropic.com) |
 
-> El sistema funciona con **solo Groq key** para el chat. Los episodios semánticos requieren además Gemini.
+> **Sin ninguna key**: dashboard, clientes, agentes, grafo y ML funcionan completamente.  
+> **Con Groq key**: se habilita el Chat IA en lenguaje natural.  
+> **Con Groq + Gemini**: se habilita además la búsqueda semántica sobre el grafo.
 
 ---
 
@@ -188,11 +175,11 @@ cp .env.example .env
 docker compose up -d neo4j graphiti graphiti-mcp
 # Esperar ~90 segundos
 
-# 3. Levantar API y frontend
-docker compose up -d api frontend
-
-# 4. Ingestar datos (una sola vez, ~17 minutos)
+# 3. Ingestar datos (una sola vez, ~17 minutos)
 docker compose run --rm ingesta
+
+# 4. Levantar API y frontend (el dashboard estará poblado desde el inicio)
+docker compose up -d api frontend
 ```
 
 | Servicio | URL |
@@ -224,7 +211,7 @@ cd ../ingesta && python ingest.py        # crea local_graph.db
 cd ..
 GRAPH_BACKEND=sqlite python -m uvicorn api.main:app --port 8001 --reload
 
-cd frontend && bun install && bun run dev  # http://localhost:5173
+cd frontend && bun install && VITE_API_URL=http://localhost:8001 bun run dev  # http://localhost:3000
 ```
 
 > En modo SQLite el chat MCP y la búsqueda semántica no están disponibles.

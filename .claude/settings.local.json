@@ -5,7 +5,8 @@
       "Bash(python *)",
       "Bash(curl -s -X POST http://localhost:8001/mcp/query -H 'Content-Type: application/json' -d '{\"query\":\"Cual es el cliente con mayor deuda?\"}' --max-time 45)",
       "Bash(docker compose *)",
-      "Bash(curl -s -X POST http://localhost:8001/mcp/query -H \"Content-Type: application/json\" -d '{\"query\":\"Cual es el cliente con mayor deuda?\"}' --max-time 45)"
+      "Bash(curl -s -X POST http://localhost:8001/mcp/query -H \"Content-Type: application/json\" -d '{\"query\":\"Cual es el cliente con mayor deuda?\"}' --max-time 45)",
+      "Bash(echo \"tracked: $?\")"
     ]
   }
 }
